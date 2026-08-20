@@ -216,3 +216,13 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# assocmem artifacts
+results/cache/
+results/hero_W.npy
+
+# tutorial labs
+runs/
+.ipynb_checkpoints/
+**/.ipynb_checkpoints/
+.DS_Store
