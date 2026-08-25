@@ -454,14 +454,20 @@ law: once a model can hold most of a *bounded* pool there is nothing left to buy
 
 ```bash
 export PYTHONPATH=src
-uv run python scripts/finite_context_sweep.py           # 9 rungs, ~20 min on CPU
-uv run python scripts/finite_context_sweep.py --report  # the table, from the JSON
+uv run python scripts/finite_context_sweep.py                  # 9 rungs at D = 2.62e7, ~74 min
+uv run python scripts/finite_context_sweep.py --steps 102400    # the original 4x-cheaper series
+uv run python scripts/finite_context_sweep.py --report          # both series, with local slopes
 ```
 
-`h` in 8…2048 (so `N = 512h` from 4.1e3 to 1.05e6), `D = 6.55e6` online draws at every
-rung, one seed, learning rate optimised per cell with the same interior-optimum refinement
-as the scan (all nine came out interior). The run is checkpointed after every cell, so it
-is resumable and re-running skips what is already done.
+`h` in 8…2048 (so `N = 512h` from 4.1e3 to 1.05e6), `D = 2.62e7` online draws and 409 600
+steps at **every** rung, one seed, learning rate optimised per cell with the same
+interior-optimum refinement as the scan (all nine interior, in both series). The run is
+checkpointed after every cell, so it is resumable and re-running skips what is done. The
+stream is a chain of equal 6.55M-token chunks, chunk `i` drawn with its own seed, so a
+longer stream is the shorter one plus an appended chunk — the same append-only discipline
+as `stream_master`/`stream_ext` and for the same reason (`sample_tokens` sizes its
+rejection chunk from the requested length, so re-drawing at a new length silently changes
+the realisation). Chunk 0 is byte-for-byte the file the first pass used.
 
 Two things make this *finite support*, not a finite dataset: contexts are sampled online
 from the truncated Zipf, and every occurrence gets a fresh next-token draw from its fixed
@@ -469,36 +475,99 @@ conditional. There is no held-out set and no train/test gap — evaluation weigh
 10 000 contexts by their exact renormalised frequencies. So the curve below is what
 running out of *things to learn* looks like, never what overfitting looks like.
 
-| `h` | `N` | excess loss | local slope |
-|---|---|---|---|
-| 8 | 4 096 | 1.694101 | — |
-| 16 | 8 192 | 1.325302 | −0.354 |
-| 32 | 16 384 | 1.033968 | −0.358 |
-| 64 | 32 768 | 0.786548 | −0.395 |
-| 128 | 65 536 | 0.573029 | −0.457 |
-| 256 | 131 072 | 0.394475 | −0.539 |
-| 512 | 262 144 | 0.253310 | −0.639 |
-| 1024 | 524 288 | 0.163384 | −0.633 |
-| 2048 | 1 048 576 | 0.120958 | −0.434 |
+| `h` | `N` | excess loss | local slope | at `D` = 6.55e6 | its slope |
+|---|---|---|---|---|---|
+| 8 | 4 096 | 1.693699 | — | 1.694101 | — |
+| 16 | 8 192 | 1.324286 | −0.355 | 1.325302 | −0.354 |
+| 32 | 16 384 | 1.032124 | −0.360 | 1.033968 | −0.358 |
+| 64 | 32 768 | 0.783258 | −0.398 | 0.786548 | −0.395 |
+| 128 | 65 536 | 0.566136 | −0.468 | 0.573029 | −0.457 |
+| 256 | 131 072 | 0.380699 | −0.572 | 0.394475 | −0.539 |
+| 512 | 262 144 | 0.228371 | −0.737 | 0.253310 | −0.639 |
+| 1024 | 524 288 | 0.127639 | −0.839 | 0.163384 | −0.633 |
+| 2048 | 1 048 576 | 0.079962 | **−0.675** | 0.120958 | −0.434 |
 
-Over the same range the infinite-pool curve is close to a straight `N^-0.21`, drifting to
-`N^-0.15` at the top as its own data limit starts to tell. The finite-pool curve is steeper
-from the very first rung (`N^-0.35`) and then *accelerates*, to `N^-0.64` — three times the
-infinite-pool slope. That acceleration is the point of the slide.
-The last rung, though, *relaxes* back to `-0.43`, and the per-stratum breakdown says why: at
-`D = 6.55e6` the rarest contexts in the pool are seen only 25-70 times each, so past
-`N ≈ 5e5` what binds is no longer how many contexts fit but how well a 512-way conditional
-can be pinned down from a few dozen samples. Read the top of the curve as a bend, then, not
-as an asymptote — a genuine exponential finish would need more draws per context, not more
-parameters.
+Over the same range the infinite-pool curve — same protocol, same `D`, from the scan's own
+`steps = 409 600` column — is close to a straight `N^-0.20` (slopes −0.212, −0.205, −0.202,
+−0.198, −0.197, −0.182). The finite-pool curve is steeper from the very first rung
+(`N^-0.36`) and then *accelerates*, to `N^-0.84` — four times the infinite-pool slope.
+That acceleration is the point of the slide.
 
-Cost 4.1·10¹⁴ flops and 19 min of wall clock (the top two rungs are 12 of those minutes),
-billed to `results/finite_support_ledger.jsonl` — its own ledger, no budget, and the closed
-10¹³ student ledger is untouched. Output: `results/finite_support_sweep.json` (every cell,
-its learning-rate grid, per-stratum losses). The slide's chart block is **hand-written** in
+**The last rung still relaxes, to −0.675, and that is a limitation of the measurement
+rather than a property of the problem.** The paragraph below is the evidence; the short
+version is that the relaxation is residual under-convergence whose size grows with `N`,
+so the bottom of this curve is an upper bound that gets looser as it goes right.
+
+### Why 409 600 steps, and why the top rung is still an upper bound
+
+The first version of this sweep gave every rung 102 400 steps (`D = 6.55e6`) and its top
+rung relaxed to −0.434. Quadrupling the budget moved that point down 34 % (0.120958 →
+0.079962) and its slope to −0.675, but did not remove the relaxation. What it did do is
+show exactly what the relaxation is.
+
+**The objective is convex in `W`**, so each rung's exact optimum — infinite data, no
+schedule, no step budget — can be computed directly on the true conditionals by full-batch
+Adam on `sum_i p(i) CE(p(.|i), softmax(W e_i))`. That is a per-rung yardstick the sweep can
+be held against, and it is not close to flattering at the top:
+
+| `h` | measured | converged optimum | gap | measured slope | optimum slope | gap at 102 400 |
+|---|---|---|---|---|---|---|
+| 8 | 1.693699 | 1.693454 | +0.01 % | — | — | +0.0 % |
+| 16 | 1.324286 | 1.323826 | +0.03 % | −0.355 | −0.355 | +0.1 % |
+| 32 | 1.032124 | 1.031228 | +0.09 % | −0.360 | −0.360 | +0.3 % |
+| 64 | 0.783258 | 0.781221 | +0.26 % | −0.398 | −0.401 | +0.7 % |
+| 128 | 0.566136 | 0.562518 | +0.64 % | −0.468 | −0.474 | +1.9 % |
+| 256 | 0.380699 | 0.373205 | +2.01 % | −0.572 | −0.592 | +5.7 % |
+| 512 | 0.228371 | 0.212071 | +7.69 % | −0.737 | −0.815 | +19.4 % |
+| 1024 | 0.127639 | 0.095693 | +33.4 % | −0.839 | −1.148 | +70.7 % |
+| 2048 | 0.079962 | 0.032715 | **+144 %** | **−0.675** | **−1.548** | +270 % |
+
+Three things follow, and they are the whole explanation:
+
+* **The bias grows monotonically with `N`.** Every rung gets the same 409 600 steps, so the
+  biggest model is the furthest from its own optimum: +0.01 % at `h = 8` rising to +144 %
+  at `h = 2048`. A model-scaling curve whose points are progressively looser upper bounds
+  is a curve that is *flattened at its top end*, which is exactly the observed relaxation.
+* **The converged curve does steepen monotonically**, −0.355 → −1.548, with no relaxation
+  anywhere and no sign of an asymptote — it is already falling faster than `N^-1` by
+  `h = 1024`. So the *bend is real*; only its measurement at equal compute is not yet
+  resolved at the last rung.
+* **More compute shrinks the bias but slowly.** The `h = 2048` gap went from +270 % at
+  102 400 steps to +144 % at 409 600: 4x compute roughly halves it. Another uniform 4x
+  (1 638 400 steps, `D = 1.05e8`, ~6.7e15 flops and ~5 h of wall clock) would leave it
+  near +70 % and the last slope still short of −1. Closing it to a few percent needs
+  something like 10^2x, which this experiment cannot afford — so the honest statement is
+  that **equal-compute training cannot resolve the bottom of this curve, and the convex
+  solve is the only thing here that sees its true shape.** Left for the author to decide.
+
+Two supporting measurements, from the diagnosis that led to the re-run:
+
+* **Doubling only the optimisation, on identical data.** Two epochs over the *same* 6.55M
+  draws — no new draws at all — buys 4.2 % at `h = 512` and 14.4 % at `h = 2048`; with 2x
+  *fresh* draws instead, 6.0 % and 19.1 %. Optimisation alone is about three quarters of
+  each gain, and both are ~3.2x larger at the top rung. A rung that had run out of samples
+  could not improve by re-reading samples it already had.
+* **Sampling noise is real, and it is not what bends this curve.** The best add-β estimator
+  built on the actual empirical counts of the draws scores 0.0550 nats at `D = 6.55e6` and
+  **0.0225 nats at `D = 2.62e7`**, so no model of any size can go below that at this `D`
+  and the bottom of the curve is an upper bound for that reason too. But the top point sits
+  at **3.55x** that floor (and 2.44x its own converged optimum), so sampling is not what
+  limits it — under-convergence is. At the old budget the top rung's per-stratum excess was
+  a nearly uniform **2.05x** the floor in *every* stratum from rank 100 to 10 000, which is
+  what an unconverged run looks like; a capacity ceiling bites the rare strata far harder
+  than the head.
+
+Cost 1.67e15 flops and 74 min of wall clock for the `D = 2.62e7` series (the top two rungs
+are half of it), plus 6.2e14 for the diagnosis, billed to
+`results/finite_support_ledger.jsonl` — its own ledger, no budget, and the closed 10¹³
+student ledger is untouched; 2.84e15 in that ledger all told. The convex solves are
+analysis rather than training and are not billed: ~1.5e15 flops, ~20 min. Output:
+`results/finite_support_sweep.json`, which keeps **both** series (cells are keyed by step
+count; `meta.series` records which one the last run produced) with every cell's
+learning-rate grid and per-stratum losses. The slide's chart block is **hand-written** in
 `figures/finite-chart.md`: there is no `--write-slide` and no BEGIN/END markers, so the
-numbers there are copied from this JSON by hand. `assets/finite-chart.js` styles its
-markers.
+numbers there are copied from this JSON by hand, from the `excess_star` field. Both of its
+series are at `D = 2.62e7`. `assets/finite-chart.js` styles its markers.
 
 ## Layout
 
@@ -526,7 +595,7 @@ markers.
 | `assets/finite-chart.js` | the finite-data chart's filled markers (colloquium draws line points hollow by default) |
 | `assets/pc-chart.js` | the two practice-capacity charts (digitised from Allen-Zhu & Li and Morris et al.): filled markers, dashed yardsticks, decade-only ticks written `1k` / `1M`. One file for the pair — the pass is shared and the tick plugin must be registered once — loaded from the `<script src>` tag at the end of `figures/pc-bitstrings.md`, which sits after both chart blocks |
 | `slides.md` | the deck (colloquium). Build it with **`uv run python scripts/build_slides.py`**, not `colloquium build` — see below |
-| `figures/*.html` | the deck's six hand-drawn SVG figures, one file each: `embed-fig`, `zipf-fig`, `hebb-fig`, `sphere-fig`, `loss-step-fig`, `scaling-twin-fig`. `slides.md` refers to each by a one-line `<!-- figure: <key> -->` placeholder and holds no SVG itself |
+| `figures/*.html` | the deck's six hand-drawn SVG figures, one file each: `embed-fig`, `zipf-fig`, `w-build-fig`, `sphere-fig`, `loss-step-fig`, `scaling-twin-fig`. `slides.md` refers to each by a one-line `<!-- figure: <key> -->` placeholder and holds no SVG itself |
 | `figures/pc-facts.md`, `figures/pc-bitstrings.md`, `figures/finite-chart.md` | the three *hand-written* chart figures — digitised or copied numbers, no generator script — each with its `cap-legend`. `slides.md` keeps only the placeholder, the surrounding prose and, on the finite-data slide, the `cap-cue` marker that belongs to the step sequence |
 | `figures/capacity-chart.md`, `figures/isoflop-figure.md`, `figures/results-alpha.md` | the same placeholder mechanism for the three *plotted* figures, each written by its generator (`capacity_sweep.py`, `isoflop_slide.py`, `grid_slide.py` with `--write-slide`) together with its legend and its `assets/*.js` styling tag. Generated files: edit the script, not these |
 | `scripts/build_slides.py` | expands those placeholders and runs colloquium: `build_slides.py` → `slides.html`, `--check` verifies every placeholder resolves and no figure is orphaned, `--serve` runs the dev server. colloquium has no include directive, so `colloquium build slides.md` on its own renders the six figures empty |

@@ -123,6 +123,13 @@ Next-token prediction requires learning a **mapping from contexts to next-token 
 <div style="margin-top: 1.5em"></div>
 
 The <strong class="tok-model">model</strong> explicitly represents **next-token probability distributions**, while the <strong class="tok-data">data</strong> only provides samples from an **implicit target distribution**.
+
+<!-- step -->
+
+<div style="margin-top: 1em"></div>
+
+We further assume that **no structure shortcuts the learning**: nothing generalises from one context to another, so the model has **no choice but to memorise** the mapping, context by context.
+
 ---
 
 ## Simplifying language modeling
@@ -272,25 +279,32 @@ The prediction for context $i$ is perturbed by the **other embeddings close to**
 
 ---
 
-<!-- class: carry-line -->
-<!-- columns: 1/4 -->
 ## Some theoretical intuition
 
-<!-- figure: hebb-fig -->
+**Hebbian model.** $W = \sum_i z_i e_i^\top$, so the row of $W$ for token $y$ is $\sum_{i \,:\, y^*_i = y} e_i^\top$: **one sum per token**.
 
-|||
+<!-- figure: w-build-fig -->
+
+<!-- step -->
+
+<div style="margin-top: 0.4em"></div>
+
+**Querying.** $(W e_i)_y = \sum_{j \,:\, y^*_j = y} e_j^\top e_i$ -- compare $e_i$ against every stored embedding and see **which colour dominates**.
+
+---
+
+<!-- class: carry-line -->
+## Some theoretical intuition
 
 **Interference.** The prediction for context $i$ is perturbed by the **other embeddings close to** $e_i$.
 
 <div style="margin-top: -1em"></div>
 
-<!-- step -->
-
 <!-- figure: sphere-fig -->
 
 <!-- step -->
 
-<div style="margin-top: 1.5em"></div>
+<div style="margin-top: 0.4em"></div>
 
 **As a result**, capacity increases with $d$ and $h$.
 
@@ -354,7 +368,7 @@ Redrawn from Figure 1(b) of [@allenzhu2024capacity] and Figure 1 of [@morris2025
 
 ---
 
-<!-- rows: 3/3/2/2 -->
+<!-- rows: 4 -->
 <!-- class: eq-rows -->
 ## From capacity to scaling laws
 
@@ -422,7 +436,11 @@ The tail sum is set by **where it starts**, and capacity grows like $N$.
 
 <!-- figure: loss-step-fig -->
 
-<div class="inline-footnote fragment" data-fragment-index="1">
+<!-- The figure builds in three steps (shade the area, carry it across to one
+     point, then sweep N into the law); the caveat belongs with the law, so it
+     waits for the last of them. -->
+
+<div class="inline-footnote fragment" data-fragment-index="3">
 
 Note that in this case there is no residual entropy and the loss will converge to $0$ under infinite compute and data.
 
@@ -430,7 +448,7 @@ Note that in this case there is no residual entropy and the loss will converge t
 
 ---
 
-<!-- rows: 2/2/3 -->
+<!-- rows: 3 -->
 <!-- class: eq-rows -->
 ## From capacity to scaling laws
 

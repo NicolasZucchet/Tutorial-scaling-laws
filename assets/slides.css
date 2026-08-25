@@ -482,72 +482,6 @@
    carry its hue; the non-argmax entries get a tint of the same. */
 .embed-fig .ef-navy-light { fill: #b6c3d1; }
 
-/* "Interference" slide, left column: a pictorial reminder of the Hebbian
-   weights from the previous slide.  Each term is one correct next token
-   (the coloured word, standing for the one-hot z_i) mapped to the context
-   embedding it is glued onto (the arrow on the unit circle, e_i).  The four
-   hues are the ones the `.sphere-fig` vectors carry on the right, so a term
-   here and a vector there are the same context.  Stroke weights, arrow
-   heads and type sizes follow `.sphere-fig` so the pair reads as one
-   figure rather than as two. */
-.hebb-fig {
-  display: block;
-  width: 100%;
-  height: auto;
-  margin: 0.4em auto 0;
-  font-family: var(--colloquium-font-body);
-}
-.hebb-fig text { fill: var(--colloquium-text); font-size: 22px; }
-.hebb-fig .hb-math {
-  font-family: "Latin Modern Math", "Cambria Math", Georgia, serif;
-  font-style: italic;
-  font-size: 27px;
-  fill: var(--colloquium-title);
-}
-.hebb-fig .hb-plus {
-  fill: var(--colloquium-muted);
-  font-size: 24px;
-}
-/* The sum runs on: three dots under the last unit circle rather than a
-   `⋯` glyph, which the body face does not carry. */
-.hebb-fig .hb-dot { fill: var(--colloquium-muted); }
-.hebb-fig .hb-tok { font-weight: 700; }
-.hebb-fig .hb-map {
-  stroke: var(--colloquium-muted);
-  stroke-width: 2;
-  marker-end: url(#hb-arrow);
-}
-.hebb-fig marker#hb-arrow path { fill: var(--colloquium-muted); }
-.hebb-fig .hb-circle {
-  fill: none;
-  stroke: var(--colloquium-muted);
-  stroke-width: 1.5;
-}
-.hebb-fig .hb-vec {
-  stroke-width: 2.4;
-  stroke-linecap: round;
-  fill: none;
-}
-.hebb-fig .hb-vec.hb-navy   { stroke: #0f3460; }
-.hebb-fig .hb-vec.hb-red    { stroke: #c0392b; }
-.hebb-fig .hb-vec.hb-green  { stroke: #27ae60; }
-.hebb-fig .hb-vec.hb-orange { stroke: #e67e22; }
-.hebb-fig .hb-tok.hb-navy   { fill: #0f3460; }
-.hebb-fig .hb-tok.hb-red    { fill: #c0392b; }
-.hebb-fig .hb-tok.hb-green  { fill: #27ae60; }
-.hebb-fig .hb-tok.hb-orange { fill: #e67e22; }
-/* The carry line moved into the right column when the reminder took the
-   left one, so the rise-in animation has to follow it there. */
-.slide.carry-line .colloquium-grid > .col > p:first-child {
-  animation: colloquium-carry-up 0.45s ease-out both;
-}
-.colloquium-capture .slide.carry-line .colloquium-grid > .col > p:first-child {
-  animation: none;
-}
-@media print {
-  .slide.carry-line .colloquium-grid > .col > p:first-child { animation: none; }
-}
-
 /* theory-capacity slide */
 /* The chart column is much shorter than the commentary beside it, so left
    top-aligned it reads as if it had slipped up the slide.  There is no
@@ -558,4 +492,80 @@
   display: flex;
   flex-direction: column;
   justify-content: center;
+}
+
+/* eq-rows slides (the two "From capacity to scaling laws" derivations) */
+/* `rows:` builds a grid on .slide-content whose bands are stretched to fill the
+   whole slide height, so a three-step derivation comes out with a third of the
+   slide of dead space between each line.  The rows structure itself has to stay
+   -- it is what lets each band carry `row-columns: 3/2` and so pairs every
+   equation with its gloss at a readable 40% width -- so only the vertical
+   distribution is undone here: the fr-based track list (an inline style, hence
+   `!important`) gives way to content-height bands packed at the top, leaving
+   the grid's own 0.9em gap as ordinary paragraph spacing. */
+.slide.eq-rows .slide-content.colloquium-rows {
+  grid-template-rows: none !important;
+  grid-auto-rows: min-content;
+  align-content: start;
+}
+
+/* "Building W" figure (`figures/w-build-fig.md`), on the slide that turns the
+   Hebbian sum into a picture.  Three panels read left to right: four contexts
+   tagged by their next token (two `mat`, two `floor`), the four random unit
+   embeddings in those two colours, then the two sums -- one per token, drawn
+   head to tail from the dashed copies -- which are literally the rows of W.
+   Same palette, arrow heads, 2.4 stroke and type sizes as `.embed-fig` and
+   `.sphere-fig`, so the three figures read as one family; the vectors are
+   shortened by 13px so the head's tip, not the line's end, lands on the
+   circle. */
+.wbuild-fig {
+  display: block;
+  width: 100%;
+  height: auto;
+  margin: 0.2em auto 0;
+  font-family: var(--colloquium-font-body);
+}
+.wbuild-fig .wb-head { fill: var(--colloquium-title); font-size: 22px; font-weight: 700; }
+.wbuild-fig .wb-context { fill: var(--colloquium-code-bg); stroke: var(--colloquium-border); }
+.wbuild-fig .wb-code { fill: var(--colloquium-text); font-family: var(--colloquium-font-mono); font-size: 13px; }
+.wbuild-fig .wb-muted { fill: var(--colloquium-muted); font-size: 16px; }
+.wbuild-fig .wb-map { stroke: var(--colloquium-muted); stroke-width: 2; marker-end: url(#wb-arrow); }
+.wbuild-fig marker#wb-arrow path { fill: var(--colloquium-muted); }
+.wbuild-fig .wb-circle { fill: none; stroke: var(--colloquium-muted); stroke-width: 1.6; }
+/* The sums are not unit vectors, so the circle in the third panel is only a
+   yardstick -- dashed, to say it no longer bounds anything. */
+.wbuild-fig .wb-circle-dash { stroke-dasharray: 5 7; stroke-opacity: 0.55; }
+.wbuild-fig .wb-vec { stroke-width: 2.4; stroke-linecap: round; fill: none; }
+/* The head-to-tail copies behind each sum: same hue, faded and dashed. */
+.wbuild-fig .wb-ghost { stroke-width: 1.7; stroke-dasharray: 4 5; opacity: 0.6; fill: none; }
+.wbuild-fig .wb-navy { stroke: #0f3460; }
+.wbuild-fig .wb-red  { stroke: #c0392b; }
+.wbuild-fig .wb-fill-navy { fill: #0f3460; }
+.wbuild-fig .wb-fill-red  { fill: #c0392b; }
+.wbuild-fig .wb-tok { font-size: 22px; font-weight: 700; }
+.wbuild-fig .wb-vector { fill: var(--colloquium-text); font-size: 18px; font-style: italic; }
+.wbuild-fig .wb-math,
+.wbuild-fig .wb-var {
+  font-family: "Latin Modern Math", "Cambria Math", Georgia, serif;
+  font-style: italic;
+}
+.wbuild-fig .wb-math { font-size: 25px; }
+.wbuild-fig .wb-sub { font-size: 15px; font-style: normal; }
+
+/* loss-step figure: the area-to-point build */
+/* The shaded block under the step curve is the loss integral, so it is a fill
+   rather than an outline -- light enough that the navy step and the red
+   capacity divider still read through it as the figure's foreground. */
+.plot-fig .pf-area {
+  fill: var(--colloquium-muted);
+  fill-opacity: 0.15;
+  stroke: none;
+}
+/* The one L(N) value that block amounts to.  The halo is the slide background,
+   not white, so the dot keeps its edge if the deck ever darkens; it matters
+   because the N^(1-alpha) line is drawn through this point one step later. */
+.plot-fig .pf-point {
+  fill: #0f3460;
+  stroke: var(--colloquium-bg);
+  stroke-width: 2.5;
 }

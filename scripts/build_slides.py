@@ -7,7 +7,7 @@ No plot or chart lives in slides.md: every figure sits in its own
 
     <!-- figure: zipf-fig -->
 
-Some fragments are hand-edited (`zipf-fig`, `embed-fig`, `hebb-fig`,
+Some fragments are hand-edited (`zipf-fig`, `embed-fig`, `w-build-fig`,
 `sphere-fig`, `loss-step-fig`, `scaling-twin-fig`, `pc-facts`,
 `pc-bitstrings`, `finite-chart`); three are owned and overwritten by the script
 that computes their numbers (`capacity-chart`, `isoflop-figure`,
