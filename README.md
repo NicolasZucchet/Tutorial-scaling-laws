@@ -95,6 +95,355 @@ budget; delete it to re-run from scratch. Student labs are accounted separately,
 uv run python tests/test_lab.py     # ~2 s: problem definition, budget guards, fit recovery
 ```
 
+## The capacity experiment (slide "Capacity, in theory and in practice")
+
+How many contexts can `softmax(W e)` actually store at **100 % accuracy**, and how much
+of that does the Hebbian one-step solution get? `d = 256` next tokens, embedding
+dimension `h` swept over 32…2048, 3 seeds, and for each `(model, h, seed)` a bisection
+on the number of contexts `n`, narrowed until fewer than 8 contexts separate the largest
+success from the smallest failure.
+
+```bash
+export PYTHONPATH=src
+uv run python scripts/capacity_sweep.py                  # everything (~16 h on CPU)
+uv run python scripts/capacity_sweep.py --h 128 256      # one slice
+uv run python scripts/capacity_sweep.py --chart-only     # redraw from the JSON
+uv run python tests/test_capacity.py                     # ~5 s
+```
+
+The run is checkpointed after every cell, so it is resumable and re-running skips what is
+already done. Outputs:
+
+| | |
+|---|---|
+| `results/capacity.json` | every probe: `n`, accuracy, steps, whether the step backstop bound it |
+| `results/capacity_chart.md` | two colloquium ` ```chart ` blocks + a table, ready to paste into `slides.md`; `--write-slide` drops the first one straight into the marked block there |
+
+Method notes, because a "100 % accuracy" number is only as good as its protocol:
+
+* **Frequencies are absent on purpose.** A 100 %-accuracy criterion does not care how
+  often a context appears, so contexts are unweighted and the Zipf law of
+  `assocmem.data` plays no role here.
+* **Nested instances.** The `n`-context problem is a *prefix* of the `n'`-context one,
+  so every probe in a bisection is asking about the same contexts.
+* **Trained to saturation, not to a budget.** Adam on the full-batch cross-entropy stops
+  when the accuracy reaches 100 % or when it stops improving — never on a step count.
+  Near the boundary the accuracy creeps for thousands of steps, so this matters: at
+  `h = 32` a 1k-step budget reports 1089 contexts, 2k reports 1102, and 4k, 8k and 32k
+  report 1107, 1107, 1111. The 8k backstop is therefore converged to ~0.4 %, and probes
+  that hit it are flagged `capped` in the JSON.
+* **The learning rate is part of the measurement.** `lr = 3` was picked because it
+  dominates: `lr = 1` sometimes fails to close the last 0.1 % that `lr = 3` closes, and
+  `lr = 10`/`30` plateau *lower* on the failing side. A hinge (Crammer-Singer) objective
+  and a closed-form ridge solution were both tried and are much worse, so plain
+  cross-entropy is the best witness available.
+* **Cost is set by the top of the range.** The measured run took 15.6 h, of which
+  `h = 2048` alone was 12 h: the near-boundary probes are the slow ones, and precision 8
+  out of ~85 000 contexts puts most of a 16-probe bisection there.
+* **Monotonicity is approximate.** Adding a context can repair another one by
+  strengthening its class, so a few successes can sit above the first failure and the
+  bisection reports *a* crossing, not the first. An exhaustive scan finds this negligible
+  for `h >= 64` and real at `h = 32`, which is where the seed spread is largest.
+
+## The (N, D) scan (slide "Results")
+
+Does the back-of-the-envelope calculation on the slides actually predict the toy model's
+scaling law? At `alpha = 1.2` it predicts, with **no fitted parameters at all**,
+
+    L - L_inf  ~  l * (mass of contexts the model cannot know)
+               ~  A N^-(alpha-1)  and  B D^-(1-1/alpha)   =  A N^-0.2  and  B D^-0.1667
+
+so the scan measures the left-hand side over a grid in model size and data, fits a law to
+the **cheap corner only**, and extrapolates up to 400x further out.
+
+```bash
+export PYTHONPATH=src
+uv run python scripts/build_extension.py   # once: extends the stream to 26.2M tokens
+uv run python scripts/scaling_grid.py --stage A    # the fit region, 75 runs, ~6 min
+uv run python scripts/scaling_grid.py --stage B    # held-out targets, 19 runs, ~57 min
+uv run python scripts/scaling_grid.py --report     # the fits and the tables
+uv run python scripts/grid_figures.py              # figures/grid_law.png, grid_map.png
+uv run python tests/test_grid.py tests/test_stream.py
+```
+
+Grid: `h` in 32...8192 (so `N = 512h` from 1.6e4 to 4.2e6), `D = 64 * steps` in powers of
+four from 6.4e3 to 2.6e7, single pass, learning rate optimised at every cell -- the grid
+is refined until the optimum is *interior*, since an edge optimum biases the loss upward
+by an amount that varies with `h` and `D`, which corrupts an exponent rather than merely
+shifting it. Stage A is `h <= 512, D <= 1.6e6` with three seeds (94 cells, 5.7 min);
+stage B holds out the far corners and the small-`h`/large-`D` and large-`h`/small-`D`
+edges, with learning rates from a surface fitted on stage A (`lr* ~ h^-0.09 D^-0.41`,
+20 % rms) and a three-point bracket to confirm. Seed-to-seed spread is ~0.003 nats.
+
+Three things make this a sharper test than a normal scaling-law study:
+
+* **`L_inf` is known**, not fitted: it is the mean conditional entropy, 2.46 nats. The
+  scan reports the *excess* `L - L_inf` computed per token as `CE_i - H_i`, a paired
+  difference, so the usual trade-off between `L_inf` and the exponents never arises.
+* **Training is single-pass over a nested stream**, which is exactly the assumption
+  behind the `D^(1/alpha)` coverage argument. (The flip side: a context seen once and a
+  context never seen cannot be told apart, so a measured data exponent near `1-1/alpha`
+  is consistent with the coverage story without isolating it.)
+* **The evaluation is stratified, not sampled.** With `alpha = 1.2` the top 100 contexts
+  carry 65 % of the mass, so a set drawn from `p(x)` estimates the tail -- the part the
+  law is about -- from a handful of draws, with a standard error as large as the effect.
+  `assocmem.grid` instead takes every context below 4096 with its exact weight and
+  log-stratifies the rest, 87 strata over 34.6k tokens. That also yields the per-stratum
+  loss curve, which is the direct picture of the step function the envelope assumes.
+
+What it finds, at `alpha = 1.2`:
+
+| | measured | predicted | |
+|---|---|---|---|
+| model exponent, where `N` binds | 0.2116 | `alpha-1` = 0.2000 | +5.8 % |
+| data exponent, where `D` binds | 0.1637 | `1-1/alpha` = 0.1667 | -1.8 % |
+| `N*(C)`, from IsoFLOP profiles | `C^0.4491` | `C^0.4545` | -1.2 % |
+| `L*(C) - L_inf`, from IsoFLOP profiles | `C^-0.0913` | `C^-0.0909` | +0.4 % |
+
+The first two are finite differences between neighbouring cells, the last two are six
+IsoFLOP profiles spanning `C = 1e10 ... 1e13` with `r2` of 0.9994 and 0.9999, measured by
+the dedicated sweep below. Nothing in the right-hand column was fitted: it is `alpha` and
+arithmetic.
+
+with two lessons that only the grid can show:
+
+* **The two constraints compose as a `min`, not a sum.** A context is learned when it is
+  *both* within capacity *and* has been seen, so the envelope predicts a kink,
+  `max(A N^-a, B D^-b)`, not the additive Chinchilla form. Fitting the additive form to
+  the same data gives a 3.2 % relative error -- a fit that looks fine -- and exponents
+  that are 0.79x and 2.40x the predicted ones, hence `N* ~ C^0.72` instead of `C^0.45`.
+  A power mean, `[(A N^-a)^q + (B D^-b)^q]^(1/q)` with `q` fitted (it comes out 3.4),
+  fits 8x better, recovers the predicted exponents to 1 % and 12 %, and extrapolates to
+  19 held-out cells -- out to `C = 1.6e14`, 63x past the top of the fit region -- with a
+  **1.3 %** rms error, against 6.9 % for the additive form and 6.8 % for the pure `max`.
+* **The exponents are right and the prefactor is not.** The per-stratum curve shows the
+  assumed step is a sigmoid spread over ~2.5 decades of context index, and the model
+  behaves as if it knows 15-50x fewer contexts than `min(capacity(N), D^(1/alpha))`,
+  so the envelope under-predicts the loss by 40-50 % everywhere on the grid. A
+  constant factor on the cutoff moves the prefactor and leaves the exponent alone, which
+  is exactly what is observed. The cost of an unknown context is also not the assumed
+  `l = log d - L_inf = 3.78` nats but 4.42: an unknown context is worse than uninformed,
+  because the weights that store the frequent contexts actively mispredict it.
+
+Caveats worth stating with the numbers: the capacity constant used by the envelope
+(41 contexts per unit `h`) was measured at `d = 256` and this problem has `d = 512`, and
+the local exponents are corner values -- away from the corners each axis is masked by the
+other bottleneck, so its local slope is smaller (see panels (c) and (d)).
+
+The scan is billed to its own ledger, `results/grid_ledger.jsonl`, with no budget: it is
+not the student exercise, and the closed 1e13 ledger in `results/ledger.jsonl` is never
+touched. Total cost 1.47e15 flops, about 150x the student budget, and ~63 min of wall clock.
+
+### The alpha sweep
+
+Both exponents are supposed to be pure functions of the tail, so the same fit-region grid
+is repeated at several `alpha`, and each exponent is read off the corner where its own
+constraint binds -- no functional form assumed.
+
+```bash
+export PYTHONPATH=src
+uv run python scripts/alpha_sweep.py                # 1.1, 1.3, 1.5, 1.8; ~7 min each
+uv run python scripts/alpha_sweep.py --extend       # small-h / large-D cells; ~8 min each
+uv run python scripts/alpha_sweep.py --report       # -> results/alpha_sweep.json
+uv run python scripts/alpha_figures.py              # -> figures/alpha_sweep.png
+```
+
+| alpha | data axis, measured | `1-1/alpha` | model axis, measured | `alpha-1` |
+|---|---|---|---|---|
+| 1.1 | 0.0873 | 0.0909 | 0.1124 | 0.1000 |
+| 1.2 | 0.1637 | 0.1667 | 0.2116 | 0.2000 |
+| 1.3 | 0.2284 | 0.2308 | 0.2944 | 0.3000 |
+| 1.5 | 0.3483 | 0.3333 | 0.5077 | 0.5000 |
+| 1.8 | 0.4907 | 0.4444 | 0.7263 | 0.8000 |
+
+The data axis holds across the whole range. The model axis needs a caveat that turned out
+to be the most useful thing the sweep produced: **it can only be read where the model is
+what binds**, i.e. where `D^(1/alpha)` runs well past the capacity, and the margin needed
+grows steeply with `alpha`. At `D = 1.6e6` the margin at `h = 64` is 129x for
+`alpha = 1.2` but only 1.2x for `alpha = 1.8`, and the measured exponent tracks the margin
+rather than the prediction: ratios of 1.01, 0.98, 0.90, 0.67 as the margin falls.
+
+`--extend` tests exactly that, by adding `h` in {32, 64} at 16x and 64x more data:
+
+| alpha | `a` at `D=1.6e6` | margin | `a` at `D=2.6e7` | margin | `alpha-1` |
+|---|---|---|---|---|---|
+| 1.5 | 0.4509 | 5.3x | **0.5077** | 33.6x | 0.5000 |
+| 1.8 | 0.5397 | 1.1x | **0.7263** | 5.0x | 0.8000 |
+
+So the shortfall was the data constraint masking the model axis, not the prediction
+failing -- and `alpha = 1.8` is still only at a 5x margin, so its 0.73 is a lower bound.
+The compute-optimal exponents track `b/(a+b)` and `ab/(a+b)` across the sweep as well; see
+`figures/alpha_sweep.png`.
+
+Each `alpha` gets its own stream, stratified eval set and grid file, under `results/alpha/`
+(`alpha = 1.2` reuses the main scan). The same append-only discipline applies: a stream is
+generated once at a canonical length and extended by a separate file, never regrown.
+
+### The IsoFLOP construction (slide "Are the toy model predictions good enough?")
+
+The last two rows of that table are IsoFLOP profiles, and the deck shows the construction
+rather than just the answer: at each compute budget, sweep the model size, fit a parabola
+in `log N`, mark the minimum, then fit the minima.
+
+```bash
+export PYTHONPATH=src
+uv run python scripts/isoflop_sweep.py --plan          # the cell list and its cost, free
+uv run python scripts/isoflop_sweep.py                 # 36 cells, 2.5e14 flops, ~8 min
+uv run python scripts/isoflop_slide.py                 # fits -> results/isoflop_fits.json
+uv run python scripts/isoflop_slide.py --write-slide   # inject the figure into slides.md
+uv run python scripts/grid_slide.py --write-slide      # fit/extrapolation + alpha slides
+```
+
+The `(N, D)` grid's anti-diagonals are already *exact* IsoFLOP lines — `h` in powers of
+two and `steps` in powers of four, so equal `h*steps` costs equal flops — but they carry
+only three or four points each, wherever the grid happened to put them: at `C = 1e13` its
+cheapest point sits a factor of 80 below `N*`. A parabola through three points is an
+interpolation, not a fit, and a badly placed third point bends it.
+
+`scripts/isoflop_sweep.py` therefore re-measures the same six budgets with **six widths
+each**, log-spaced over `[N*/3, 3N*]` around the `N*` the first pass found. Two things
+keep it exact rather than approximate:
+
+* a budget fixes the product `h * steps = K`, and `K = 2^(11+2j) * 25` here, so the
+  admissible widths are `2^a`, `5*2^a` and `25*2^a` — a ladder in steps of 1.25, dense
+  enough that snapping a target ratio to it costs at most 12 %. Every width divides `K`,
+  so no step count is rounded and no loss is interpolated.
+* every cell gets a three-point learning-rate bracket from the surface fitted on the
+  first pass (`lr* ~ h^-0.028 D^-0.461`, 27 % rms), refined until the optimum is
+  interior. An lr that is wrong *as a function of h* tilts a parabola rather than merely
+  raising it. All 36 came out interior.
+
+`assocmem.grid_fit.isoflop_detail` then returns the points, the parabola, the minimum and
+the three power laws the minima define:
+
+| | measured | predicted | | anti-diagonals |
+|---|---|---|---|---|
+| `L* - L∞` vs `C` | `C^-0.0913` | `-ab/(a+b)` = `C^-0.0909` | r² 0.9999 | `C^-0.0916` |
+| `N*` vs `C` | `C^0.4491` | `b/(a+b)` = `C^0.4545` | r² 0.9994 | `C^0.4626` |
+| `L* - L∞` vs `N*` — the envelope | `N*^-0.2032` | `-(alpha-1)` = `N*^-0.2000` | r² 0.9997 | `N*^-0.1979` |
+
+The last column is what the grid's own anti-diagonals gave, for comparison: `L*` barely
+moves (a parabola is flat at its base, so a poorly sampled one still finds the right
+depth) while `N*` shifts by up to 6 % at the top two budgets, which is what pulls the
+exponent from `+1.8 %` off the prediction to `-1.2 %`.
+
+The third row is the one worth knowing: the two compute exponents share a denominator, so
+their ratio is exactly `-(alpha - 1)`. **The envelope of the IsoFLOP minima carries the
+model-size exponent**, with no compute axis anywhere in it — measured `-0.203` against a
+predicted `-0.200`.
+
+Profiles whose parabola minimum falls outside the widths measured are kept in the JSON
+flagged `edge` and excluded from all three fits: an edge minimum is a bound, not a
+measurement. The dedicated sweep has none; the grid's anti-diagonals had one
+(`C = 5.2e12`).
+
+The figure is a **generated SVG**, not a ` ```chart ` block, because its two reveals (the
+envelope, then `N*(C)`) are `<g class="fragment">` groups — the same mechanism the deck's
+hand-drawn figures use. Two things to know before editing it: colloquium numbers
+fragments by substituting *every* literal `data-colloquium-fragment="1"`, so that value is
+a marker and the reveal order is document order (anything else is left permanently
+visible); and a `1180x470` viewBox renders 613 px tall at full slide width, which
+overflows the slide and silently pushes the figure off the bottom — hence `1180x400`.
+
+Outputs: `results/isoflop_grid.json` (36 cells, same schema as `grid.json`, resumable),
+`results/isoflop_fits.json` (every profile and every fit, `source` records which store it
+came from), `results/isoflop_chart.md`, and its own ledger `results/isoflop_ledger.jsonl`.
+
+### A note on the training stream
+
+`data.sample_tokens` sizes its rejection-sampling chunk from the requested length, so its
+RNG desynchronises with `m`: **the first 4M tokens of a 26M draw are not the first 4M
+tokens of a 4M draw.** Raising a single `MASTER_TOKENS` and regenerating would silently
+change the problem instance under every number in `REPORT.md` and `results/ledger.jsonl`,
+with no error anywhere. So `stream_master_s0.npz` is frozen and is the canonical prefix;
+longer streams are that file concatenated with a separately stored, independently seeded
+extension (`stream_ext_s0.npz`). `tests/test_stream.py` asserts the base fingerprint and
+the nesting, and `build_extension` refuses to clobber.
+
+## The emergence experiment (slides "Digression: emergent behavior under the hood")
+
+The scan above reports one number, the excess loss averaged over the whole Zipf tail, and it
+is a clean power law. Ask the *same* runs a **threshold** question instead — for a band of
+context ranks, does the model predict the **most likely next token**, counted uniformly
+inside the band? — and the same nine models look like five sigmoids switching on one after
+another.
+
+```bash
+export PYTHONPATH=src
+uv run python scripts/emergence.py --run          # 9 models, h = 32...8192, full stream (~67 min)
+uv run python scripts/emergence.py --report       # the switch-on tables
+uv run python scripts/emergence.py --figures      # figures/emergence.png, six panels
+uv run python scripts/emergence.py --write-slide  # inject both chart blocks into slides.md
+uv run python tests/test_emergence.py             # ~15 s
+```
+
+Bands `1-1k`, `2-3k`, `5-6k`, `10-11k`, `20-30k` (every context of the four narrow ones, 4096
+sampled uniformly from the last, 8096 in total), 23 checkpoints per run, `D` = 26.2M tokens,
+one seed. Nothing is trained differently from the scan: same hand-written Adam, same frozen
+stream, same cosine schedule, same `lr*` surface as stage B — so the excess loss of these runs
+reproduces the scan's own cells to **≤ 0.001 nats**. The two pictures are one experiment seen
+through two metrics, which is the whole point.
+
+Where each band switches on, against the capacity yardstick (`capacity = 41h` contexts, so the
+band's median rank is reached at `N = 512 * median / 41`):
+
+| band | `N`(10 %) | `N`(50 %) | `N`(90 %) | width | `N` predicted | ratio |
+|---|---|---|---|---|---|---|
+| 1-1k | — | 3.3·10⁴ | 1.2·10⁵ | — | 6.3·10³ | 5.3 |
+| 2-3k | 7.4·10⁴ | 1.8·10⁵ | 5.5·10⁵ | 0.87 dec | 3.1·10⁴ | 5.7 |
+| 5-6k | 1.6·10⁵ | 4.0·10⁵ | 1.9·10⁶ | 1.09 dec | 6.9·10⁴ | 5.8 |
+| 10-11k | 3.2·10⁵ | 9.2·10⁵ | — | — | 1.3·10⁵ | 7.0 |
+| 20-30k | 9.1·10⁵ | 3.1·10⁶ | — | — | 3.1·10⁵ | 9.8 |
+
+and over training, at the largest model (`h` = 8192, `N` = 4.2·10⁶, whose capacity is far past
+rank 30k so only coverage can bind):
+
+| band | final | `D`(50 %) | `D` for "seen once" | times seen at `D`(50 %) |
+|---|---|---|---|---|
+| 1-1k | 0.926 | 2.3·10⁴ | 9.7·10³ | 2.4 |
+| 2-3k | 0.927 | 2.3·10⁵ | 6.7·10⁴ | 3.4 |
+| 5-6k | 0.901 | 6.3·10⁵ | 1.7·10⁵ | 3.7 |
+| 10-11k | 0.870 | 1.8·10⁶ | 3.7·10⁵ | 4.9 |
+| 20-30k | 0.615 | 1.1·10⁷ | 1.1·10⁶ | 10.3 |
+
+Three things the pair of pictures says that the loss alone does not:
+
+* **The switches are ordered and they are not steps.** Each band needs 5–10x more parameters
+  than the capacity yardstick allows, and it takes ~1 decade of `N` to go from 10 % to 90 %.
+  That is the same softness the scan sees as a sigmoid over ~2.5 decades of context index —
+  measured here directly, on the contexts themselves.
+* **"Seen once" is not enough; a handful of times is.** The coverage argument behind the
+  `D^(1-1/alpha)` exponent assumes a context is learned when `p(i) D >= 1`. Measured, the
+  crossing sits at 2–10 occurrences. A constant factor on the cutoff moves the prefactor and
+  leaves the exponent alone, which is exactly what the scan reports.
+* **Nothing jumps in the average.** Over the same nine models the excess loss slides smoothly
+  from 1.5526 to 0.5488 nats, and over the same single run its curve is featureless — while
+  ten thousand individual contexts go from chance to 0.6.
+
+Method notes, because "accuracy" needs a protocol as much as "capacity" does:
+
+* **Top-1 against the mode, not against a sampled `y`.** A context counts as known when
+  `argmax_y W e_x` equals `argmax_y p(y|x)`. Chance is `1/512 = 0.002`. The ceiling is **not**
+  1: these conditionals are broad (`exp(H)` averages 16 tokens, `p(y*|x)` averages 0.46), so
+  near-ties flip and the head bands saturate around 0.95. The same prediction scored against
+  `y ~ p(.|x)` is recorded as `sampled` in the JSON, and saturates at `E[p*]` instead.
+* **Uniform inside the band, on purpose.** A threshold metric does not care how often a
+  context appears; weighting by `p(i)` would let the head answer for the tail, which is
+  exactly the averaging the experiment is trying to undo.
+* **Mid-schedule checkpoints.** The training-time curves are checkpoints of one cosine-annealed
+  run sized for the full stream, not a family of runs each annealed at its own `D` — the usual
+  way such a plot is made, and it slightly understates an early checkpoint.
+* **The two largest models are the least tuned.** `h` = 4096 and 8192 take `lr*` from the
+  stage-A surface extrapolated (27 % rms), and the head-band accuracy peaks at `h` = 1024
+  (0.953) and dips to 0.926 at `h` = 8192 while the loss keeps falling monotonically. Either
+  the bigger model really does trade a little head precision for tail coverage, or its
+  learning rate is slightly off; the switch-on structure is far larger than the effect.
+
+Cost 1.33·10¹⁵ flops and 67 min of wall clock, billed to `results/emergence_ledger.jsonl`
+(no budget, like the scan; the closed 10¹³ student ledger is untouched). Outputs:
+`results/emergence.json` (every checkpoint of every run, plus the `--report` analysis),
+`results/emergence_chart.md`, `figures/emergence.png`.
+
 ## Layout
 
 | | |
@@ -106,6 +455,19 @@ uv run python tests/test_lab.py     # ~2 s: problem definition, budget guards, f
 | `src/assocmem/fit.py` | IsoFLOP parabolas, power laws, joint `L(n, D)` fit |
 | `src/assocmem/problem.py`, `prepare.py` | cached stream + eval sets |
 | `src/assocmem/ledger.py` | the flop ledger (`python -m assocmem.ledger` to audit) |
+| `src/assocmem/capacity.py` | the capacity experiment: Hebbian vs trained, bisection on `n` |
+| `src/assocmem/grid.py`, `grid_fit.py` | the (N, D) scan: stratified evaluator, one grid cell, the fits |
+| `src/assocmem/emergence.py` | the emergence experiment: per-band eval set, accuracy kernel, one checkpointed run |
+| `scripts/scaling_grid.py`, `alpha_sweep.py` | the two scans; `grid_figures.py`, `alpha_figures.py` draw them |
+| `scripts/grid_slide.py` | turns the scans into the deck's Results slides (`--write-slide`) |
+| `scripts/isoflop_sweep.py` | six widths per compute budget, centred on `N*`: the sweep the IsoFLOP figure is fitted to |
+| `scripts/isoflop_slide.py` | the IsoFLOP construction: parabolas, minima, `N*(C)`, as a generated SVG with two reveals |
+| `assets/results-chart.js` | the alpha result slide's line and marker styling |
+| `scripts/emergence.py` | the emergence sweep, its figure, and its two deck slides (`--write-slide`) |
+| `assets/emergence-chart.js` | the emergence charts' marker styling and log tick labels |
+| `slides.md` | the deck (colloquium): `colloquium build slides.md`, `colloquium serve slides.md` |
+| `assets/slides.css` | the deck's stylesheet, pulled in by the `<link>` on the title slide; font URLs are relative to `assets/`, so it needs to sit next to `slides.html` |
+| `assets/capacity-chart.js`, `assets/scaling-slider.js` | the deck's two scripts: capacity-chart markers and tick labels, and the α slider on the twin-axis scaling-law slide |
 
 ## Notes on the implementation
 

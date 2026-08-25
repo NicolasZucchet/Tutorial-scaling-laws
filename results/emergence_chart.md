@@ -1,0 +1,91 @@
+<div class="cap-legend">
+<span><svg width="30" height="10" viewBox="0 0 30 10" aria-hidden="true"><line x1="1" y1="5" x2="29" y2="5" stroke="#86b6ef" stroke-width="2.2"/><circle cx="15" cy="5" r="2.8" fill="#86b6ef"/></svg>contexts 1-1k</span>
+<span><svg width="30" height="10" viewBox="0 0 30 10" aria-hidden="true"><line x1="1" y1="5" x2="29" y2="5" stroke="#5598e7" stroke-width="2.2"/><circle cx="15" cy="5" r="2.8" fill="#5598e7"/></svg>contexts 2-3k</span>
+<span><svg width="30" height="10" viewBox="0 0 30 10" aria-hidden="true"><line x1="1" y1="5" x2="29" y2="5" stroke="#2a78d6" stroke-width="2.2"/><circle cx="15" cy="5" r="2.8" fill="#2a78d6"/></svg>contexts 5-6k</span>
+<span><svg width="30" height="10" viewBox="0 0 30 10" aria-hidden="true"><line x1="1" y1="5" x2="29" y2="5" stroke="#184f95" stroke-width="2.2"/><circle cx="15" cy="5" r="2.8" fill="#184f95"/></svg>contexts 10-11k</span>
+<span><svg width="30" height="10" viewBox="0 0 30 10" aria-hidden="true"><line x1="1" y1="5" x2="29" y2="5" stroke="#0d366b" stroke-width="2.2"/><circle cx="15" cy="5" r="2.8" fill="#0d366b"/></svg>contexts 20-30k</span>
+</div>
+
+```chart
+type: line
+data:
+  datasets:
+    - label: "1-1k"
+      color: "#86b6ef"
+      data:
+        - {x: 1.638e+04, y: 0.249}
+        - {x: 3.277e+04, y: 0.497}
+        - {x: 6.554e+04, y: 0.789}
+        - {x: 1.311e+05, y: 0.921}
+        - {x: 2.621e+05, y: 0.946}
+        - {x: 5.243e+05, y: 0.953}
+        - {x: 1.049e+06, y: 0.948}
+        - {x: 2.097e+06, y: 0.940}
+        - {x: 4.194e+06, y: 0.926}
+    - label: "2-3k"
+      color: "#5598e7"
+      data:
+        - {x: 1.638e+04, y: 0.005}
+        - {x: 3.277e+04, y: 0.007}
+        - {x: 6.554e+04, y: 0.055}
+        - {x: 1.311e+05, y: 0.326}
+        - {x: 2.621e+05, y: 0.732}
+        - {x: 5.243e+05, y: 0.898}
+        - {x: 1.049e+06, y: 0.933}
+        - {x: 2.097e+06, y: 0.938}
+        - {x: 4.194e+06, y: 0.927}
+    - label: "5-6k"
+      color: "#2a78d6"
+      data:
+        - {x: 1.638e+04, y: 0.000}
+        - {x: 3.277e+04, y: 0.002}
+        - {x: 6.554e+04, y: 0.007}
+        - {x: 1.311e+05, y: 0.042}
+        - {x: 2.621e+05, y: 0.269}
+        - {x: 5.243e+05, y: 0.650}
+        - {x: 1.049e+06, y: 0.861}
+        - {x: 2.097e+06, y: 0.906}
+        - {x: 4.194e+06, y: 0.901}
+    - label: "10-11k"
+      color: "#184f95"
+      data:
+        - {x: 1.638e+04, y: 0.001}
+        - {x: 3.277e+04, y: 0.002}
+        - {x: 6.554e+04, y: 0.006}
+        - {x: 1.311e+05, y: 0.003}
+        - {x: 2.621e+05, y: 0.036}
+        - {x: 5.243e+05, y: 0.244}
+        - {x: 1.049e+06, y: 0.560}
+        - {x: 2.097e+06, y: 0.793}
+        - {x: 4.194e+06, y: 0.870}
+    - label: "20-30k"
+      color: "#0d366b"
+      data:
+        - {x: 1.638e+04, y: 0.003}
+        - {x: 3.277e+04, y: 0.001}
+        - {x: 6.554e+04, y: 0.002}
+        - {x: 1.311e+05, y: 0.003}
+        - {x: 2.621e+05, y: 0.004}
+        - {x: 5.243e+05, y: 0.022}
+        - {x: 1.049e+06, y: 0.120}
+        - {x: 2.097e+06, y: 0.358}
+        - {x: 4.194e+06, y: 0.615}
+options:
+  plugins:
+    legend: {display: false}
+  scales:
+    x:
+      type: logarithmic
+      title: {display: true, text: "model size N"}
+      min: 1e+04
+      max: 5.872e+06
+      grid: {drawOnChartArea: false}
+      ticks: {padding: 8}
+    y:
+      type: linear
+      title: {display: true, text: "top-1 accuracy"}
+      min: 0
+      max: 1
+      grid: {drawOnChartArea: false}
+      ticks: {padding: 8}
+```

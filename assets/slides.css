@@ -1,0 +1,453 @@
+/* Deck styling for slides.md — loaded by the <link> tag on the title slide.
+   Lives outside the markdown so the deck source stays readable; colloquium
+   only inlines `custom_css:` from the frontmatter, and a <link> in the slide
+   body is the one hook that takes an external sheet. */
+
+/* Local body font (not on Google Fonts): prefer the installed copy,
+   fall back to the files in ../fonts so exports stay portable. */
+@font-face {
+  font-family: "GothamNicolas";
+  src: local("GothamNicolas"),
+       url("../fonts/GothamNicolas-Regular.otf") format("opentype");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "GothamNicolas";
+  src: local("GothamNicolas Bold"), local("GothamNicolas-Bold"),
+       url("../fonts/GothamNicolas-Bold.otf") format("opentype");
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+:root {
+  --colloquium-font-body: "GothamNicolas", "Helvetica Neue", Arial, sans-serif;
+}
+
+.highlight-red { color: #c0392b; font-weight: 600; }
+.highlight-blue { color: #2980b9; font-weight: 600; }
+.highlight-green { color: #27ae60; font-weight: 600; }
+/* Same navy as the "trained" series in the capacity chart, so the number in
+   the text reads as belonging to that line. */
+.highlight-navy { color: #0f3460; font-weight: 600; }
+
+/* The capacity slide is the only chart in the deck, and its column is half
+   the slide rather than the theme's assumed full width, so the plot gives
+   back a little of the default 400px height. */
+.colloquium-chart-container { height: 380px; }
+
+/* Stand-in legend above that chart (emitted by scripts/capacity_sweep.py): one
+   thin line plus its marker per series, so the keys look like the curves
+   instead of Chart.js's filled boxes.  The colours stay inline in the glyphs --
+   they come from the data. */
+.cap-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.2em 1.5em;
+  justify-content: center;
+  font-size: 0.7em;
+  line-height: 1.3;
+}
+
+.cap-legend span.legend-note {
+  display: inline;
+  color: var(--colloquium-muted);
+  font-size: 0.9em;
+}
+.cap-legend span {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4em;
+}
+
+/* Chinchilla slide: preserve the mockup's three horizontal bands (premise,
+   equation/interpretation, evidence/conclusion) without copying its heavy table. */
+.chin-premise { margin-bottom: 0.35em; }
+.chin-equation-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2.8em;
+  align-items: center;
+  margin: 0.1em 0 0.6em;
+}
+.chin-equation-row .katex-display { margin: 0.2em 0; }
+.chin-independence { color: var(--colloquium-muted); }
+.chin-lower {
+  display: grid;
+  grid-template-columns: 1.08fr 0.92fr;
+  gap: 3em;
+  align-items: start;
+}
+.chin-story p { margin-bottom: 0.62em; }
+.chin-story .katex-display { margin: 0.35em 0 0.55em; }
+
+/* A typographic matrix rather than a boxed or shaded table. */
+.fit-matrix {
+  display: grid;
+  grid-template-columns: 1.2fr 1fr 1fr;
+  align-items: baseline;
+  margin-top: 0.55em;
+  border-top: 1px solid var(--colloquium-border);
+  border-bottom: 1px solid var(--colloquium-border);
+  font-size: 0.8em;
+}
+.fit-matrix > div { padding: 0.42em 0.35em; }
+.fit-matrix > div:nth-child(n+4) { border-top: 1px solid var(--colloquium-border); }
+.fit-matrix .fm-head { color: var(--colloquium-muted); font-size: 0.88em; }
+.fit-matrix .fm-label, .fit-matrix .fm-value { font-weight: 700; }
+.fit-matrix .fm-red { color: #c0392b; }
+.fit-matrix .fm-navy { color: #0f3460; }
+.fit-matrix .fm-value { font-variant-numeric: tabular-nums; }
+
+/* Bold text picks up the theme's dark blue title. */
+.slide strong,
+.slide b {
+  color: var(--colloquium-title);
+}
+
+/* "Simplifying language modeling": the model's explicit next-token
+   distribution vs. the data's implicit one, each in its own accent.
+   Extra specificity so bold inside these spans keeps the role colour
+   instead of falling back to the navy `.slide strong` rule. */
+.slide .tok-model, .slide .tok-model strong, .slide strong.tok-model {
+  color: #2980b9;
+}
+.slide .tok-data, .slide .tok-data strong, .slide strong.tok-data {
+  color: #c0392b;
+}
+
+/* Centered, code-like example block: candidate next tokens in a single
+   black column, one probability column per source (model, then data). */
+.tok-example {
+  display: flex;
+  align-items: flex-start;
+  gap: 1.5em;
+  width: fit-content;
+  max-width: 100%;
+  margin: 0.6em auto;
+  padding: 0.8em 1.6em;
+  background: var(--colloquium-code-bg);
+  border-radius: 8px;
+  font-family: var(--colloquium-font-mono);
+  font-size: 0.78em;
+  line-height: 1.55;
+}
+
+/* The context, underlined and labelled underneath. */
+/* Drop the context down by exactly one column-header line (0.8em text at
+   1.55 line-height + its 0.45em bottom margin) so it sits on the first
+   token row rather than in the middle of the stack. */
+.tok-ctx {
+  text-align: center;
+  margin-top: calc(0.8em * 1.55 + 0.8 * 0.45em);
+}
+.tok-ctx-group { display: inline-block; }
+.tok-ctx-text {
+  display: block;
+  padding-bottom: 0.2em;
+  border-bottom: 2px solid var(--colloquium-muted);
+}
+.tok-ctx-label {
+  display: block;
+  margin-top: 0.2em;
+  font-size: 0.8em;
+  color: var(--colloquium-muted);
+}
+
+/* Token / probability columns. */
+.tok-cols { display: flex; justify-content: center; gap: 2.4em; }
+.tok-col-head {
+  display: block;
+  margin-bottom: 0.45em;
+  font-size: 0.8em;
+  letter-spacing: 0.04em;
+}
+.tok-tokens { text-align: left; }
+.tok-model, .tok-data { text-align: right; min-width: 3.6em; }
+
+/* Assumption 2: a compact Zipf explainer. The plot is deliberately schematic:
+   its job is to make rank, frequency and the long tail legible at a glance. */
+.zipf-layout {
+  display: grid;
+  grid-template-columns: 0.86fr 1.14fr;
+  gap: 2.4em;
+  align-items: center;
+  margin-top: 0.35em;
+}
+.zipf-copy { font-size: 0.82em; }
+.zipf-copy .katex-display { margin: 0.45em 0; }
+.zipf-fig {
+  display: block;
+  width: 100%;
+  height: auto;
+  font-family: var(--colloquium-font-body);
+}
+.zipf-fig .zf-axis { stroke: var(--colloquium-muted); stroke-width: 1.8; }
+.zipf-fig .zf-guide {
+  fill: none;
+  stroke: #0f3460;
+  stroke-width: 3;
+  stroke-linecap: round;
+}
+.zipf-fig .zf-dot { fill: #c0392b; stroke: white; stroke-width: 1.5; }
+.zipf-fig .zf-label { fill: var(--colloquium-text); font-size: 20px; }
+.zipf-fig .zf-note { fill: var(--colloquium-muted); font-size: 17px; }
+.zipf-fig .zf-law { fill: #0f3460; font-size: 19px; font-weight: 700; }
+.zipf-fig .zf-log { fill: var(--colloquium-muted); font-size: 13px; }
+
+/* Assumption 3: the only architecture retained by the toy model. */
+.embed-fig {
+  display: block;
+  width: 100%;
+  height: auto;
+  margin: 0.1em auto 0;
+  font-family: var(--colloquium-font-body);
+}
+.embed-fig .ef-head { fill: var(--colloquium-title); font-size: 22px; font-weight: 700; }
+.embed-fig .ef-context { fill: var(--colloquium-code-bg); stroke: var(--colloquium-border); }
+.embed-fig .ef-code { fill: var(--colloquium-text); font-family: var(--colloquium-font-mono); font-size: 17px; }
+.embed-fig .ef-arrow { stroke: var(--colloquium-muted); stroke-width: 2; marker-end: url(#ef-arrow); }
+.embed-fig marker path { fill: var(--colloquium-muted); }
+.embed-fig .ef-muted, .embed-fig .ef-random { fill: var(--colloquium-muted); font-size: 16px; }
+.embed-fig .ef-space { fill: none; stroke: var(--colloquium-muted); stroke-width: 1.6; }
+.embed-fig .ef-grid { stroke: var(--colloquium-border); stroke-width: 1.2; }
+.embed-fig .ef-point { stroke: white; stroke-width: 2; }
+.embed-fig .ef-blue { fill: #2980b9; }
+.embed-fig .ef-red { fill: #c0392b; }
+.embed-fig .ef-green { fill: #27ae60; }
+.embed-fig .ef-orange { fill: #e67e22; }
+.embed-fig .ef-navy { fill: #0f3460; }
+.embed-fig .ef-vector { fill: var(--colloquium-text); font-size: 18px; font-style: italic; }
+.embed-fig .ef-math { fill: var(--colloquium-title); font-size: 25px; font-family: "Latin Modern Math", Georgia, serif; font-style: italic; }
+.embed-fig .ef-token, .embed-fig .ef-prob { fill: var(--colloquium-text); font-size: 17px; }
+.embed-fig .ef-bar { fill: #2980b9; }
+.embed-fig .ef-blue-light { fill: #9ac7e2; }
+.embed-fig .ef-softmax { fill: var(--colloquium-title); font-size: 19px; font-family: "Latin Modern Math", Georgia, serif; }
+
+/* Extra half line of air under the title-slide headline
+   (theme default is 0.3em at font-size 2.8em). */
+.slide--title h1 {
+  margin-bottom: calc(0.6em + 18px);
+}
+
+/* Remove space between paragraph and bullet points */
+.slide p + ul {
+  margin-top: -0.5em;   /* 0.8em gap → ~0.4em */
+}
+
+/* Increase space after slide titles */
+.slide h2 {
+  margin-bottom: 1em;
+}
+
+/* "Interference" figure: three unit spheres of random embeddings.  One
+   arrow = one context embedding, coloured by its correct next token, so
+   "several nearby arrows sharing a colour" is exactly the failure mode. */
+.sphere-fig {
+  display: block;
+  width: 100%;
+  height: auto;
+  margin: 0.4em auto 0;
+  font-family: var(--colloquium-font-body);
+}
+.sphere-fig .sf-sphere {
+  fill: none;
+  stroke: var(--colloquium-muted);
+  stroke-width: 1.5;
+}
+.sphere-fig .sf-vec {
+  stroke-width: 2.4;
+  stroke-linecap: round;
+}
+.sphere-fig .sf-legend { stroke-width: 1.9; }
+.sphere-fig .sf-axis {
+  stroke: var(--colloquium-muted);
+  stroke-width: 1.6;
+}
+.sphere-fig .sf-navy   { stroke: #0f3460; }
+.sphere-fig .sf-red    { stroke: #c0392b; }
+.sphere-fig .sf-green  { stroke: #27ae60; }
+.sphere-fig .sf-orange { stroke: #e67e22; }
+.sphere-fig text {
+  fill: var(--colloquium-text);
+  font-size: 22px;
+}
+.sphere-fig .sf-muted { fill: var(--colloquium-muted); }
+.sphere-fig .sf-strong { font-weight: 700; }
+.sphere-fig .sf-good { fill: #0f3460; font-weight: 700; }
+.sphere-fig .sf-bad { fill: #c0392b; font-weight: 700; }
+.sphere-fig .sf-small { font-size: 20px; }
+/* Legend: the word itself carries the colour code, one hue per character. */
+.sphere-fig .sf-t1 { fill: #0f3460; }
+.sphere-fig .sf-t2 { fill: #c0392b; }
+.sphere-fig .sf-t3 { fill: #27ae60; }
+.sphere-fig .sf-t4 { fill: #e67e22; }
+/* The interference line ends one slide and opens the next.  Colloquium
+   swaps slides with display none/flex, so there is no cross-slide morph
+   to hook into; the closest honest effect is to let the line rise into
+   its new position as the slide appears.  Disabled for print/capture so
+   a static export never catches it mid-flight. */
+@keyframes colloquium-carry-up {
+  from { opacity: 0; transform: translateY(38px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.slide.carry-line .slide-content > p:first-child {
+  animation: colloquium-carry-up 0.45s ease-out both;
+}
+.colloquium-capture .slide.carry-line .slide-content > p:first-child {
+  animation: none;
+}
+@media print {
+  .slide.carry-line .slide-content > p:first-child { animation: none; }
+}
+
+/* Math-ish italics for the scalars d and h inside the captions. */
+.sphere-fig .sf-var {
+  font-family: "Latin Modern Math", "Cambria Math", Georgia, serif;
+  font-style: italic;
+  font-size: 1.05em;
+}
+
+/* "From capacity to scaling laws": two schematic plots.  Same palette,
+   stroke weights and type sizes as .sphere-fig above, so the two figures
+   read as one family. */
+.plot-fig {
+  display: block;
+  width: 100%;
+  height: auto;
+  margin: 0.2em auto 0;
+  font-family: var(--colloquium-font-body);
+}
+.plot-fig .pf-axis {
+  fill: none;
+  stroke: var(--colloquium-muted);
+  stroke-width: 1.6;
+}
+.plot-fig .pf-curve {
+  fill: none;
+  stroke: #0f3460;
+  stroke-width: 2.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.plot-fig .pf-guide {
+  fill: none;
+  stroke: var(--colloquium-muted);
+  stroke-width: 1.6;
+  stroke-dasharray: 6 5;
+}
+/* Red is reserved for the capacity marker, the one quantity the slide is
+   about; the level guide for l stays muted. */
+.plot-fig .pf-tick {
+  stroke: #c0392b;
+  stroke-width: 2;
+}
+/* The same red, run the full height of the left panel: the capacity is the
+   line between what the model has stored and what it has not, so the divider
+   carries on above the l plateau.  Dashed, like the level guide, so it reads
+   as a guide rather than as part of the step. */
+.plot-fig .pf-sep {
+  stroke: #c0392b;
+  stroke-width: 1.6;
+  stroke-dasharray: 6 5;
+}
+.plot-fig text {
+  fill: var(--colloquium-text);
+  font-size: 22px;
+}
+.plot-fig .pf-muted { fill: var(--colloquium-muted); }
+.plot-fig .pf-red { fill: #c0392b; }
+.plot-fig .pf-navy { fill: #0f3460; font-weight: 700; }
+.plot-fig .pf-strong { font-weight: 700; }
+.plot-fig .pf-small { font-size: 20px; }
+/* Twin-axis version: one grey axis shared by both laws, so the hue lives on
+   the lines and in the legend under the plot instead. */
+.plot-fig .pf-curve-d { stroke: #c0392b; }
+.plot-fig .pf-var {
+  font-family: "Latin Modern Math", "Cambria Math", Georgia, serif;
+  font-style: italic;
+  font-size: 1.05em;
+}
+
+/* Slider under the twin-axis plot.  `input` is in presentation.js's
+   click-to-advance ignore list, so dragging it does not change slide. */
+.alpha-control {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1em;
+  margin-top: 0.1em;
+  font-size: 0.68em;
+  color: var(--colloquium-muted);
+}
+.alpha-control input[type="range"] {
+  width: 240px;
+  accent-color: #0f3460;
+}
+.alpha-var {
+  font-family: "Latin Modern Math", "Cambria Math", Georgia, serif;
+  font-style: italic;
+  font-size: 1.15em;
+}
+
+/* Stepped derivations: one line of maths per `<!-- step -->`, with a short note
+   in a fixed gutter on the right.  The lines are left-aligned rather than each
+   centred in its own row, so a `\phantom` on the continuation lines keeps the
+   relation symbols under one another the way `aligned` would.  Margins are
+   tighter than the theme's 0.8em because a split derivation pays them once per
+   line. */
+.eq-step {
+  display: grid;
+  grid-template-columns: 1fr 240px;
+  gap: 2rem;
+  align-items: center;
+  margin: 0.2em 0;
+}
+.eq-step .katex-display {
+  margin: 0.3em 0 0.3em 1.2em;
+}
+/* KaTeX centres the inner .katex block, so left-aligning has to happen there. */
+.eq-step .katex-display > .katex { text-align: left; }
+/* The note is commentary, not part of the derivation, and carries no
+   paragraph margins of its own so it stays centred on its equation. */
+.eq-step .text-sm { color: var(--colloquium-muted); }
+.eq-step .text-sm p { margin: 0; }
+
+/* Footnote look, but inside the slide body so a `<!-- step -->` can hold it
+   back: colloquium's own footnotes render outside the fragment machinery. */
+.slide .inline-footnote {
+  font-size: 0.62em;
+  line-height: 1.35;
+  color: var(--colloquium-muted);
+  margin-top: 0.8em;
+}
+.slide .inline-footnote strong { color: inherit; }
+
+/* Legend labels carrying an exponent (the IsoFLOP slide's compute budgets).
+   `.cap-legend span` above is an inline-flex box with a gap, and that rule matches
+   nested spans too, so a bare <sup> inside one becomes a flex item: it loses its
+   raise and gains the gap, rendering as "10 13". Marking the label as plain inline
+   text puts the <sup> back inside an inline box, where it superscripts normally. */
+.cap-legend span.num { display: inline; }
+
+/* IsoFLOP slide: the compute legend runs down the left of the figure rather than across
+   the top of it, so the pair is no taller than the plot itself.  `.cap-legend` is a
+   centred wrapping row by default, which is right everywhere else in the deck. */
+.if-row {
+  display: flex;
+  align-items: center;
+  gap: 1.2em;
+  margin-top: 0;
+}
+.if-row > .cap-legend {
+  flex: 0 0 auto;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+}
+.if-row > .plot-fig {
+  flex: 1 1 auto;
+  min-width: 0;
+  margin: 0;
+}

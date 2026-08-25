@@ -146,9 +146,10 @@ def _accept_ratio(i: np.ndarray, gamma: float) -> np.ndarray:
     return ((gamma - 1.0) * t) / -np.expm1(-(gamma - 1.0) * np.log1p(t))
 
 
-def sample_tokens(m: int, seed: int, gamma: float = GAMMA, p_cut: float = P_CUT) -> np.ndarray:
+def sample_tokens(m: int, seed: int, gamma: float = GAMMA, p_cut: float = P_CUT,
+                  max_context: int | None = None) -> np.ndarray:
     """Draw `m` i.i.d. tokens from p(i) proportional to i^-gamma on [1, V]."""
-    v = float(vocab_size(gamma, p_cut))
+    v = float(vocab_size(gamma, p_cut) if max_context is None else max_context)
     rng = np.random.default_rng(seed)
     sup = _accept_ratio(np.array([1.0]), gamma)[0]
     tail = (v + 1.0) ** (1.0 - gamma)

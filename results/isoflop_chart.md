@@ -1,0 +1,123 @@
+<div class="if-row">
+<div class="cap-legend">
+<span class="num"><em>C</em> (&#215;10<sup>9</sup>)</span>
+<span><svg width="30" height="10" viewBox="0 0 30 10" aria-hidden="true"><line x1="1" y1="5" x2="29" y2="5" stroke="#86b6ef" stroke-width="2.2"/><circle cx="15" cy="5" r="2.8" fill="#86b6ef"/></svg>10</span>
+<span><svg width="30" height="10" viewBox="0 0 30 10" aria-hidden="true"><line x1="1" y1="5" x2="29" y2="5" stroke="#6da7ec" stroke-width="2.2"/><circle cx="15" cy="5" r="2.8" fill="#6da7ec"/></svg>40</span>
+<span><svg width="30" height="10" viewBox="0 0 30 10" aria-hidden="true"><line x1="1" y1="5" x2="29" y2="5" stroke="#5598e7" stroke-width="2.2"/><circle cx="15" cy="5" r="2.8" fill="#5598e7"/></svg>160</span>
+<span><svg width="30" height="10" viewBox="0 0 30 10" aria-hidden="true"><line x1="1" y1="5" x2="29" y2="5" stroke="#256abf" stroke-width="2.2"/><circle cx="15" cy="5" r="2.8" fill="#256abf"/></svg>640</span>
+<span><svg width="30" height="10" viewBox="0 0 30 10" aria-hidden="true"><line x1="1" y1="5" x2="29" y2="5" stroke="#184f95" stroke-width="2.2"/><circle cx="15" cy="5" r="2.8" fill="#184f95"/></svg>2.6k</span>
+<span><svg width="30" height="10" viewBox="0 0 30 10" aria-hidden="true"><line x1="1" y1="5" x2="29" y2="5" stroke="#0d366b" stroke-width="2.2"/><circle cx="15" cy="5" r="2.8" fill="#0d366b"/></svg>10k</span>
+</div>
+<svg class="plot-fig" viewBox="0 0 1180 400" role="img" aria-label="Left: loss against model size for six compute budgets, each a U-shaped IsoFLOP profile with a fitted parabola and its optimum marked; a dashed line through the optima has slope minus alpha minus one. Right: the compute-optimal model size against compute, measured and fitted.">
+<defs>
+<clipPath id="if-a"><rect x="152" y="8" width="410" height="300"/></clipPath>
+<clipPath id="if-b"><rect x="764" y="8" width="388" height="300"/></clipPath>
+</defs>
+<line class="pf-axis" x1="152" y1="308" x2="562" y2="308"/>
+<line class="pf-axis" x1="152" y1="308" x2="152" y2="18"/>
+<line class="pf-axis" x1="152" y1="308" x2="152" y2="316"/>
+<text class="pf-muted pf-small" x="152" y="342" text-anchor="middle">10k</text>
+<line class="pf-axis" x1="300" y1="308" x2="300" y2="316"/>
+<text class="pf-muted pf-small" x="300" y="342" text-anchor="middle">100k</text>
+<line class="pf-axis" x1="447" y1="308" x2="447" y2="316"/>
+<text class="pf-muted pf-small" x="447" y="342" text-anchor="middle">1M</text>
+<line class="pf-axis" x1="144" y1="273" x2="152" y2="273"/>
+<text class="pf-muted pf-small" x="138" y="280" text-anchor="end">0.8</text>
+<line class="pf-axis" x1="144" y1="199" x2="152" y2="199"/>
+<text class="pf-muted pf-small" x="138" y="206" text-anchor="end">1</text>
+<line class="pf-axis" x1="144" y1="138" x2="152" y2="138"/>
+<text class="pf-muted pf-small" x="138" y="145" text-anchor="end">1.2</text>
+<line class="pf-axis" x1="144" y1="64" x2="152" y2="64"/>
+<text class="pf-muted pf-small" x="138" y="71" text-anchor="end">1.5</text>
+<text class="pf-muted pf-small" x="357" y="380" text-anchor="middle">model size <tspan class="pf-var">N</tspan></text>
+<text class="pf-muted pf-small" transform="rotate(-90 78 163)" x="78" y="163" text-anchor="middle">loss</text>
+<circle cx="197.9" cy="48.3" r="3.6" fill="#86b6ef"/>
+<circle cx="228.1" cy="63.5" r="3.6" fill="#86b6ef"/>
+<circle cx="256.7" cy="69.4" r="3.6" fill="#86b6ef"/>
+<circle cx="272.5" cy="69.3" r="3.6" fill="#86b6ef"/>
+<circle cx="301.1" cy="63.1" r="3.6" fill="#86b6ef"/>
+<circle cx="331.2" cy="49.3" r="3.6" fill="#86b6ef"/>
+<circle cx="242.4" cy="95.0" r="3.6" fill="#6da7ec"/>
+<circle cx="256.7" cy="102.4" r="3.6" fill="#6da7ec"/>
+<circle cx="286.8" cy="111.6" r="3.6" fill="#6da7ec"/>
+<circle cx="316.9" cy="112.7" r="3.6" fill="#6da7ec"/>
+<circle cx="345.5" cy="107.1" r="3.6" fill="#6da7ec"/>
+<circle cx="375.7" cy="95.1" r="3.6" fill="#6da7ec"/>
+<circle cx="272.5" cy="131.9" r="3.6" fill="#5598e7"/>
+<circle cx="301.1" cy="146.5" r="3.6" fill="#5598e7"/>
+<circle cx="331.2" cy="154.2" r="3.6" fill="#5598e7"/>
+<circle cx="361.3" cy="154.8" r="3.6" fill="#5598e7"/>
+<circle cx="390.0" cy="148.6" r="3.6" fill="#5598e7"/>
+<circle cx="420.1" cy="135.1" r="3.6" fill="#5598e7"/>
+<circle cx="316.9" cy="176.8" r="3.6" fill="#256abf"/>
+<circle cx="345.5" cy="190.2" r="3.6" fill="#256abf"/>
+<circle cx="375.7" cy="196.8" r="3.6" fill="#256abf"/>
+<circle cx="405.8" cy="195.9" r="3.6" fill="#256abf"/>
+<circle cx="434.4" cy="189.2" r="3.6" fill="#256abf"/>
+<circle cx="464.5" cy="175.4" r="3.6" fill="#256abf"/>
+<circle cx="361.3" cy="221.6" r="3.6" fill="#184f95"/>
+<circle cx="390.0" cy="233.4" r="3.6" fill="#184f95"/>
+<circle cx="420.1" cy="239.5" r="3.6" fill="#184f95"/>
+<circle cx="450.2" cy="236.8" r="3.6" fill="#184f95"/>
+<circle cx="464.5" cy="233.2" r="3.6" fill="#184f95"/>
+<circle cx="494.6" cy="221.6" r="3.6" fill="#184f95"/>
+<circle cx="405.8" cy="267.1" r="3.6" fill="#0d366b"/>
+<circle cx="434.4" cy="277.6" r="3.6" fill="#0d366b"/>
+<circle cx="450.2" cy="280.6" r="3.6" fill="#0d366b"/>
+<circle cx="478.8" cy="279.2" r="3.6" fill="#0d366b"/>
+<circle cx="508.9" cy="272.9" r="3.6" fill="#0d366b"/>
+<circle cx="539.1" cy="260.4" r="3.6" fill="#0d366b"/>
+<g class="fragment" data-colloquium-fragment="1">
+<g clip-path="url(#if-a)">
+<path d="M 183.2 38.7 L 190.0 43.4 L 196.8 47.8 L 203.5 51.8 L 210.3 55.5 L 217.1 58.7 L 223.9 61.6 L 230.7 64.0 L 237.5 66.0 L 244.2 67.6 L 251.0 68.7 L 257.8 69.4 L 264.6 69.7 L 271.4 69.5 L 278.2 68.8 L 284.9 67.8 L 291.7 66.2 L 298.5 64.3 L 305.3 61.9 L 312.1 59.1 L 318.8 56.0 L 325.6 52.4 L 332.4 48.4 L 339.2 44.1 L 346.0 39.4" fill="none" stroke="#86b6ef" stroke-width="2.4" stroke-linecap="round"/>
+<path d="M 227.6 86.9 L 234.4 91.0 L 241.2 94.7 L 248.0 98.2 L 254.7 101.3 L 261.5 104.0 L 268.3 106.5 L 275.1 108.5 L 281.9 110.2 L 288.7 111.5 L 295.4 112.4 L 302.2 113.0 L 309.0 113.1 L 315.8 112.9 L 322.6 112.3 L 329.4 111.3 L 336.1 110.0 L 342.9 108.3 L 349.7 106.2 L 356.5 103.7 L 363.3 100.9 L 370.1 97.7 L 376.8 94.2 L 383.6 90.4 L 390.4 86.3" fill="none" stroke="#6da7ec" stroke-width="2.4" stroke-linecap="round"/>
+<path d="M 257.7 122.6 L 265.1 127.5 L 272.5 132.1 L 279.9 136.3 L 287.3 140.1 L 294.6 143.5 L 302.0 146.5 L 309.4 149.1 L 316.8 151.3 L 324.1 153.0 L 331.5 154.3 L 338.9 155.1 L 346.3 155.5 L 353.7 155.4 L 361.0 154.9 L 368.4 153.9 L 375.8 152.5 L 383.2 150.7 L 390.6 148.4 L 397.9 145.6 L 405.3 142.5 L 412.7 138.9 L 420.1 135.0 L 427.5 130.7 L 434.8 126.0" fill="none" stroke="#5598e7" stroke-width="2.4" stroke-linecap="round"/>
+<path d="M 302.2 168.3 L 309.5 172.8 L 316.9 177.1 L 324.3 180.9 L 331.7 184.4 L 339.1 187.5 L 346.4 190.1 L 353.8 192.4 L 361.2 194.3 L 368.6 195.7 L 376.0 196.7 L 383.3 197.3 L 390.7 197.4 L 398.1 197.1 L 405.5 196.3 L 412.8 195.1 L 420.2 193.5 L 427.6 191.5 L 435.0 189.0 L 442.4 186.2 L 449.7 182.9 L 457.1 179.3 L 464.5 175.3 L 471.9 170.9 L 479.3 166.2" fill="none" stroke="#256abf" stroke-width="2.4" stroke-linecap="round"/>
+<path d="M 346.6 213.4 L 353.4 217.4 L 360.2 221.1 L 366.9 224.5 L 373.7 227.5 L 380.5 230.2 L 387.3 232.6 L 394.1 234.6 L 400.9 236.2 L 407.6 237.5 L 414.4 238.4 L 421.2 239.0 L 428.0 239.2 L 434.8 238.9 L 441.6 238.4 L 448.3 237.4 L 455.1 236.1 L 461.9 234.4 L 468.7 232.3 L 475.5 229.9 L 482.3 227.2 L 489.0 224.1 L 495.8 220.7 L 502.6 217.0 L 509.4 212.9" fill="none" stroke="#184f95" stroke-width="2.4" stroke-linecap="round"/>
+<path d="M 391.0 260.3 L 397.8 263.8 L 404.6 267.0 L 411.4 269.8 L 418.1 272.4 L 424.9 274.6 L 431.7 276.5 L 438.5 278.0 L 445.3 279.2 L 452.1 280.1 L 458.8 280.6 L 465.6 280.7 L 472.4 280.5 L 479.2 279.9 L 486.0 279.0 L 492.8 277.7 L 499.5 276.1 L 506.3 274.1 L 513.1 271.8 L 519.9 269.2 L 526.7 266.3 L 533.5 263.0 L 540.2 259.5 L 547.0 255.6 L 553.8 251.5" fill="none" stroke="#0d366b" stroke-width="2.4" stroke-linecap="round"/>
+</g>
+<path d="M 265.1 63.7 L 271.1 69.7 L 265.1 75.7 L 259.1 69.7 Z" fill="#86b6ef" stroke="#fcfcfb" stroke-width="1.6"/>
+<path d="M 308.5 107.1 L 314.5 113.1 L 308.5 119.1 L 302.5 113.1 Z" fill="#6da7ec" stroke="#fcfcfb" stroke-width="1.6"/>
+<path d="M 348.8 149.5 L 354.8 155.5 L 348.8 161.5 L 342.8 155.5 Z" fill="#5598e7" stroke="#fcfcfb" stroke-width="1.6"/>
+<path d="M 389.1 191.4 L 395.1 197.4 L 389.1 203.4 L 383.1 197.4 Z" fill="#256abf" stroke="#fcfcfb" stroke-width="1.6"/>
+<path d="M 427.6 233.2 L 433.6 239.2 L 427.6 245.2 L 421.6 239.2 Z" fill="#184f95" stroke="#fcfcfb" stroke-width="1.6"/>
+<path d="M 464.9 274.7 L 470.9 280.7 L 464.9 286.7 L 458.9 280.7 Z" fill="#0d366b" stroke="#fcfcfb" stroke-width="1.6"/>
+</g>
+<g class="fragment" data-colloquium-fragment="1">
+<g clip-path="url(#if-a)">
+<path class="pf-guide" d="M 244.0 45.7 L 367.4 176.0 L 490.9 306.3"/>
+</g>
+<text class="pf-muted pf-small" x="558" y="48" text-anchor="end"><tspan class="pf-var">L</tspan>* &#8733; <tspan class="pf-var">C</tspan><tspan dy="-9" font-size="0.72em">&#8722;0.091</tspan></text>
+</g>
+<g class="fragment" data-colloquium-fragment="1">
+<line class="pf-axis" x1="764" y1="308" x2="1152" y2="308"/>
+<line class="pf-axis" x1="764" y1="308" x2="764" y2="18"/>
+<line class="pf-axis" x1="796" y1="308" x2="796" y2="316"/>
+<text class="pf-muted pf-small" x="796" y="342" text-anchor="middle">10</text>
+<line class="pf-axis" x1="903" y1="308" x2="903" y2="316"/>
+<text class="pf-muted pf-small" x="903" y="342" text-anchor="middle">100</text>
+<line class="pf-axis" x1="1009" y1="308" x2="1009" y2="316"/>
+<text class="pf-muted pf-small" x="1009" y="342" text-anchor="middle">1k</text>
+<line class="pf-axis" x1="1116" y1="308" x2="1116" y2="316"/>
+<text class="pf-muted pf-small" x="1116" y="342" text-anchor="middle">10k</text>
+<line class="pf-axis" x1="756" y1="230" x2="764" y2="230"/>
+<text class="pf-muted pf-small" x="750" y="237" text-anchor="end">100k</text>
+<line class="pf-axis" x1="756" y1="80" x2="764" y2="80"/>
+<text class="pf-muted pf-small" x="750" y="87" text-anchor="end">1M</text>
+<text class="pf-muted pf-small" x="958" y="380" text-anchor="middle">compute <tspan class="pf-var">C</tspan> (&#215;10<tspan dy="-9" font-size="0.72em">9</tspan>)</text>
+<text class="pf-muted pf-small" transform="rotate(-90 690 163)" x="690" y="163" text-anchor="middle">model size <tspan class="pf-var">N</tspan>*</text>
+<g clip-path="url(#if-b)">
+<path class="pf-guide" d="M 764.0 282.6 L 958.0 160.2 L 1152.0 37.8"/>
+</g>
+<path d="M 796.4 258.7 L 802.4 264.7 L 796.4 270.7 L 790.4 264.7 Z" fill="#86b6ef" stroke="#fcfcfb" stroke-width="1.6"/>
+<path d="M 860.5 214.7 L 866.5 220.7 L 860.5 226.7 L 854.5 220.7 Z" fill="#6da7ec" stroke="#fcfcfb" stroke-width="1.6"/>
+<path d="M 924.6 173.8 L 930.6 179.8 L 924.6 185.8 L 918.6 179.8 Z" fill="#5598e7" stroke="#fcfcfb" stroke-width="1.6"/>
+<path d="M 988.7 133.0 L 994.7 139.0 L 988.7 145.0 L 982.7 139.0 Z" fill="#256abf" stroke="#fcfcfb" stroke-width="1.6"/>
+<path d="M 1052.8 93.9 L 1058.8 99.9 L 1052.8 105.9 L 1046.8 99.9 Z" fill="#184f95" stroke="#fcfcfb" stroke-width="1.6"/>
+<path d="M 1116.9 56.1 L 1122.9 62.1 L 1116.9 68.1 L 1110.9 62.1 Z" fill="#0d366b" stroke="#fcfcfb" stroke-width="1.6"/>
+<text class="pf-muted pf-small" x="1037" y="90" text-anchor="end"><tspan class="pf-var">C</tspan><tspan dy="-9" font-size="0.72em">0.449</tspan></text>
+</g>
+</svg>
+</div>
+
+The loss falls as $C^{-0.0913}$ against a predicted $C^{-0.0909}$, and the optimal model size grows as $C^{0.449}$ against $C^{0.455}$.

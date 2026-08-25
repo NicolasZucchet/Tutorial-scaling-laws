@@ -1,0 +1,3752 @@
+{
+ "d": 256,
+ "hs": [
+  32,
+  64,
+  128,
+  256,
+  512,
+  1024,
+  2048
+ ],
+ "seeds": [
+  0,
+  1,
+  2
+ ],
+ "cells": {
+  "hebbian/h32/s0": {
+   "model": "hebbian",
+   "h": 32,
+   "seed": 0,
+   "capacity": 150,
+   "upper": 155,
+   "n_probes": 6,
+   "n_capped": 0,
+   "seconds": 0.2,
+   "per_h": 4.688,
+   "trace": [
+    {
+     "n": 160,
+     "stored": false,
+     "accuracy": 0.9937500357627869,
+     "steps": 0,
+     "capped": false
+    },
+    {
+     "n": 80,
+     "stored": true,
+     "accuracy": 1.0,
+     "steps": 0,
+     "capped": false
+    },
+    {
+     "n": 120,
+     "stored": true,
+     "accuracy": 1.0,
+     "steps": 0,
+     "capped": false
+    },
+    {
+     "n": 140,
+     "stored": true,
+     "accuracy": 1.0,
+     "steps": 0,
+     "capped": false
+    },
+    {
+     "n": 150,
+     "stored": true,
+     "accuracy": 1.0,
+     "steps": 0,
+     "capped": false
+    },
+    {
+     "n": 155,
+     "stored": false,
+     "accuracy": 0.9935483932495117,
+     "steps": 0,
+     "capped": false
+    }
+   ]
+  },
+  "hebbian/h32/s1": {
+   "model": "hebbian",
+   "h": 32,
+   "seed": 1,
+   "capacity": 60,
+   "upper": 65,
+   "n_probes": 6,
+   "n_capped": 0,
+   "seconds": 0.2,
+   "per_h": 1.875,
+   "trace": [
+    {
+     "n": 150,
+     "stored": false,
+     "accuracy": 0.9800000190734863,
+     "steps": 0,
+     "capped": false
+    },
+    {
+     "n": 75,
+     "stored": false,
+     "accuracy": 0.9866666793823242,
+     "steps": 0,
+     "capped": false
+    },
+    {
+     "n": 37,
+     "stored": true,
+     "accuracy": 1.0,
+     "steps": 0,
+     "capped": false
+    },
+    {
+     "n": 56,
+     "stored": true,
+     "accuracy": 1.0,
+     "steps": 0,
+     "capped": false
+    },
+    {
+     "n": 65,
+     "stored": false,
+     "accuracy": 0.9846153855323792,
+     "steps": 0,
+     "capped": false
+    },
+    {
+     "n": 60,
+     "stored": true,
+     "accuracy": 1.0,
+     "steps": 0,
+     "capped": false
+    }
+   ]
+  },
+  "hebbian/h32/s2": {
+   "model": "hebbian",
+   "h": 32,
+   "seed": 2,
+   "capacity": 118,
+   "upper": 124,
+   "n_probes": 6,
+   "n_capped": 0,
+   "seconds": 0.2,
+   "per_h": 3.688,
+   "trace": [
+    {
+     "n": 105,
+     "stored": true,
+     "accuracy": 1.0,
+     "steps": 0,
+     "capped": false
+    },
+    {
+     "n": 210,
+     "stored": false,
+     "accuracy": 0.9428572058677673,
+     "steps": 0,
+     "capped": false
+    },
+    {
+     "n": 157,
+     "stored": false,
+     "accuracy": 0.9554140567779541,
+     "steps": 0,
+     "capped": false
+    },
+    {
+     "n": 131,
+     "stored": false,
+     "accuracy": 0.9694656729698181,
+     "steps": 0,
+     "capped": false
+    },
+    {
+     "n": 118,
+     "stored": true,
+     "accuracy": 1.0,
+     "steps": 0,
+     "capped": false
+    },
+    {
+     "n": 124,
+     "stored": false,
+     "accuracy": 0.9919354319572449,
+     "steps": 0,
+     "capped": false
+    }
+   ]
+  },
+  "hebbian/h64/s0": {
+   "model": "hebbian",
+   "h": 64,
+   "seed": 0,
+   "capacity": 102,
+   "upper": 109,
+   "n_probes": 6,
+   "n_capped": 0,
+   "seconds": 0.2,
+   "per_h": 1.594,
+   "trace": [
+    {
+     "n": 219,
+     "stored": false,
+     "accuracy": 0.9954337477684021,
+     "steps": 0,
+     "capped": false
+    },
+    {
+     "n": 109,
+     "stored": false,
+     "accuracy": 0.9999999403953552,
+     "steps": 0,
+     "capped": false
+    },
+    {
+     "n": 54,
+     "stored": true,
+     "accuracy": 1.0,
+     "steps": 0,
+     "capped": false
+    },
+    {
+     "n": 81,
+     "stored": true,
+     "accuracy": 1.0,
+     "steps": 0,
+     "capped": false
+    },
+    {
+     "n": 95,
+     "stored": true,
+     "accuracy": 1.0,
+     "steps": 0,
+     "capped": false
+    },
+    {
+     "n": 102,
+     "stored": true,
+     "accuracy": 1.0,
+     "steps": 0,
+     "capped": false
+    }
+   ]
+  },
+  "hebbian/h64/s1": {
+   "model": "hebbian",
+   "h": 64,
+   "seed": 1,
+   "capacity": 148,
+   "upper": 154,
+   "n_probes": 6,
+   "n_capped": 0,
+   "seconds": 0.2,
+   "per_h": 2.312,
+   "trace": [
+    {
+     "n": 190,
+     "stored": false,
+     "accuracy": 0.994736909866333,
+     "steps": 0,
+     "capped": false
+    },
+    {
+     "n": 95,
+     "stored": true,
+     "accuracy": 1.0,
+     "steps": 0,
+     "capped": false
+    },
+    {
+     "n": 142,
+     "stored": true,
+     "accuracy": 1.0,
+     "steps": 0,
+     "capped": false
+    },
+    {
+     "n": 166,
+     "stored": false,
+     "accuracy": 0.9939758777618408,
+     "steps": 0,
+     "capped": false
+    },
+    {
+     "n": 154,
+     "stored": false,
+     "accuracy": 0.9935064911842346,
+     "steps": 0,
+     "capped": false
+    },
+    {
+     "n": 148,
+     "stored": true,
+     "accuracy": 1.0,
+     "steps": 0,
+     "capped": false
+    }
+   ]
+  },
+  "hebbian/h64/s2": {
+   "model": "hebbian",
+   "h": 64,
+   "seed": 2,
+   "capacity": 152,
+   "upper": 158,
+   "n_probes": 6,
+   "n_capped": 0,
+   "seconds": 0.2,
+   "per_h": 2.375,
+   "trace": [
+    {
+     "n": 181,
+     "stored": false,
+     "accuracy": 0.9944751858711243,
+     "steps": 0,
+     "capped": false
+    },
+    {
+     "n": 90,
+     "stored": true,
+     "accuracy": 1.0,
+     "steps": 0,
+     "capped": false
+    },
+    {
+     "n": 135,
+     "stored": true,
+     "accuracy": 1.0,
+     "steps": 0,
+     "capped": false
+    },
+    {
+     "n": 158,
+     "stored": false,
+     "accuracy": 0.9936709403991699,
+     "steps": 0,
+     "capped": false
+    },
+    {
+     "n": 146,
+     "stored": true,
+     "accuracy": 1.0,
+     "steps": 0,
+     "capped": false
+    },
+    {
+     "n": 152,
+     "stored": true,
+     "accuracy": 1.0,
+     "steps": 0,
+     "capped": false
+    }
+   ]
+  },
+  "hebbian/h128/s0": {
+   "model": "hebbian",
+   "h": 128,
+   "seed": 0,
+   "capacity": 534,
+   "upper": 540,
+   "n_probes": 8,
+   "n_capped": 0,
+   "seconds": 0.4,
+   "per_h": 4.172,
+   "trace": [
+    {
+     "n": 353,
+     "stored": true,
+     "accuracy": 1.0,
+     "steps": 0,
+     "capped": false
+    },
+    {
+     "n": 706,
+     "stored": false,
+     "accuracy": 0.9971671104431152,
+     "steps": 0,
+     "capped": false
+    },
+    {
+     "n": 529,
+     "stored": true,
+     "accuracy": 1.0,
+     "steps": 0,
+     "capped": false
+    },
+    {
+     "n": 617,
+     "stored": false,
+     "accuracy": 0.9983792304992676,
+     "steps": 0,
+     "capped": false
+    },
+    {
+     "n": 573,
+     "stored": false,
+     "accuracy": 0.9982548356056213,
+     "steps": 0,
+     "capped": false
+    },
+    {
+     "n": 551,
+     "stored": false,
+     "accuracy": 0.9981850981712341,
+     "steps": 0,
+     "capped": false
+    },
+    {
+     "n": 540,
+     "stored": false,
+     "accuracy": 0.9981481432914734,
+     "steps": 0,
+     "capped": false
+    },
+    {
+     "n": 534,
+     "stored": true,
+     "accuracy": 1.0,
+     "steps": 0,
+     "capped": false
+    }
+   ]
+  },
+  "hebbian/h128/s1": {
+   "model": "hebbian",
+   "h": 128,
+   "seed": 1,
+   "capacity": 668,
+   "upper": 674,
+   "n_probes": 8,
+   "n_capped": 0,
+   "seconds": 0.4,
+   "per_h": 5.219,
+   "trace": [
+    {
+     "n": 379,
+     "stored": true,
+     "accuracy": 1.0,
+     "steps": 0,
+     "capped": false
+    },
+    {
+     "n": 758,
+     "stored": false,
+     "accuracy": 0.9960422515869141,
+     "steps": 0,
+     "capped": false
+    },
+    {
+     "n": 568,
+     "stored": true,
+     "accuracy": 1.0,
+     "steps": 0,
+     "capped": false
+    },
+    {
+     "n": 663,
+     "stored": true,
+     "accuracy": 1.0,
+     "steps": 0,
+     "capped": false
+    },
+    {
+     "n": 710,
+     "stored": false,
+     "accuracy": 0.997183084487915,
+     "steps": 0,
+     "capped": false
+    },
+    {
+     "n": 686,
+     "stored": false,
+     "accuracy": 0.998542308807373,
+     "steps": 0,
+     "capped": false
+    },
+    {
+     "n": 674,
+     "stored": false,
+     "accuracy": 0.998516321182251,
+     "steps": 0,
+     "capped": false
+    },
+    {
+     "n": 668,
+     "stored": true,
+     "accuracy": 1.0,
+     "steps": 0,
+     "capped": false
+    }
+   ]
+  },
+  "hebbian/h128/s2": {
+   "model": "hebbian",
+   "h": 128,
+   "seed": 2,
+   "capacity": 706,
+   "upper": 713,
+   "n_probes": 8,
+   "n_capped": 0,
+   "seconds": 0.3,
+   "per_h": 5.516,
+   "trace": [
+    {
+     "n": 415,
+     "stored": true,
+     "accuracy": 1.0,
+     "steps": 0,
+     "capped": false
+    },
+    {
+     "n": 830,
+     "stored": false,
+     "accuracy": 0.9951807260513306,
+     "steps": 0,
+     "capped": false
+    },
+    {
+     "n": 622,
+     "stored": true,
+     "accuracy": 1.0,
+     "steps": 0,
+     "capped": false
+    },
+    {
+     "n": 726,
+     "stored": false,
+     "accuracy": 0.9986225962638855,
+     "steps": 0,
+     "capped": false
+    },
+    {
+     "n": 674,
+     "stored": true,
+     "accuracy": 1.0,
+     "steps": 0,
+     "capped": false
+    },
+    {
+     "n": 700,
+     "stored": true,
+     "accuracy": 1.0,
+     "steps": 0,
+     "capped": false
+    },
+    {
+     "n": 713,
+     "stored": false,
+     "accuracy": 0.9985974431037903,
+     "steps": 0,
+     "capped": false
+    },
+    {
+     "n": 706,
+     "stored": true,
+     "accuracy": 1.0,
+     "steps": 0,
+     "capped": false
+    }
+   ]
+  },
+  "hebbian/h256/s0": {
+   "model": "hebbian",
+   "h": 256,
+   "seed": 0,
+   "capacity": 1068,
+   "upper": 1075,
+   "n_probes": 9,
+   "n_capped": 0,
+   "seconds": 0.4,
+   "per_h": 4.172,
+   "trace": [
+    {
+     "n": 894,
+     "stored": true,
+     "accuracy": 1.0,
+     "steps": 0,
+     "capped": false
+    },
+    {
+     "n": 1788,
+     "stored": false,
+     "accuracy": 0.9955257177352905,
+     "steps": 0,
+     "capped": false
+    },
+    {
+     "n": 1341,
+     "stored": false,
+     "accuracy": 0.9977628588676453,
+     "steps": 0,
+     "capped": false
+    },
+    {
+     "n": 1117,
+     "stored": false,
+     "accuracy": 0.9991047382354736,
+     "steps": 0,
+     "capped": false
+    },
+    {
+     "n": 1005,
+     "stored": true,
+     "accuracy": 1.0,
+     "steps": 0,
+     "capped": false
+    },
+    {
+     "n": 1061,
+     "stored": true,
+     "accuracy": 1.0,
+     "steps": 0,
+     "capped": false
+    },
+    {
+     "n": 1089,
+     "stored": false,
+     "accuracy": 0.9990817308425903,
+     "steps": 0,
+     "capped": false
+    },
+    {
+     "n": 1075,
+     "stored": false,
+     "accuracy": 0.9990698099136353,
+     "steps": 0,
+     "capped": false
+    },
+    {
+     "n": 1068,
+     "stored": true,
+     "accuracy": 1.0,
+     "steps": 0,
+     "capped": false
+    }
+   ]
+  },
+  "hebbian/h256/s1": {
+   "model": "hebbian",
+   "h": 256,
+   "seed": 1,
+   "capacity": 1282,
+   "upper": 1289,
+   "n_probes": 9,
+   "n_capped": 0,
+   "seconds": 0.4,
+   "per_h": 5.008,
+   "trace": [
+    {
+     "n": 912,
+     "stored": true,
+     "accuracy": 1.0,
+     "steps": 0,
+     "capped": false
+    },
+    {
+     "n": 1824,
+     "stored": false,
+     "accuracy": 0.9939693212509155,
+     "steps": 0,
+     "capped": false
+    },
+    {
+     "n": 1368,
+     "stored": false,
+     "accuracy": 0.9992690086364746,
+     "steps": 0,
+     "capped": false
+    },
+    {
+     "n": 1140,
+     "stored": true,
+     "accuracy": 1.0,
+     "steps": 0,
+     "capped": false
+    },
+    {
+     "n": 1254,
+     "stored": true,
+     "accuracy": 1.0,
+     "steps": 0,
+     "capped": false
+    },
+    {
+     "n": 1311,
+     "stored": false,
+     "accuracy": 0.9992372393608093,
+     "steps": 0,
+     "capped": false
+    },
+    {
+     "n": 1282,
+     "stored": true,
+     "accuracy": 1.0,
+     "steps": 0,
+     "capped": false
+    },
+    {
+     "n": 1296,
+     "stored": false,
+     "accuracy": 0.9992284178733826,
+     "steps": 0,
+     "capped": false
+    },
+    {
+     "n": 1289,
+     "stored": false,
+     "accuracy": 0.9992241859436035,
+     "steps": 0,
+     "capped": false
+    }
+   ]
+  },
+  "hebbian/h256/s2": {
+   "model": "hebbian",
+   "h": 256,
+   "seed": 2,
+   "capacity": 1114,
+   "upper": 1122,
+   "n_probes": 9,
+   "n_capped": 0,
+   "seconds": 0.4,
+   "per_h": 4.352,
+   "trace": [
+    {
+     "n": 945,
+     "stored": true,
+     "accuracy": 1.0,
+     "steps": 0,
+     "capped": false
+    },
+    {
+     "n": 1890,
+     "stored": false,
+     "accuracy": 0.9957672357559204,
+     "steps": 0,
+     "capped": false
+    },
+    {
+     "n": 1417,
+     "stored": false,
+     "accuracy": 0.9992942810058594,
+     "steps": 0,
+     "capped": false
+    },
+    {
+     "n": 1181,
+     "stored": false,
+     "accuracy": 0.9983065128326416,
+     "steps": 0,
+     "capped": false
+    },
+    {
+     "n": 1063,
+     "stored": true,
+     "accuracy": 1.0,
+     "steps": 0,
+     "capped": false
+    },
+    {
+     "n": 1122,
+     "stored": false,
+     "accuracy": 0.9991087317466736,
+     "steps": 0,
+     "capped": false
+    },
+    {
+     "n": 1092,
+     "stored": true,
+     "accuracy": 1.0,
+     "steps": 0,
+     "capped": false
+    },
+    {
+     "n": 1107,
+     "stored": true,
+     "accuracy": 1.0,
+     "steps": 0,
+     "capped": false
+    },
+    {
+     "n": 1114,
+     "stored": true,
+     "accuracy": 1.0,
+     "steps": 0,
+     "capped": false
+    }
+   ]
+  },
+  "hebbian/h512/s0": {
+   "model": "hebbian",
+   "h": 512,
+   "seed": 0,
+   "capacity": 1821,
+   "upper": 1829,
+   "n_probes": 9,
+   "n_capped": 0,
+   "seconds": 0.4,
+   "per_h": 3.557,
+   "trace": [
+    {
+     "n": 1919,
+     "stored": false,
+     "accuracy": 0.9994788765907288,
+     "steps": 0,
+     "capped": false
+    },
+    {
+     "n": 959,
+     "stored": true,
+     "accuracy": 1.0,
+     "steps": 0,
+     "capped": false
+    },
+    {
+     "n": 1439,
+     "stored": true,
+     "accuracy": 1.0,
+     "steps": 0,
+     "capped": false
+    },
+    {
+     "n": 1679,
+     "stored": true,
+     "accuracy": 1.0,
+     "steps": 0,
+     "capped": false
+    },
+    {
+     "n": 1799,
+     "stored": true,
+     "accuracy": 1.0,
+     "steps": 0,
+     "capped": false
+    },
+    {
+     "n": 1859,
+     "stored": false,
+     "accuracy": 0.9999999403953552,
+     "steps": 0,
+     "capped": false
+    },
+    {
+     "n": 1829,
+     "stored": false,
+     "accuracy": 0.9999999403953552,
+     "steps": 0,
+     "capped": false
+    },
+    {
+     "n": 1814,
+     "stored": true,
+     "accuracy": 1.0,
+     "steps": 0,
+     "capped": false
+    },
+    {
+     "n": 1821,
+     "stored": true,
+     "accuracy": 1.0,
+     "steps": 0,
+     "capped": false
+    }
+   ]
+  },
+  "hebbian/h512/s1": {
+   "model": "hebbian",
+   "h": 512,
+   "seed": 1,
+   "capacity": 2492,
+   "upper": 2499,
+   "n_probes": 10,
+   "n_capped": 0,
+   "seconds": 0.5,
+   "per_h": 4.867,
+   "trace": [
+    {
+     "n": 1911,
+     "stored": true,
+     "accuracy": 1.0,
+     "steps": 0,
+     "capped": false
+    },
+    {
+     "n": 3822,
+     "stored": false,
+     "accuracy": 0.9934589266777039,
+     "steps": 0,
+     "capped": false
+    },
+    {
+     "n": 2866,
+     "stored": false,
+     "accuracy": 0.9996510744094849,
+     "steps": 0,
+     "capped": false
+    },
+    {
+     "n": 2388,
+     "stored": true,
+     "accuracy": 1.0,
+     "steps": 0,
+     "capped": false
+    },
+    {
+     "n": 2627,
+     "stored": false,
+     "accuracy": 0.9996193647384644,
+     "steps": 0,
+     "capped": false
+    },
+    {
+     "n": 2507,
+     "stored": false,
+     "accuracy": 0.9996011257171631,
+     "steps": 0,
+     "capped": false
+    },
+    {
+     "n": 2447,
+     "stored": true,
+     "accuracy": 1.0,
+     "steps": 0,
+     "capped": false
+    },
+    {
+     "n": 2477,
+     "stored": true,
+     "accuracy": 1.0,
+     "steps": 0,
+     "capped": false
+    },
+    {
+     "n": 2492,
+     "stored": true,
+     "accuracy": 1.0,
+     "steps": 0,
+     "capped": false
+    },
+    {
+     "n": 2499,
+     "stored": false,
+     "accuracy": 0.999599814414978,
+     "steps": 0,
+     "capped": false
+    }
+   ]
+  },
+  "hebbian/h512/s2": {
+   "model": "hebbian",
+   "h": 512,
+   "seed": 2,
+   "capacity": 2532,
+   "upper": 2539,
+   "n_probes": 10,
+   "n_capped": 0,
+   "seconds": 0.5,
+   "per_h": 4.945,
+   "trace": [
+    {
+     "n": 1953,
+     "stored": true,
+     "accuracy": 1.0,
+     "steps": 0,
+     "capped": false
+    },
+    {
+     "n": 3906,
+     "stored": false,
+     "accuracy": 0.9941115975379944,
+     "steps": 0,
+     "capped": false
+    },
+    {
+     "n": 2929,
+     "stored": false,
+     "accuracy": 0.9993171691894531,
+     "steps": 0,
+     "capped": false
+    },
+    {
+     "n": 2441,
+     "stored": true,
+     "accuracy": 1.0,
+     "steps": 0,
+     "capped": false
+    },
+    {
+     "n": 2685,
+     "stored": false,
+     "accuracy": 0.9992551207542419,
+     "steps": 0,
+     "capped": false
+    },
+    {
+     "n": 2563,
+     "stored": false,
+     "accuracy": 0.9996098875999451,
+     "steps": 0,
+     "capped": false
+    },
+    {
+     "n": 2502,
+     "stored": true,
+     "accuracy": 1.0,
+     "steps": 0,
+     "capped": false
+    },
+    {
+     "n": 2532,
+     "stored": true,
+     "accuracy": 1.0,
+     "steps": 0,
+     "capped": false
+    },
+    {
+     "n": 2547,
+     "stored": false,
+     "accuracy": 0.9996073842048645,
+     "steps": 0,
+     "capped": false
+    },
+    {
+     "n": 2539,
+     "stored": false,
+     "accuracy": 0.9996061325073242,
+     "steps": 0,
+     "capped": false
+    }
+   ]
+  },
+  "trained/h32/s0": {
+   "model": "trained",
+   "h": 32,
+   "seed": 0,
+   "capacity": 1106,
+   "upper": 1111,
+   "n_probes": 9,
+   "n_capped": 3,
+   "seconds": 9.7,
+   "per_h": 34.562,
+   "trace": [
+    {
+     "n": 1216,
+     "stored": false,
+     "accuracy": 0.7582237124443054,
+     "steps": 5000,
+     "capped": false
+    },
+    {
+     "n": 608,
+     "stored": true,
+     "accuracy": 1.0,
+     "steps": 500,
+     "capped": false
+    },
+    {
+     "n": 912,
+     "stored": true,
+     "accuracy": 1.0,
+     "steps": 500,
+     "capped": false
+    },
+    {
+     "n": 1064,
+     "stored": true,
+     "accuracy": 1.0,
+     "steps": 500,
+     "capped": false
+    },
+    {
+     "n": 1140,
+     "stored": false,
+     "accuracy": 0.9263157844543457,
+     "steps": 8000,
+     "capped": true
+    },
+    {
+     "n": 1102,
+     "stored": true,
+     "accuracy": 1.0,
+     "steps": 1500,
+     "capped": false
+    },
+    {
+     "n": 1121,
+     "stored": false,
+     "accuracy": 0.9776984453201294,
+     "steps": 8000,
+     "capped": true
+    },
+    {
+     "n": 1111,
+     "stored": false,
+     "accuracy": 0.9972997307777405,
+     "steps": 8000,
+     "capped": true
+    },
+    {
+     "n": 1106,
+     "stored": true,
+     "accuracy": 1.0,
+     "steps": 2500,
+     "capped": false
+    }
+   ]
+  },
+  "trained/h32/s1": {
+   "model": "trained",
+   "h": 32,
+   "seed": 1,
+   "capacity": 1071,
+   "upper": 1079,
+   "n_probes": 8,
+   "n_capped": 2,
+   "seconds": 7.3,
+   "per_h": 33.469,
+   "trace": [
+    {
+     "n": 1106,
+     "stored": false,
+     "accuracy": 0.9086799621582031,
+     "steps": 5000,
+     "capped": false
+    },
+    {
+     "n": 553,
+     "stored": true,
+     "accuracy": 1.0,
+     "steps": 500,
+     "capped": false
+    },
+    {
+     "n": 829,
+     "stored": true,
+     "accuracy": 1.0,
+     "steps": 500,
+     "capped": false
+    },
+    {
+     "n": 967,
+     "stored": true,
+     "accuracy": 1.0,
+     "steps": 500,
+     "capped": false
+    },
+    {
+     "n": 1036,
+     "stored": true,
+     "accuracy": 1.0,
+     "steps": 1000,
+     "capped": false
+    },
+    {
+     "n": 1071,
+     "stored": true,
+     "accuracy": 1.0,
+     "steps": 3500,
+     "capped": false
+    },
+    {
+     "n": 1088,
+     "stored": false,
+     "accuracy": 0.9577205777168274,
+     "steps": 8000,
+     "capped": true
+    },
+    {
+     "n": 1079,
+     "stored": false,
+     "accuracy": 0.9814643263816833,
+     "steps": 8000,
+     "capped": true
+    }
+   ]
+  },
+  "trained/h32/s2": {
+   "model": "trained",
+   "h": 32,
+   "seed": 2,
+   "capacity": 1037,
+   "upper": 1045,
+   "n_probes": 8,
+   "n_capped": 3,
+   "seconds": 7.8,
+   "per_h": 32.406,
+   "trace": [
+    {
+     "n": 1088,
+     "stored": false,
+     "accuracy": 0.8777573704719543,
+     "steps": 8000,
+     "capped": true
+    },
+    {
+     "n": 544,
+     "stored": true,
+     "accuracy": 1.0,
+     "steps": 500,
+     "capped": false
+    },
+    {
+     "n": 816,
+     "stored": true,
+     "accuracy": 1.0,
+     "steps": 500,
+     "capped": false
+    },
+    {
+     "n": 952,
+     "stored": true,
+     "accuracy": 1.0,
+     "steps": 500,
+     "capped": false
+    },
+    {
+     "n": 1020,
+     "stored": true,
+     "accuracy": 1.0,
+     "steps": 1000,
+     "capped": false
+    },
+    {
+     "n": 1054,
+     "stored": false,
+     "accuracy": 0.9734345078468323,
+     "steps": 8000,
+     "capped": true
+    },
+    {
+     "n": 1037,
+     "stored": true,
+     "accuracy": 1.0,
+     "steps": 3000,
+     "capped": false
+    },
+    {
+     "n": 1045,
+     "stored": false,
+     "accuracy": 0.9971292018890381,
+     "steps": 8000,
+     "capped": true
+    }
+   ]
+  },
+  "trained/h64/s0": {
+   "model": "trained",
+   "h": 64,
+   "seed": 0,
+   "capacity": 2338,
+   "upper": 2343,
+   "n_probes": 11,
+   "n_capped": 3,
+   "seconds": 29.7,
+   "per_h": 36.531,
+   "trace": [
+    {
+     "n": 2143,
+     "stored": true,
+     "accuracy": 1.0,
+     "steps": 500,
+     "capped": false
+    },
+    {
+     "n": 4286,
+     "stored": false,
+     "accuracy": 0.2244517058134079,
+     "steps": 7500,
+     "capped": false
+    },
+    {
+     "n": 3214,
+     "stored": false,
+     "accuracy": 0.40541383624076843,
+     "steps": 8000,
+     "capped": true
+    },
+    {
+     "n": 2678,
+     "stored": false,
+     "accuracy": 0.6303211450576782,
+     "steps": 7500,
+     "capped": false
+    },
+    {
+     "n": 2410,
+     "stored": false,
+     "accuracy": 0.8896265625953674,
+     "steps": 8000,
+     "capped": true
+    },
+    {
+     "n": 2276,
+     "stored": true,
+     "accuracy": 1.0,
+     "steps": 1000,
+     "capped": false
+    },
+    {
+     "n": 2343,
+     "stored": false,
+     "accuracy": 0.9982928037643433,
+     "steps": 8000,
+     "capped": true
+    },
+    {
+     "n": 2309,
+     "stored": true,
+     "accuracy": 1.0,
+     "steps": 1500,
+     "capped": false
+    },
+    {
+     "n": 2326,
+     "stored": true,
+     "accuracy": 1.0,
+     "steps": 3000,
+     "capped": false
+    },
+    {
+     "n": 2334,
+     "stored": true,
+     "accuracy": 1.0,
+     "steps": 4000,
+     "capped": false
+    },
+    {
+     "n": 2338,
+     "stored": true,
+     "accuracy": 1.0,
+     "steps": 4500,
+     "capped": false
+    }
+   ]
+  },
+  "trained/h64/s1": {
+   "model": "trained",
+   "h": 64,
+   "seed": 1,
+   "capacity": 2320,
+   "upper": 2324,
+   "n_probes": 11,
+   "n_capped": 3,
+   "seconds": 30.1,
+   "per_h": 36.25,
+   "trace": [
+    {
+     "n": 2192,
+     "stored": true,
+     "accuracy": 1.0,
+     "steps": 500,
+     "capped": false
+    },
+    {
+     "n": 4384,
+     "stored": false,
+     "accuracy": 0.2281021922826767,
+     "steps": 6000,
+     "capped": false
+    },
+    {
+     "n": 3288,
+     "stored": false,
+     "accuracy": 0.3959853947162628,
+     "steps": 8000,
+     "capped": true
+    },
+    {
+     "n": 2740,
+     "stored": false,
+     "accuracy": 0.5970802903175354,
+     "steps": 5500,
+     "capped": false
+    },
+    {
+     "n": 2466,
+     "stored": false,
+     "accuracy": 0.8122465014457703,
+     "steps": 7500,
+     "capped": false
+    },
+    {
+     "n": 2329,
+     "stored": false,
+     "accuracy": 0.9965651035308838,
+     "steps": 8000,
+     "capped": true
+    },
+    {
+     "n": 2260,
+     "stored": true,
+     "accuracy": 1.0,
+     "steps": 1000,
+     "capped": false
+    },
+    {
+     "n": 2294,
+     "stored": true,
+     "accuracy": 1.0,
+     "steps": 1500,
+     "capped": false
+    },
+    {
+     "n": 2311,
+     "stored": true,
+     "accuracy": 1.0,
+     "steps": 2500,
+     "capped": false
+    },
+    {
+     "n": 2320,
+     "stored": true,
+     "accuracy": 1.0,
+     "steps": 4500,
+     "capped": false
+    },
+    {
+     "n": 2324,
+     "stored": false,
+     "accuracy": 0.998278796672821,
+     "steps": 8000,
+     "capped": true
+    }
+   ]
+  },
+  "trained/h64/s2": {
+   "model": "trained",
+   "h": 64,
+   "seed": 2,
+   "capacity": 2350,
+   "upper": 2355,
+   "n_probes": 11,
+   "n_capped": 2,
+   "seconds": 35.0,
+   "per_h": 36.719,
+   "trace": [
+    {
+     "n": 2217,
+     "stored": true,
+     "accuracy": 1.0,
+     "steps": 500,
+     "capped": false
+    },
+    {
+     "n": 4434,
+     "stored": false,
+     "accuracy": 0.21786196529865265,
+     "steps": 7500,
+     "capped": false
+    },
+    {
+     "n": 3325,
+     "stored": false,
+     "accuracy": 0.37353384494781494,
+     "steps": 6500,
+     "capped": false
+    },
+    {
+     "n": 2771,
+     "stored": false,
+     "accuracy": 0.5651389360427856,
+     "steps": 8000,
+     "capped": true
+    },
+    {
+     "n": 2494,
+     "stored": false,
+     "accuracy": 0.7738572359085083,
+     "steps": 5500,
+     "capped": false
+    },
+    {
+     "n": 2355,
+     "stored": false,
+     "accuracy": 0.9987260699272156,
+     "steps": 8000,
+     "capped": true
+    },
+    {
+     "n": 2286,
+     "stored": true,
+     "accuracy": 1.0,
+     "steps": 1000,
+     "capped": false
+    },
+    {
+     "n": 2320,
+     "stored": true,
+     "accuracy": 1.0,
+     "steps": 1500,
+     "capped": false
+    },
+    {
+     "n": 2337,
+     "stored": true,
+     "accuracy": 1.0,
+     "steps": 3000,
+     "capped": false
+    },
+    {
+     "n": 2346,
+     "stored": true,
+     "accuracy": 1.0,
+     "steps": 5500,
+     "capped": false
+    },
+    {
+     "n": 2350,
+     "stored": true,
+     "accuracy": 1.0,
+     "steps": 7500,
+     "capped": false
+    }
+   ]
+  },
+  "trained/h128/s0": {
+   "model": "trained",
+   "h": 128,
+   "seed": 0,
+   "capacity": 4950,
+   "upper": 4954,
+   "n_probes": 12,
+   "n_capped": 6,
+   "seconds": 107.2,
+   "per_h": 38.672,
+   "trace": [
+    {
+     "n": 4479,
+     "stored": true,
+     "accuracy": 1.0,
+     "steps": 500,
+     "capped": false
+    },
+    {
+     "n": 8958,
+     "stored": false,
+     "accuracy": 0.21533824503421783,
+     "steps": 8000,
+     "capped": true
+    },
+    {
+     "n": 6718,
+     "stored": false,
+     "accuracy": 0.37704673409461975,
+     "steps": 8000,
+     "capped": true
+    },
+    {
+     "n": 5598,
+     "stored": false,
+     "accuracy": 0.5744908452033997,
+     "steps": 7500,
+     "capped": false
+    },
+    {
+     "n": 5038,
+     "stored": false,
+     "accuracy": 0.9382691979408264,
+     "steps": 8000,
+     "capped": true
+    },
+    {
+     "n": 4758,
+     "stored": true,
+     "accuracy": 1.0,
+     "steps": 500,
+     "capped": false
+    },
+    {
+     "n": 4898,
+     "stored": true,
+     "accuracy": 1.0,
+     "steps": 2000,
+     "capped": false
+    },
+    {
+     "n": 4968,
+     "stored": false,
+     "accuracy": 0.9965780973434448,
+     "steps": 8000,
+     "capped": true
+    },
+    {
+     "n": 4933,
+     "stored": true,
+     "accuracy": 1.0,
+     "steps": 4000,
+     "capped": false
+    },
+    {
+     "n": 4950,
+     "stored": true,
+     "accuracy": 1.0,
+     "steps": 6500,
+     "capped": false
+    },
+    {
+     "n": 4959,
+     "stored": false,
+     "accuracy": 0.9989917278289795,
+     "steps": 8000,
+     "capped": true
+    },
+    {
+     "n": 4954,
+     "stored": false,
+     "accuracy": 0.999394416809082,
+     "steps": 8000,
+     "capped": true
+    }
+   ]
+  },
+  "trained/h128/s1": {
+   "model": "trained",
+   "h": 128,
+   "seed": 1,
+   "capacity": 5016,
+   "upper": 5020,
+   "n_probes": 12,
+   "n_capped": 4,
+   "seconds": 91.8,
+   "per_h": 39.188,
+   "trace": [
+    {
+     "n": 4546,
+     "stored": true,
+     "accuracy": 1.0,
+     "steps": 500,
+     "capped": false
+    },
+    {
+     "n": 9092,
+     "stored": false,
+     "accuracy": 0.2210734784603119,
+     "steps": 5000,
+     "capped": false
+    },
+    {
+     "n": 6819,
+     "stored": false,
+     "accuracy": 0.3559172749519348,
+     "steps": 7000,
+     "capped": false
+    },
+    {
+     "n": 5682,
+     "stored": false,
+     "accuracy": 0.5596621036529541,
+     "steps": 6000,
+     "capped": false
+    },
+    {
+     "n": 5114,
+     "stored": false,
+     "accuracy": 0.9208056330680847,
+     "steps": 8000,
+     "capped": true
+    },
+    {
+     "n": 4830,
+     "stored": true,
+     "accuracy": 1.0,
+     "steps": 500,
+     "capped": false
+    },
+    {
+     "n": 4972,
+     "stored": true,
+     "accuracy": 1.0,
+     "steps": 1500,
+     "capped": false
+    },
+    {
+     "n": 5043,
+     "stored": false,
+     "accuracy": 0.9904818534851074,
+     "steps": 8000,
+     "capped": true
+    },
+    {
+     "n": 5007,
+     "stored": true,
+     "accuracy": 1.0,
+     "steps": 5000,
+     "capped": false
+    },
+    {
+     "n": 5025,
+     "stored": false,
+     "accuracy": 0.9982089996337891,
+     "steps": 8000,
+     "capped": true
+    },
+    {
+     "n": 5016,
+     "stored": true,
+     "accuracy": 1.0,
+     "steps": 7000,
+     "capped": false
+    },
+    {
+     "n": 5020,
+     "stored": false,
+     "accuracy": 0.9992032051086426,
+     "steps": 8000,
+     "capped": true
+    }
+   ]
+  },
+  "trained/h128/s2": {
+   "model": "trained",
+   "h": 128,
+   "seed": 2,
+   "capacity": 5040,
+   "upper": 5045,
+   "n_probes": 12,
+   "n_capped": 4,
+   "seconds": 95.1,
+   "per_h": 39.375,
+   "trace": [
+    {
+     "n": 4605,
+     "stored": true,
+     "accuracy": 1.0,
+     "steps": 500,
+     "capped": false
+    },
+    {
+     "n": 9210,
+     "stored": false,
+     "accuracy": 0.20401737093925476,
+     "steps": 6500,
+     "capped": false
+    },
+    {
+     "n": 6907,
+     "stored": false,
+     "accuracy": 0.3484870493412018,
+     "steps": 5500,
+     "capped": false
+    },
+    {
+     "n": 5756,
+     "stored": false,
+     "accuracy": 0.5100764632225037,
+     "steps": 8000,
+     "capped": true
+    },
+    {
+     "n": 5180,
+     "stored": false,
+     "accuracy": 0.7826254963874817,
+     "steps": 8000,
+     "capped": false
+    },
+    {
+     "n": 4892,
+     "stored": true,
+     "accuracy": 1.0,
+     "steps": 500,
+     "capped": false
+    },
+    {
+     "n": 5036,
+     "stored": true,
+     "accuracy": 1.0,
+     "steps": 7000,
+     "capped": false
+    },
+    {
+     "n": 5108,
+     "stored": false,
+     "accuracy": 0.896632730960846,
+     "steps": 6000,
+     "capped": false
+    },
+    {
+     "n": 5072,
+     "stored": false,
+     "accuracy": 0.9716088771820068,
+     "steps": 8000,
+     "capped": true
+    },
+    {
+     "n": 5054,
+     "stored": false,
+     "accuracy": 0.9887217879295349,
+     "steps": 8000,
+     "capped": true
+    },
+    {
+     "n": 5045,
+     "stored": false,
+     "accuracy": 0.9982160925865173,
+     "steps": 8000,
+     "capped": true
+    },
+    {
+     "n": 5040,
+     "stored": true,
+     "accuracy": 1.0,
+     "steps": 8000,
+     "capped": false
+    }
+   ]
+  },
+  "trained/h256/s0": {
+   "model": "trained",
+   "h": 256,
+   "seed": 0,
+   "capacity": 10168,
+   "upper": 10173,
+   "n_probes": 13,
+   "n_capped": 1,
+   "seconds": 187.2,
+   "per_h": 39.719,
+   "trace": [
+    {
+     "n": 9306,
+     "stored": true,
+     "accuracy": 1.0,
+     "steps": 500,
+     "capped": false
+    },
+    {
+     "n": 18612,
+     "stored": false,
+     "accuracy": 0.207339346408844,
+     "steps": 8000,
+     "capped": false
+    },
+    {
+     "n": 13959,
+     "stored": false,
+     "accuracy": 0.3359123170375824,
+     "steps": 7000,
+     "capped": false
+    },
+    {
+     "n": 11632,
+     "stored": false,
+     "accuracy": 0.5028370022773743,
+     "steps": 7000,
+     "capped": false
+    },
+    {
+     "n": 10469,
+     "stored": false,
+     "accuracy": 0.9323717951774597,
+     "steps": 8000,
+     "capped": true
+    },
+    {
+     "n": 9887,
+     "stored": true,
+     "accuracy": 1.0,
+     "steps": 500,
+     "capped": false
+    },
+    {
+     "n": 10178,
+     "stored": false,
+     "accuracy": 0.9999999403953552,
+     "steps": 5000,
+     "capped": false
+    },
+    {
+     "n": 10032,
+     "stored": true,
+     "accuracy": 1.0,
+     "steps": 500,
+     "capped": false
+    },
+    {
+     "n": 10105,
+     "stored": true,
+     "accuracy": 1.0,
+     "steps": 500,
+     "capped": false
+    },
+    {
+     "n": 10141,
+     "stored": true,
+     "accuracy": 1.0,
+     "steps": 500,
+     "capped": false
+    },
+    {
+     "n": 10159,
+     "stored": true,
+     "accuracy": 1.0,
+     "steps": 500,
+     "capped": false
+    },
+    {
+     "n": 10168,
+     "stored": true,
+     "accuracy": 1.0,
+     "steps": 1000,
+     "capped": false
+    },
+    {
+     "n": 10173,
+     "stored": false,
+     "accuracy": 0.9999999403953552,
+     "steps": 5000,
+     "capped": false
+    }
+   ]
+  },
+  "trained/h256/s1": {
+   "model": "trained",
+   "h": 256,
+   "seed": 1,
+   "capacity": 10262,
+   "upper": 10267,
+   "n_probes": 13,
+   "n_capped": 4,
+   "seconds": 216.5,
+   "per_h": 40.086,
+   "trace": [
+    {
+     "n": 9392,
+     "stored": true,
+     "accuracy": 1.0,
+     "steps": 500,
+     "capped": false
+    },
+    {
+     "n": 18784,
+     "stored": false,
+     "accuracy": 0.2077299803495407,
+     "steps": 8000,
+     "capped": true
+    },
+    {
+     "n": 14088,
+     "stored": false,
+     "accuracy": 0.34199318289756775,
+     "steps": 8000,
+     "capped": true
+    },
+    {
+     "n": 11740,
+     "stored": false,
+     "accuracy": 0.5040034055709839,
+     "steps": 8000,
+     "capped": true
+    },
+    {
+     "n": 10566,
+     "stored": false,
+     "accuracy": 0.8210297226905823,
+     "steps": 8000,
+     "capped": true
+    },
+    {
+     "n": 9979,
+     "stored": true,
+     "accuracy": 1.0,
+     "steps": 500,
+     "capped": false
+    },
+    {
+     "n": 10272,
+     "stored": false,
+     "accuracy": 0.9999999403953552,
+     "steps": 6000,
+     "capped": false
+    },
+    {
+     "n": 10125,
+     "stored": true,
+     "accuracy": 1.0,
+     "steps": 1000,
+     "capped": false
+    },
+    {
+     "n": 10198,
+     "stored": true,
+     "accuracy": 1.0,
+     "steps": 1000,
+     "capped": false
+    },
+    {
+     "n": 10235,
+     "stored": true,
+     "accuracy": 1.0,
+     "steps": 1500,
+     "capped": false
+    },
+    {
+     "n": 10253,
+     "stored": true,
+     "accuracy": 1.0,
+     "steps": 1500,
+     "capped": false
+    },
+    {
+     "n": 10262,
+     "stored": true,
+     "accuracy": 1.0,
+     "steps": 2000,
+     "capped": false
+    },
+    {
+     "n": 10267,
+     "stored": false,
+     "accuracy": 0.9999999403953552,
+     "steps": 6000,
+     "capped": false
+    }
+   ]
+  },
+  "trained/h256/s2": {
+   "model": "trained",
+   "h": 256,
+   "seed": 2,
+   "capacity": 10422,
+   "upper": 10427,
+   "n_probes": 13,
+   "n_capped": 4,
+   "seconds": 276.7,
+   "per_h": 40.711,
+   "trace": [
+    {
+     "n": 9471,
+     "stored": true,
+     "accuracy": 1.0,
+     "steps": 500,
+     "capped": false
+    },
+    {
+     "n": 18942,
+     "stored": false,
+     "accuracy": 0.20024284720420837,
+     "steps": 6000,
+     "capped": false
+    },
+    {
+     "n": 14206,
+     "stored": false,
+     "accuracy": 0.32767847180366516,
+     "steps": 8000,
+     "capped": true
+    },
+    {
+     "n": 11838,
+     "stored": false,
+     "accuracy": 0.48192262649536133,
+     "steps": 7500,
+     "capped": false
+    },
+    {
+     "n": 10654,
+     "stored": false,
+     "accuracy": 0.7433827519416809,
+     "steps": 4500,
+     "capped": false
+    },
+    {
+     "n": 10062,
+     "stored": true,
+     "accuracy": 1.0,
+     "steps": 500,
+     "capped": false
+    },
+    {
+     "n": 10358,
+     "stored": true,
+     "accuracy": 1.0,
+     "steps": 2500,
+     "capped": false
+    },
+    {
+     "n": 10506,
+     "stored": false,
+     "accuracy": 0.916904628276825,
+     "steps": 8000,
+     "capped": true
+    },
+    {
+     "n": 10432,
+     "stored": false,
+     "accuracy": 0.9995206594467163,
+     "steps": 8000,
+     "capped": true
+    },
+    {
+     "n": 10395,
+     "stored": true,
+     "accuracy": 1.0,
+     "steps": 4000,
+     "capped": false
+    },
+    {
+     "n": 10413,
+     "stored": true,
+     "accuracy": 1.0,
+     "steps": 6000,
+     "capped": false
+    },
+    {
+     "n": 10422,
+     "stored": true,
+     "accuracy": 1.0,
+     "steps": 6500,
+     "capped": false
+    },
+    {
+     "n": 10427,
+     "stored": false,
+     "accuracy": 0.9999040961265564,
+     "steps": 8000,
+     "capped": true
+    }
+   ]
+  },
+  "hebbian/h1024/s0": {
+   "model": "hebbian",
+   "h": 1024,
+   "seed": 0,
+   "capacity": 5281,
+   "upper": 5289,
+   "n_probes": 11,
+   "n_capped": 0,
+   "seconds": 0.6,
+   "per_h": 5.157,
+   "trace": [
+    {
+     "n": 3983,
+     "stored": true,
+     "accuracy": 1.0,
+     "steps": 0,
+     "capped": false
+    },
+    {
+     "n": 7966,
+     "stored": false,
+     "accuracy": 0.9933467507362366,
+     "steps": 0,
+     "capped": false
+    },
+    {
+     "n": 5974,
+     "stored": false,
+     "accuracy": 0.9994978308677673,
+     "steps": 0,
+     "capped": false
+    },
+    {
+     "n": 4978,
+     "stored": true,
+     "accuracy": 1.0,
+     "steps": 0,
+     "capped": false
+    },
+    {
+     "n": 5476,
+     "stored": false,
+     "accuracy": 0.999817430973053,
+     "steps": 0,
+     "capped": false
+    },
+    {
+     "n": 5227,
+     "stored": true,
+     "accuracy": 1.0,
+     "steps": 0,
+     "capped": false
+    },
+    {
+     "n": 5351,
+     "stored": false,
+     "accuracy": 0.9998131394386292,
+     "steps": 0,
+     "capped": false
+    },
+    {
+     "n": 5289,
+     "stored": false,
+     "accuracy": 0.9999999403953552,
+     "steps": 0,
+     "capped": false
+    },
+    {
+     "n": 5258,
+     "stored": true,
+     "accuracy": 1.0,
+     "steps": 0,
+     "capped": false
+    },
+    {
+     "n": 5273,
+     "stored": true,
+     "accuracy": 1.0,
+     "steps": 0,
+     "capped": false
+    },
+    {
+     "n": 5281,
+     "stored": true,
+     "accuracy": 1.0,
+     "steps": 0,
+     "capped": false
+    }
+   ]
+  },
+  "hebbian/h1024/s1": {
+   "model": "hebbian",
+   "h": 1024,
+   "seed": 1,
+   "capacity": 4175,
+   "upper": 4183,
+   "n_probes": 11,
+   "n_capped": 0,
+   "seconds": 0.6,
+   "per_h": 4.077,
+   "trace": [
+    {
+     "n": 4064,
+     "stored": true,
+     "accuracy": 1.0,
+     "steps": 0,
+     "capped": false
+    },
+    {
+     "n": 8128,
+     "stored": false,
+     "accuracy": 0.993848443031311,
+     "steps": 0,
+     "capped": false
+    },
+    {
+     "n": 6096,
+     "stored": false,
+     "accuracy": 0.9995078444480896,
+     "steps": 0,
+     "capped": false
+    },
+    {
+     "n": 5080,
+     "stored": false,
+     "accuracy": 0.9998031258583069,
+     "steps": 0,
+     "capped": false
+    },
+    {
+     "n": 4572,
+     "stored": false,
+     "accuracy": 0.9997813105583191,
+     "steps": 0,
+     "capped": false
+    },
+    {
+     "n": 4318,
+     "stored": false,
+     "accuracy": 0.9997683763504028,
+     "steps": 0,
+     "capped": false
+    },
+    {
+     "n": 4191,
+     "stored": false,
+     "accuracy": 0.9997613430023193,
+     "steps": 0,
+     "capped": false
+    },
+    {
+     "n": 4127,
+     "stored": true,
+     "accuracy": 1.0,
+     "steps": 0,
+     "capped": false
+    },
+    {
+     "n": 4159,
+     "stored": true,
+     "accuracy": 1.0,
+     "steps": 0,
+     "capped": false
+    },
+    {
+     "n": 4175,
+     "stored": true,
+     "accuracy": 1.0,
+     "steps": 0,
+     "capped": false
+    },
+    {
+     "n": 4183,
+     "stored": false,
+     "accuracy": 0.9997609853744507,
+     "steps": 0,
+     "capped": false
+    }
+   ]
+  },
+  "hebbian/h1024/s2": {
+   "model": "hebbian",
+   "h": 1024,
+   "seed": 2,
+   "capacity": 5897,
+   "upper": 5905,
+   "n_probes": 11,
+   "n_capped": 0,
+   "seconds": 0.6,
+   "per_h": 5.759,
+   "trace": [
+    {
+     "n": 4070,
+     "stored": true,
+     "accuracy": 1.0,
+     "steps": 0,
+     "capped": false
+    },
+    {
+     "n": 8140,
+     "stored": false,
+     "accuracy": 0.9954545497894287,
+     "steps": 0,
+     "capped": false
+    },
+    {
+     "n": 6105,
+     "stored": false,
+     "accuracy": 0.9993448257446289,
+     "steps": 0,
+     "capped": false
+    },
+    {
+     "n": 5087,
+     "stored": true,
+     "accuracy": 1.0,
+     "steps": 0,
+     "capped": false
+    },
+    {
+     "n": 5596,
+     "stored": true,
+     "accuracy": 1.0,
+     "steps": 0,
+     "capped": false
+    },
+    {
+     "n": 5850,
+     "stored": true,
+     "accuracy": 1.0,
+     "steps": 0,
+     "capped": false
+    },
+    {
+     "n": 5977,
+     "stored": false,
+     "accuracy": 0.9998326897621155,
+     "steps": 0,
+     "capped": false
+    },
+    {
+     "n": 5913,
+     "stored": false,
+     "accuracy": 0.9998309016227722,
+     "steps": 0,
+     "capped": false
+    },
+    {
+     "n": 5881,
+     "stored": true,
+     "accuracy": 1.0,
+     "steps": 0,
+     "capped": false
+    },
+    {
+     "n": 5897,
+     "stored": true,
+     "accuracy": 1.0,
+     "steps": 0,
+     "capped": false
+    },
+    {
+     "n": 5905,
+     "stored": false,
+     "accuracy": 0.9998306632041931,
+     "steps": 0,
+     "capped": false
+    }
+   ]
+  },
+  "hebbian/h2048/s0": {
+   "model": "hebbian",
+   "h": 2048,
+   "seed": 0,
+   "capacity": 10883,
+   "upper": 10891,
+   "n_probes": 12,
+   "n_capped": 0,
+   "seconds": 1.4,
+   "per_h": 5.314,
+   "trace": [
+    {
+     "n": 8343,
+     "stored": true,
+     "accuracy": 1.0,
+     "steps": 0,
+     "capped": false
+    },
+    {
+     "n": 16686,
+     "stored": false,
+     "accuracy": 0.9945462942123413,
+     "steps": 0,
+     "capped": false
+    },
+    {
+     "n": 12514,
+     "stored": false,
+     "accuracy": 0.9994406700134277,
+     "steps": 0,
+     "capped": false
+    },
+    {
+     "n": 10428,
+     "stored": true,
+     "accuracy": 1.0,
+     "steps": 0,
+     "capped": false
+    },
+    {
+     "n": 11471,
+     "stored": false,
+     "accuracy": 0.9998255968093872,
+     "steps": 0,
+     "capped": false
+    },
+    {
+     "n": 10949,
+     "stored": false,
+     "accuracy": 0.9999086856842041,
+     "steps": 0,
+     "capped": false
+    },
+    {
+     "n": 10688,
+     "stored": true,
+     "accuracy": 1.0,
+     "steps": 0,
+     "capped": false
+    },
+    {
+     "n": 10818,
+     "stored": true,
+     "accuracy": 1.0,
+     "steps": 0,
+     "capped": false
+    },
+    {
+     "n": 10883,
+     "stored": true,
+     "accuracy": 1.0,
+     "steps": 0,
+     "capped": false
+    },
+    {
+     "n": 10916,
+     "stored": false,
+     "accuracy": 0.9999083876609802,
+     "steps": 0,
+     "capped": false
+    },
+    {
+     "n": 10899,
+     "stored": false,
+     "accuracy": 0.9999082088470459,
+     "steps": 0,
+     "capped": false
+    },
+    {
+     "n": 10891,
+     "stored": false,
+     "accuracy": 0.9999081492424011,
+     "steps": 0,
+     "capped": false
+    }
+   ]
+  },
+  "hebbian/h2048/s1": {
+   "model": "hebbian",
+   "h": 2048,
+   "seed": 1,
+   "capacity": 10777,
+   "upper": 10785,
+   "n_probes": 12,
+   "n_capped": 0,
+   "seconds": 1.4,
+   "per_h": 5.262,
+   "trace": [
+    {
+     "n": 8477,
+     "stored": true,
+     "accuracy": 1.0,
+     "steps": 0,
+     "capped": false
+    },
+    {
+     "n": 16954,
+     "stored": false,
+     "accuracy": 0.9930400252342224,
+     "steps": 0,
+     "capped": false
+    },
+    {
+     "n": 12715,
+     "stored": false,
+     "accuracy": 0.99913489818573,
+     "steps": 0,
+     "capped": false
+    },
+    {
+     "n": 10596,
+     "stored": true,
+     "accuracy": 1.0,
+     "steps": 0,
+     "capped": false
+    },
+    {
+     "n": 11655,
+     "stored": false,
+     "accuracy": 0.9996567964553833,
+     "steps": 0,
+     "capped": false
+    },
+    {
+     "n": 11125,
+     "stored": false,
+     "accuracy": 0.9997302889823914,
+     "steps": 0,
+     "capped": false
+    },
+    {
+     "n": 10860,
+     "stored": false,
+     "accuracy": 0.9998158812522888,
+     "steps": 0,
+     "capped": false
+    },
+    {
+     "n": 10728,
+     "stored": true,
+     "accuracy": 1.0,
+     "steps": 0,
+     "capped": false
+    },
+    {
+     "n": 10794,
+     "stored": false,
+     "accuracy": 0.999907374382019,
+     "steps": 0,
+     "capped": false
+    },
+    {
+     "n": 10761,
+     "stored": true,
+     "accuracy": 1.0,
+     "steps": 0,
+     "capped": false
+    },
+    {
+     "n": 10777,
+     "stored": true,
+     "accuracy": 1.0,
+     "steps": 0,
+     "capped": false
+    },
+    {
+     "n": 10785,
+     "stored": false,
+     "accuracy": 0.9999072551727295,
+     "steps": 0,
+     "capped": false
+    }
+   ]
+  },
+  "hebbian/h2048/s2": {
+   "model": "hebbian",
+   "h": 2048,
+   "seed": 2,
+   "capacity": 10332,
+   "upper": 10337,
+   "n_probes": 13,
+   "n_capped": 0,
+   "seconds": 1.5,
+   "per_h": 5.045,
+   "trace": [
+    {
+     "n": 8592,
+     "stored": true,
+     "accuracy": 1.0,
+     "steps": 0,
+     "capped": false
+    },
+    {
+     "n": 17184,
+     "stored": false,
+     "accuracy": 0.9929586052894592,
+     "steps": 0,
+     "capped": false
+    },
+    {
+     "n": 12888,
+     "stored": false,
+     "accuracy": 0.9989913702011108,
+     "steps": 0,
+     "capped": false
+    },
+    {
+     "n": 10740,
+     "stored": false,
+     "accuracy": 0.9999068975448608,
+     "steps": 0,
+     "capped": false
+    },
+    {
+     "n": 9666,
+     "stored": true,
+     "accuracy": 1.0,
+     "steps": 0,
+     "capped": false
+    },
+    {
+     "n": 10203,
+     "stored": true,
+     "accuracy": 1.0,
+     "steps": 0,
+     "capped": false
+    },
+    {
+     "n": 10471,
+     "stored": false,
+     "accuracy": 0.9999045133590698,
+     "steps": 0,
+     "capped": false
+    },
+    {
+     "n": 10337,
+     "stored": false,
+     "accuracy": 0.9999032616615295,
+     "steps": 0,
+     "capped": false
+    },
+    {
+     "n": 10270,
+     "stored": true,
+     "accuracy": 1.0,
+     "steps": 0,
+     "capped": false
+    },
+    {
+     "n": 10303,
+     "stored": true,
+     "accuracy": 1.0,
+     "steps": 0,
+     "capped": false
+    },
+    {
+     "n": 10320,
+     "stored": true,
+     "accuracy": 1.0,
+     "steps": 0,
+     "capped": false
+    },
+    {
+     "n": 10328,
+     "stored": true,
+     "accuracy": 1.0,
+     "steps": 0,
+     "capped": false
+    },
+    {
+     "n": 10332,
+     "stored": true,
+     "accuracy": 1.0,
+     "steps": 0,
+     "capped": false
+    }
+   ]
+  },
+  "trained/h512/s0": {
+   "model": "trained",
+   "h": 512,
+   "seed": 0,
+   "capacity": 20941,
+   "upper": 20946,
+   "n_probes": 14,
+   "n_capped": 5,
+   "seconds": 1019.6,
+   "per_h": 40.9,
+   "trace": [
+    {
+     "n": 19101,
+     "stored": true,
+     "accuracy": 1.0,
+     "steps": 500,
+     "capped": false
+    },
+    {
+     "n": 38202,
+     "stored": false,
+     "accuracy": 0.19941364228725433,
+     "steps": 8000,
+     "capped": true
+    },
+    {
+     "n": 28651,
+     "stored": false,
+     "accuracy": 0.32560816407203674,
+     "steps": 7000,
+     "capped": false
+    },
+    {
+     "n": 23876,
+     "stored": false,
+     "accuracy": 0.46716371178627014,
+     "steps": 6000,
+     "capped": false
+    },
+    {
+     "n": 21488,
+     "stored": false,
+     "accuracy": 0.6995067000389099,
+     "steps": 5500,
+     "capped": false
+    },
+    {
+     "n": 20294,
+     "stored": true,
+     "accuracy": 1.0,
+     "steps": 500,
+     "capped": false
+    },
+    {
+     "n": 20891,
+     "stored": true,
+     "accuracy": 1.0,
+     "steps": 4000,
+     "capped": false
+    },
+    {
+     "n": 21189,
+     "stored": false,
+     "accuracy": 0.8299117684364319,
+     "steps": 8000,
+     "capped": true
+    },
+    {
+     "n": 21040,
+     "stored": false,
+     "accuracy": 0.9588878154754639,
+     "steps": 8000,
+     "capped": true
+    },
+    {
+     "n": 20965,
+     "stored": false,
+     "accuracy": 0.9977104663848877,
+     "steps": 8000,
+     "capped": true
+    },
+    {
+     "n": 20928,
+     "stored": true,
+     "accuracy": 1.0,
+     "steps": 6000,
+     "capped": false
+    },
+    {
+     "n": 20946,
+     "stored": false,
+     "accuracy": 0.9999999403953552,
+     "steps": 8000,
+     "capped": true
+    },
+    {
+     "n": 20937,
+     "stored": true,
+     "accuracy": 1.0,
+     "steps": 6500,
+     "capped": false
+    },
+    {
+     "n": 20941,
+     "stored": true,
+     "accuracy": 1.0,
+     "steps": 6500,
+     "capped": false
+    }
+   ]
+  },
+  "trained/h512/s1": {
+   "model": "trained",
+   "h": 512,
+   "seed": 1,
+   "capacity": 20965,
+   "upper": 20970,
+   "n_probes": 14,
+   "n_capped": 4,
+   "seconds": 1023.2,
+   "per_h": 40.947,
+   "trace": [
+    {
+     "n": 19243,
+     "stored": true,
+     "accuracy": 1.0,
+     "steps": 500,
+     "capped": false
+    },
+    {
+     "n": 38486,
+     "stored": false,
+     "accuracy": 0.1992412805557251,
+     "steps": 7000,
+     "capped": false
+    },
+    {
+     "n": 28864,
+     "stored": false,
+     "accuracy": 0.3184589743614197,
+     "steps": 8000,
+     "capped": true
+    },
+    {
+     "n": 24053,
+     "stored": false,
+     "accuracy": 0.46389222145080566,
+     "steps": 7500,
+     "capped": false
+    },
+    {
+     "n": 21648,
+     "stored": false,
+     "accuracy": 0.668930172920227,
+     "steps": 8000,
+     "capped": true
+    },
+    {
+     "n": 20445,
+     "stored": true,
+     "accuracy": 1.0,
+     "steps": 500,
+     "capped": false
+    },
+    {
+     "n": 21046,
+     "stored": false,
+     "accuracy": 0.9617980122566223,
+     "steps": 8000,
+     "capped": true
+    },
+    {
+     "n": 20745,
+     "stored": true,
+     "accuracy": 1.0,
+     "steps": 1500,
+     "capped": false
+    },
+    {
+     "n": 20895,
+     "stored": true,
+     "accuracy": 1.0,
+     "steps": 4000,
+     "capped": false
+    },
+    {
+     "n": 20970,
+     "stored": false,
+     "accuracy": 0.9998092651367188,
+     "steps": 8000,
+     "capped": true
+    },
+    {
+     "n": 20932,
+     "stored": true,
+     "accuracy": 1.0,
+     "steps": 6000,
+     "capped": false
+    },
+    {
+     "n": 20951,
+     "stored": true,
+     "accuracy": 1.0,
+     "steps": 7000,
+     "capped": false
+    },
+    {
+     "n": 20960,
+     "stored": true,
+     "accuracy": 1.0,
+     "steps": 8000,
+     "capped": false
+    },
+    {
+     "n": 20965,
+     "stored": true,
+     "accuracy": 1.0,
+     "steps": 8000,
+     "capped": false
+    }
+   ]
+  },
+  "trained/h512/s2": {
+   "model": "trained",
+   "h": 512,
+   "seed": 2,
+   "capacity": 20797,
+   "upper": 20802,
+   "n_probes": 14,
+   "n_capped": 4,
+   "seconds": 965.8,
+   "per_h": 40.619,
+   "trace": [
+    {
+     "n": 19366,
+     "stored": true,
+     "accuracy": 1.0,
+     "steps": 500,
+     "capped": false
+    },
+    {
+     "n": 38732,
+     "stored": false,
+     "accuracy": 0.1998605728149414,
+     "steps": 8000,
+     "capped": true
+    },
+    {
+     "n": 29049,
+     "stored": false,
+     "accuracy": 0.3189094364643097,
+     "steps": 8000,
+     "capped": true
+    },
+    {
+     "n": 24207,
+     "stored": false,
+     "accuracy": 0.46275871992111206,
+     "steps": 7000,
+     "capped": false
+    },
+    {
+     "n": 21786,
+     "stored": false,
+     "accuracy": 0.6353162527084351,
+     "steps": 5000,
+     "capped": false
+    },
+    {
+     "n": 20576,
+     "stored": true,
+     "accuracy": 1.0,
+     "steps": 1500,
+     "capped": false
+    },
+    {
+     "n": 21181,
+     "stored": false,
+     "accuracy": 0.7810301780700684,
+     "steps": 7500,
+     "capped": false
+    },
+    {
+     "n": 20878,
+     "stored": false,
+     "accuracy": 0.9848165512084961,
+     "steps": 8000,
+     "capped": true
+    },
+    {
+     "n": 20727,
+     "stored": true,
+     "accuracy": 1.0,
+     "steps": 3000,
+     "capped": false
+    },
+    {
+     "n": 20802,
+     "stored": false,
+     "accuracy": 0.9999999403953552,
+     "steps": 8000,
+     "capped": true
+    },
+    {
+     "n": 20764,
+     "stored": true,
+     "accuracy": 1.0,
+     "steps": 4000,
+     "capped": false
+    },
+    {
+     "n": 20783,
+     "stored": true,
+     "accuracy": 1.0,
+     "steps": 5500,
+     "capped": false
+    },
+    {
+     "n": 20792,
+     "stored": true,
+     "accuracy": 1.0,
+     "steps": 4500,
+     "capped": false
+    },
+    {
+     "n": 20797,
+     "stored": true,
+     "accuracy": 1.0,
+     "steps": 5000,
+     "capped": false
+    }
+   ]
+  },
+  "trained/h1024/s0": {
+   "model": "trained",
+   "h": 1024,
+   "seed": 0,
+   "capacity": 40732,
+   "upper": 40737,
+   "n_probes": 15,
+   "n_capped": 0,
+   "seconds": 1896.6,
+   "per_h": 39.777,
+   "trace": [
+    {
+     "n": 38923,
+     "stored": true,
+     "accuracy": 1.0,
+     "steps": 500,
+     "capped": false
+    },
+    {
+     "n": 77846,
+     "stored": false,
+     "accuracy": 0.1965675801038742,
+     "steps": 5000,
+     "capped": false
+    },
+    {
+     "n": 58384,
+     "stored": false,
+     "accuracy": 0.31236299872398376,
+     "steps": 5000,
+     "capped": false
+    },
+    {
+     "n": 48653,
+     "stored": false,
+     "accuracy": 0.44206932187080383,
+     "steps": 4500,
+     "capped": false
+    },
+    {
+     "n": 43788,
+     "stored": false,
+     "accuracy": 0.6298986077308655,
+     "steps": 6000,
+     "capped": false
+    },
+    {
+     "n": 41355,
+     "stored": false,
+     "accuracy": 0.9999999403953552,
+     "steps": 4500,
+     "capped": false
+    },
+    {
+     "n": 40139,
+     "stored": true,
+     "accuracy": 1.0,
+     "steps": 500,
+     "capped": false
+    },
+    {
+     "n": 40747,
+     "stored": false,
+     "accuracy": 0.9999999403953552,
+     "steps": 4500,
+     "capped": false
+    },
+    {
+     "n": 40443,
+     "stored": true,
+     "accuracy": 1.0,
+     "steps": 500,
+     "capped": false
+    },
+    {
+     "n": 40595,
+     "stored": true,
+     "accuracy": 1.0,
+     "steps": 500,
+     "capped": false
+    },
+    {
+     "n": 40671,
+     "stored": true,
+     "accuracy": 1.0,
+     "steps": 500,
+     "capped": false
+    },
+    {
+     "n": 40709,
+     "stored": true,
+     "accuracy": 1.0,
+     "steps": 500,
+     "capped": false
+    },
+    {
+     "n": 40728,
+     "stored": true,
+     "accuracy": 1.0,
+     "steps": 500,
+     "capped": false
+    },
+    {
+     "n": 40737,
+     "stored": false,
+     "accuracy": 0.9999999403953552,
+     "steps": 4500,
+     "capped": false
+    },
+    {
+     "n": 40732,
+     "stored": true,
+     "accuracy": 1.0,
+     "steps": 500,
+     "capped": false
+    }
+   ]
+  },
+  "trained/h1024/s1": {
+   "model": "trained",
+   "h": 1024,
+   "seed": 1,
+   "capacity": 42394,
+   "upper": 42399,
+   "n_probes": 15,
+   "n_capped": 8,
+   "seconds": 4383.2,
+   "per_h": 41.4,
+   "trace": [
+    {
+     "n": 39036,
+     "stored": true,
+     "accuracy": 1.0,
+     "steps": 500,
+     "capped": false
+    },
+    {
+     "n": 78072,
+     "stored": false,
+     "accuracy": 0.19580642879009247,
+     "steps": 5500,
+     "capped": false
+    },
+    {
+     "n": 58554,
+     "stored": false,
+     "accuracy": 0.31577691435813904,
+     "steps": 8000,
+     "capped": true
+    },
+    {
+     "n": 48795,
+     "stored": false,
+     "accuracy": 0.44936978816986084,
+     "steps": 6500,
+     "capped": false
+    },
+    {
+     "n": 43915,
+     "stored": false,
+     "accuracy": 0.6285096406936646,
+     "steps": 8000,
+     "capped": true
+    },
+    {
+     "n": 41475,
+     "stored": true,
+     "accuracy": 1.0,
+     "steps": 500,
+     "capped": false
+    },
+    {
+     "n": 42695,
+     "stored": false,
+     "accuracy": 0.8947651982307434,
+     "steps": 8000,
+     "capped": true
+    },
+    {
+     "n": 42085,
+     "stored": true,
+     "accuracy": 1.0,
+     "steps": 2500,
+     "capped": false
+    },
+    {
+     "n": 42390,
+     "stored": true,
+     "accuracy": 1.0,
+     "steps": 8000,
+     "capped": false
+    },
+    {
+     "n": 42542,
+     "stored": false,
+     "accuracy": 0.9579474329948425,
+     "steps": 8000,
+     "capped": true
+    },
+    {
+     "n": 42466,
+     "stored": false,
+     "accuracy": 0.9883201122283936,
+     "steps": 8000,
+     "capped": true
+    },
+    {
+     "n": 42428,
+     "stored": false,
+     "accuracy": 0.9992929100990295,
+     "steps": 8000,
+     "capped": true
+    },
+    {
+     "n": 42409,
+     "stored": false,
+     "accuracy": 0.999976396560669,
+     "steps": 8000,
+     "capped": true
+    },
+    {
+     "n": 42399,
+     "stored": false,
+     "accuracy": 0.9999292492866516,
+     "steps": 8000,
+     "capped": true
+    },
+    {
+     "n": 42394,
+     "stored": true,
+     "accuracy": 1.0,
+     "steps": 7500,
+     "capped": false
+    }
+   ]
+  },
+  "trained/h1024/s2": {
+   "model": "trained",
+   "h": 1024,
+   "seed": 2,
+   "capacity": 42393,
+   "upper": 42397,
+   "n_probes": 15,
+   "n_capped": 6,
+   "seconds": 3943.6,
+   "per_h": 41.399,
+   "trace": [
+    {
+     "n": 39233,
+     "stored": true,
+     "accuracy": 1.0,
+     "steps": 500,
+     "capped": false
+    },
+    {
+     "n": 78466,
+     "stored": false,
+     "accuracy": 0.1956261396408081,
+     "steps": 5000,
+     "capped": false
+    },
+    {
+     "n": 58849,
+     "stored": false,
+     "accuracy": 0.31103333830833435,
+     "steps": 5000,
+     "capped": false
+    },
+    {
+     "n": 49041,
+     "stored": false,
+     "accuracy": 0.43857184052467346,
+     "steps": 6500,
+     "capped": false
+    },
+    {
+     "n": 44137,
+     "stored": false,
+     "accuracy": 0.6077440977096558,
+     "steps": 4500,
+     "capped": false
+    },
+    {
+     "n": 41685,
+     "stored": true,
+     "accuracy": 1.0,
+     "steps": 1000,
+     "capped": false
+    },
+    {
+     "n": 42911,
+     "stored": false,
+     "accuracy": 0.7827130556106567,
+     "steps": 8000,
+     "capped": true
+    },
+    {
+     "n": 42298,
+     "stored": true,
+     "accuracy": 1.0,
+     "steps": 4500,
+     "capped": false
+    },
+    {
+     "n": 42604,
+     "stored": false,
+     "accuracy": 0.942564070224762,
+     "steps": 8000,
+     "capped": true
+    },
+    {
+     "n": 42451,
+     "stored": false,
+     "accuracy": 0.9999057650566101,
+     "steps": 8000,
+     "capped": true
+    },
+    {
+     "n": 42374,
+     "stored": true,
+     "accuracy": 1.0,
+     "steps": 6000,
+     "capped": false
+    },
+    {
+     "n": 42412,
+     "stored": false,
+     "accuracy": 0.9999999403953552,
+     "steps": 8000,
+     "capped": true
+    },
+    {
+     "n": 42393,
+     "stored": true,
+     "accuracy": 1.0,
+     "steps": 6500,
+     "capped": false
+    },
+    {
+     "n": 42402,
+     "stored": false,
+     "accuracy": 0.9999999403953552,
+     "steps": 8000,
+     "capped": true
+    },
+    {
+     "n": 42397,
+     "stored": false,
+     "accuracy": 0.9999999403953552,
+     "steps": 8000,
+     "capped": true
+    }
+   ]
+  },
+  "trained/h2048/s0": {
+   "model": "trained",
+   "h": 2048,
+   "seed": 0,
+   "capacity": 83728,
+   "upper": 83733,
+   "n_probes": 16,
+   "n_capped": 0,
+   "seconds": 8884.9,
+   "per_h": 40.883,
+   "trace": [
+    {
+     "n": 78817,
+     "stored": true,
+     "accuracy": 1.0,
+     "steps": 500,
+     "capped": false
+    },
+    {
+     "n": 157634,
+     "stored": false,
+     "accuracy": 0.19164647161960602,
+     "steps": 8000,
+     "capped": false
+    },
+    {
+     "n": 118225,
+     "stored": false,
+     "accuracy": 0.30599281191825867,
+     "steps": 6500,
+     "capped": false
+    },
+    {
+     "n": 98521,
+     "stored": false,
+     "accuracy": 0.4322124123573303,
+     "steps": 4500,
+     "capped": false
+    },
+    {
+     "n": 88669,
+     "stored": false,
+     "accuracy": 0.5905446410179138,
+     "steps": 8000,
+     "capped": false
+    },
+    {
+     "n": 83743,
+     "stored": false,
+     "accuracy": 0.9999999403953552,
+     "steps": 5000,
+     "capped": false
+    },
+    {
+     "n": 81280,
+     "stored": true,
+     "accuracy": 1.0,
+     "steps": 500,
+     "capped": false
+    },
+    {
+     "n": 82511,
+     "stored": true,
+     "accuracy": 1.0,
+     "steps": 500,
+     "capped": false
+    },
+    {
+     "n": 83127,
+     "stored": true,
+     "accuracy": 1.0,
+     "steps": 500,
+     "capped": false
+    },
+    {
+     "n": 83435,
+     "stored": true,
+     "accuracy": 1.0,
+     "steps": 1000,
+     "capped": false
+    },
+    {
+     "n": 83589,
+     "stored": true,
+     "accuracy": 1.0,
+     "steps": 1000,
+     "capped": false
+    },
+    {
+     "n": 83666,
+     "stored": true,
+     "accuracy": 1.0,
+     "steps": 1000,
+     "capped": false
+    },
+    {
+     "n": 83704,
+     "stored": true,
+     "accuracy": 1.0,
+     "steps": 1000,
+     "capped": false
+    },
+    {
+     "n": 83723,
+     "stored": true,
+     "accuracy": 1.0,
+     "steps": 1000,
+     "capped": false
+    },
+    {
+     "n": 83733,
+     "stored": false,
+     "accuracy": 0.9999999403953552,
+     "steps": 5000,
+     "capped": false
+    },
+    {
+     "n": 83728,
+     "stored": true,
+     "accuracy": 1.0,
+     "steps": 1000,
+     "capped": false
+    }
+   ]
+  },
+  "trained/h2048/s1": {
+   "model": "trained",
+   "h": 2048,
+   "seed": 1,
+   "capacity": 84808,
+   "upper": 84812,
+   "n_probes": 16,
+   "n_capped": 7,
+   "seconds": 16887.6,
+   "per_h": 41.41,
+   "trace": [
+    {
+     "n": 79076,
+     "stored": true,
+     "accuracy": 1.0,
+     "steps": 500,
+     "capped": false
+    },
+    {
+     "n": 158152,
+     "stored": false,
+     "accuracy": 0.19169533252716064,
+     "steps": 8000,
+     "capped": true
+    },
+    {
+     "n": 118614,
+     "stored": false,
+     "accuracy": 0.3029237389564514,
+     "steps": 5000,
+     "capped": false
+    },
+    {
+     "n": 98845,
+     "stored": false,
+     "accuracy": 0.4243816137313843,
+     "steps": 4500,
+     "capped": false
+    },
+    {
+     "n": 88960,
+     "stored": false,
+     "accuracy": 0.5775853991508484,
+     "steps": 5000,
+     "capped": false
+    },
+    {
+     "n": 84018,
+     "stored": true,
+     "accuracy": 1.0,
+     "steps": 2000,
+     "capped": false
+    },
+    {
+     "n": 86489,
+     "stored": false,
+     "accuracy": 0.6756234765052795,
+     "steps": 4500,
+     "capped": false
+    },
+    {
+     "n": 85253,
+     "stored": false,
+     "accuracy": 0.885153591632843,
+     "steps": 8000,
+     "capped": true
+    },
+    {
+     "n": 84635,
+     "stored": true,
+     "accuracy": 1.0,
+     "steps": 4500,
+     "capped": false
+    },
+    {
+     "n": 84944,
+     "stored": false,
+     "accuracy": 0.9815996885299683,
+     "steps": 8000,
+     "capped": true
+    },
+    {
+     "n": 84789,
+     "stored": true,
+     "accuracy": 1.0,
+     "steps": 7500,
+     "capped": false
+    },
+    {
+     "n": 84866,
+     "stored": false,
+     "accuracy": 0.9990337491035461,
+     "steps": 8000,
+     "capped": true
+    },
+    {
+     "n": 84827,
+     "stored": false,
+     "accuracy": 0.9999881982803345,
+     "steps": 8000,
+     "capped": true
+    },
+    {
+     "n": 84808,
+     "stored": true,
+     "accuracy": 1.0,
+     "steps": 7000,
+     "capped": false
+    },
+    {
+     "n": 84817,
+     "stored": false,
+     "accuracy": 0.999976396560669,
+     "steps": 8000,
+     "capped": true
+    },
+    {
+     "n": 84812,
+     "stored": false,
+     "accuracy": 0.9999999403953552,
+     "steps": 8000,
+     "capped": true
+    }
+   ]
+  },
+  "trained/h2048/s2": {
+   "model": "trained",
+   "h": 2048,
+   "seed": 2,
+   "capacity": 84883,
+   "upper": 84888,
+   "n_probes": 16,
+   "n_capped": 6,
+   "seconds": 17141.9,
+   "per_h": 41.447,
+   "trace": [
+    {
+     "n": 79362,
+     "stored": true,
+     "accuracy": 1.0,
+     "steps": 500,
+     "capped": false
+    },
+    {
+     "n": 158724,
+     "stored": false,
+     "accuracy": 0.18939164280891418,
+     "steps": 6500,
+     "capped": false
+    },
+    {
+     "n": 119043,
+     "stored": false,
+     "accuracy": 0.30210092663764954,
+     "steps": 8000,
+     "capped": true
+    },
+    {
+     "n": 99202,
+     "stored": false,
+     "accuracy": 0.4205661118030548,
+     "steps": 4500,
+     "capped": false
+    },
+    {
+     "n": 89282,
+     "stored": false,
+     "accuracy": 0.5680540800094604,
+     "steps": 5000,
+     "capped": false
+    },
+    {
+     "n": 84322,
+     "stored": true,
+     "accuracy": 1.0,
+     "steps": 2500,
+     "capped": false
+    },
+    {
+     "n": 86802,
+     "stored": false,
+     "accuracy": 0.6623234748840332,
+     "steps": 4500,
+     "capped": false
+    },
+    {
+     "n": 85562,
+     "stored": false,
+     "accuracy": 0.8177579045295715,
+     "steps": 8000,
+     "capped": true
+    },
+    {
+     "n": 84942,
+     "stored": false,
+     "accuracy": 0.9988933205604553,
+     "steps": 8000,
+     "capped": true
+    },
+    {
+     "n": 84632,
+     "stored": true,
+     "accuracy": 1.0,
+     "steps": 4500,
+     "capped": false
+    },
+    {
+     "n": 84787,
+     "stored": true,
+     "accuracy": 1.0,
+     "steps": 6000,
+     "capped": false
+    },
+    {
+     "n": 84864,
+     "stored": true,
+     "accuracy": 1.0,
+     "steps": 8000,
+     "capped": false
+    },
+    {
+     "n": 84903,
+     "stored": false,
+     "accuracy": 0.9997526407241821,
+     "steps": 8000,
+     "capped": true
+    },
+    {
+     "n": 84883,
+     "stored": true,
+     "accuracy": 1.0,
+     "steps": 8000,
+     "capped": false
+    },
+    {
+     "n": 84893,
+     "stored": false,
+     "accuracy": 0.9999529123306274,
+     "steps": 8000,
+     "capped": true
+    },
+    {
+     "n": 84888,
+     "stored": false,
+     "accuracy": 0.9999411106109619,
+     "steps": 8000,
+     "capped": true
+    }
+   ]
+  }
+ },
+ "precision": 8,
+ "train_config": {
+  "lrs": [
+   3.0
+  ],
+  "segment": 500,
+  "patience": 8,
+  "max_steps": 8000
+ }
+}
