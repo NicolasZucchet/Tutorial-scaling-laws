@@ -34,7 +34,7 @@ LEDGER = ROOT / "results/finite_support_ledger.jsonl"
 
 K = 10_000
 ALPHA = 1.2
-HS = (8, 16, 32, 64, 128, 256, 512)
+HS = (8, 16, 32, 64, 128, 256, 512, 1024, 2048)
 STEPS = (102_400,)
 SEEDS = (0,)
 MAX_TOKENS = 64 * max(STEPS)

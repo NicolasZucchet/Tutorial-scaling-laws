@@ -226,3 +226,7 @@ runs/
 .ipynb_checkpoints/
 **/.ipynb_checkpoints/
 .DS_Store
+
+# expanded deck intermediate (scripts/build_slides.py)
+.slides.build.*.md
+.slides.build.*.html

@@ -108,6 +108,7 @@ export PYTHONPATH=src
 uv run python scripts/capacity_sweep.py                  # everything (~16 h on CPU)
 uv run python scripts/capacity_sweep.py --h 128 256      # one slice
 uv run python scripts/capacity_sweep.py --chart-only     # redraw from the JSON
+uv run python scripts/capacity_sweep.py --chart-only --write-slide   # + the deck's figure
 uv run python tests/test_capacity.py                     # ~5 s
 ```
 
@@ -117,7 +118,8 @@ already done. Outputs:
 | | |
 |---|---|
 | `results/capacity.json` | every probe: `n`, accuracy, steps, whether the step backstop bound it |
-| `results/capacity_chart.md` | two colloquium ` ```chart ` blocks + a table, ready to paste into `slides.md`; `--write-slide` drops the first one straight into the marked block there |
+| `results/capacity_chart.md` | two colloquium ` ```chart ` blocks + a table, for reading outside the deck |
+| `figures/capacity-chart.md` | with `--write-slide`: the deck's figure — the slide version of the first chart, its legend and `assets/capacity-chart.js`. The slide holds only `<!-- figure: capacity-chart -->`, so this script owns the plot outright |
 
 Method notes, because a "100 % accuracy" number is only as good as its protocol:
 
@@ -290,8 +292,8 @@ export PYTHONPATH=src
 uv run python scripts/isoflop_sweep.py --plan          # the cell list and its cost, free
 uv run python scripts/isoflop_sweep.py                 # 36 cells, 2.5e14 flops, ~8 min
 uv run python scripts/isoflop_slide.py                 # fits -> results/isoflop_fits.json
-uv run python scripts/isoflop_slide.py --write-slide   # inject the figure into slides.md
-uv run python scripts/grid_slide.py --write-slide      # fit/extrapolation + alpha slides
+uv run python scripts/isoflop_slide.py --write-slide   # -> figures/isoflop-figure.md + slides.md
+uv run python scripts/grid_slide.py --write-slide      # -> figures/results-alpha.md + slides.md
 ```
 
 The `(N, D)` grid's anti-diagonals are already *exact* IsoFLOP lines — `h` in powers of
@@ -444,6 +446,60 @@ Cost 1.33·10¹⁵ flops and 67 min of wall clock, billed to `results/emergence_
 `results/emergence.json` (every checkpoint of every run, plus the `--report` analysis),
 `results/emergence_chart.md`, `figures/emergence.png`.
 
+## The finite-context-pool sweep (slide "What if data was finite?")
+
+The scan above draws contexts from the full, effectively infinite Zipf tail. Truncate the
+tail at `K = 10 000` contexts, renormalise, and the model-size curve stops being a power
+law: once a model can hold most of a *bounded* pool there is nothing left to buy.
+
+```bash
+export PYTHONPATH=src
+uv run python scripts/finite_context_sweep.py           # 9 rungs, ~20 min on CPU
+uv run python scripts/finite_context_sweep.py --report  # the table, from the JSON
+```
+
+`h` in 8…2048 (so `N = 512h` from 4.1e3 to 1.05e6), `D = 6.55e6` online draws at every
+rung, one seed, learning rate optimised per cell with the same interior-optimum refinement
+as the scan (all nine came out interior). The run is checkpointed after every cell, so it
+is resumable and re-running skips what is already done.
+
+Two things make this *finite support*, not a finite dataset: contexts are sampled online
+from the truncated Zipf, and every occurrence gets a fresh next-token draw from its fixed
+conditional. There is no held-out set and no train/test gap — evaluation weights all
+10 000 contexts by their exact renormalised frequencies. So the curve below is what
+running out of *things to learn* looks like, never what overfitting looks like.
+
+| `h` | `N` | excess loss | local slope |
+|---|---|---|---|
+| 8 | 4 096 | 1.694101 | — |
+| 16 | 8 192 | 1.325302 | −0.354 |
+| 32 | 16 384 | 1.033968 | −0.358 |
+| 64 | 32 768 | 0.786548 | −0.395 |
+| 128 | 65 536 | 0.573029 | −0.457 |
+| 256 | 131 072 | 0.394475 | −0.539 |
+| 512 | 262 144 | 0.253310 | −0.639 |
+| 1024 | 524 288 | 0.163384 | −0.633 |
+| 2048 | 1 048 576 | 0.120958 | −0.434 |
+
+Over the same range the infinite-pool curve is close to a straight `N^-0.21`, drifting to
+`N^-0.15` at the top as its own data limit starts to tell. The finite-pool curve is steeper
+from the very first rung (`N^-0.35`) and then *accelerates*, to `N^-0.64` — three times the
+infinite-pool slope. That acceleration is the point of the slide.
+The last rung, though, *relaxes* back to `-0.43`, and the per-stratum breakdown says why: at
+`D = 6.55e6` the rarest contexts in the pool are seen only 25-70 times each, so past
+`N ≈ 5e5` what binds is no longer how many contexts fit but how well a 512-way conditional
+can be pinned down from a few dozen samples. Read the top of the curve as a bend, then, not
+as an asymptote — a genuine exponential finish would need more draws per context, not more
+parameters.
+
+Cost 4.1·10¹⁴ flops and 19 min of wall clock (the top two rungs are 12 of those minutes),
+billed to `results/finite_support_ledger.jsonl` — its own ledger, no budget, and the closed
+10¹³ student ledger is untouched. Output: `results/finite_support_sweep.json` (every cell,
+its learning-rate grid, per-stratum losses). The slide's chart block is **hand-written** in
+`figures/finite-chart.md`: there is no `--write-slide` and no BEGIN/END markers, so the
+numbers there are copied from this JSON by hand. `assets/finite-chart.js` styles its
+markers.
+
 ## Layout
 
 | | |
@@ -459,13 +515,21 @@ Cost 1.33·10¹⁵ flops and 67 min of wall clock, billed to `results/emergence_
 | `src/assocmem/grid.py`, `grid_fit.py` | the (N, D) scan: stratified evaluator, one grid cell, the fits |
 | `src/assocmem/emergence.py` | the emergence experiment: per-band eval set, accuracy kernel, one checkpointed run |
 | `scripts/scaling_grid.py`, `alpha_sweep.py` | the two scans; `grid_figures.py`, `alpha_figures.py` draw them |
-| `scripts/grid_slide.py` | turns the scans into the deck's Results slides (`--write-slide`) |
+| `scripts/capacity_sweep.py` | the capacity sweep; `--write-slide` writes `figures/capacity-chart.md`, the plot on "Capacity, in theory and in practice" |
+| `scripts/grid_slide.py` | turns the scans into the deck's Results slides: `--write-slide` writes `figures/results-alpha.md` (the exponents-vs-α chart) and the inline `results-fit` block in `slides.md` |
 | `scripts/isoflop_sweep.py` | six widths per compute budget, centred on `N*`: the sweep the IsoFLOP figure is fitted to |
-| `scripts/isoflop_slide.py` | the IsoFLOP construction: parabolas, minima, `N*(C)`, as a generated SVG with two reveals |
+| `scripts/isoflop_slide.py` | the IsoFLOP construction: parabolas, minima, `N*(C)`, as a generated SVG with two reveals; `--write-slide` writes `figures/isoflop-figure.md` and the inline `isoflop-exponents` sentence in `slides.md` |
 | `assets/results-chart.js` | the alpha result slide's line and marker styling |
 | `scripts/emergence.py` | the emergence sweep, its figure, and its two deck slides (`--write-slide`) |
 | `assets/emergence-chart.js` | the emergence charts' marker styling and log tick labels |
-| `slides.md` | the deck (colloquium): `colloquium build slides.md`, `colloquium serve slides.md` |
+| `scripts/finite_context_sweep.py` | the finite-context-pool sweep: online truncated Zipf, exact frequency-weighted eval |
+| `assets/finite-chart.js` | the finite-data chart's filled markers (colloquium draws line points hollow by default) |
+| `assets/pc-chart.js` | the two practice-capacity charts (digitised from Allen-Zhu & Li and Morris et al.): filled markers, dashed yardsticks, decade-only ticks written `1k` / `1M`. One file for the pair — the pass is shared and the tick plugin must be registered once — loaded from the `<script src>` tag at the end of `figures/pc-bitstrings.md`, which sits after both chart blocks |
+| `slides.md` | the deck (colloquium). Build it with **`uv run python scripts/build_slides.py`**, not `colloquium build` — see below |
+| `figures/*.html` | the deck's six hand-drawn SVG figures, one file each: `embed-fig`, `zipf-fig`, `hebb-fig`, `sphere-fig`, `loss-step-fig`, `scaling-twin-fig`. `slides.md` refers to each by a one-line `<!-- figure: <key> -->` placeholder and holds no SVG itself |
+| `figures/pc-facts.md`, `figures/pc-bitstrings.md`, `figures/finite-chart.md` | the three *hand-written* chart figures — digitised or copied numbers, no generator script — each with its `cap-legend`. `slides.md` keeps only the placeholder, the surrounding prose and, on the finite-data slide, the `cap-cue` marker that belongs to the step sequence |
+| `figures/capacity-chart.md`, `figures/isoflop-figure.md`, `figures/results-alpha.md` | the same placeholder mechanism for the three *plotted* figures, each written by its generator (`capacity_sweep.py`, `isoflop_slide.py`, `grid_slide.py` with `--write-slide`) together with its legend and its `assets/*.js` styling tag. Generated files: edit the script, not these |
+| `scripts/build_slides.py` | expands those placeholders and runs colloquium: `build_slides.py` → `slides.html`, `--check` verifies every placeholder resolves and no figure is orphaned, `--serve` runs the dev server. colloquium has no include directive, so `colloquium build slides.md` on its own renders the six figures empty |
 | `assets/slides.css` | the deck's stylesheet, pulled in by the `<link>` on the title slide; font URLs are relative to `assets/`, so it needs to sit next to `slides.html` |
 | `assets/capacity-chart.js`, `assets/scaling-slider.js` | the deck's two scripts: capacity-chart markers and tick labels, and the α slider on the twin-axis scaling-law slide |
 

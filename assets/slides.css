@@ -61,24 +61,14 @@
   gap: 0.4em;
 }
 
-/* Chinchilla slide: preserve the mockup's three horizontal bands (premise,
-   equation/interpretation, evidence/conclusion) without copying its heavy table. */
-.chin-premise { margin-bottom: 0.35em; }
-.chin-equation-row {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 2.8em;
-  align-items: center;
-  margin: 0.1em 0 0.6em;
-}
-.chin-equation-row .katex-display { margin: 0.2em 0; }
+/* Chinchilla slide: the mockup's three horizontal bands (premise,
+   equation/interpretation, evidence/conclusion) are colloquium `===` rows, the
+   last two split `row-columns: 1/1`.  Only the trimmings live here. */
+.chin-slide .katex-display { margin: 0.2em 0; }
+/* Band two is one display equation against a one-line gloss: centre the gloss
+   on the equation rather than letting it hang from the top of the row. */
+.chin-slide .colloquium-row:nth-child(2) { align-items: center; }
 .chin-independence { color: var(--colloquium-muted); }
-.chin-lower {
-  display: grid;
-  grid-template-columns: 1.08fr 0.92fr;
-  gap: 3em;
-  align-items: start;
-}
 .chin-story p { margin-bottom: 0.62em; }
 .chin-story .katex-display { margin: 0.35em 0 0.55em; }
 
@@ -166,21 +156,16 @@
 .tok-tokens { text-align: left; }
 .tok-model, .tok-data { text-align: right; min-width: 3.6em; }
 
-/* Assumption 2: a compact Zipf explainer. The plot is deliberately schematic:
-   its job is to make rank, frequency and the long tail legible at a glance. */
-.zipf-layout {
-  display: grid;
-  grid-template-columns: 0.86fr 1.14fr;
-  gap: 2.4em;
-  align-items: center;
-  margin-top: 0.35em;
-}
-.zipf-copy { font-size: 0.82em; }
-.zipf-copy .katex-display { margin: 0.45em 0; }
+/* Assumption 3: a compact Zipf explainer. The plot is deliberately schematic:
+   its job is to make rank, frequency and the long tail legible at a glance.
+   The two-column split is colloquium's own (`row-columns: 1/1`), so all that is
+   left here is capping the figure so it does not fill its whole half. */
 .zipf-fig {
   display: block;
   width: 100%;
+  max-width: 430px;
   height: auto;
+  margin: 0 auto;
   font-family: var(--colloquium-font-body);
 }
 .zipf-fig .zf-axis { stroke: var(--colloquium-muted); stroke-width: 1.8; }
@@ -190,13 +175,13 @@
   stroke-width: 3;
   stroke-linecap: round;
 }
-.zipf-fig .zf-dot { fill: #c0392b; stroke: white; stroke-width: 1.5; }
+.zipf-fig .zf-tick { stroke: var(--colloquium-muted); stroke-width: 1.4; }
+.zipf-fig .zf-num { fill: var(--colloquium-muted); font-size: 17px; }
 .zipf-fig .zf-label { fill: var(--colloquium-text); font-size: 20px; }
 .zipf-fig .zf-note { fill: var(--colloquium-muted); font-size: 17px; }
 .zipf-fig .zf-law { fill: #0f3460; font-size: 19px; font-weight: 700; }
-.zipf-fig .zf-log { fill: var(--colloquium-muted); font-size: 13px; }
 
-/* Assumption 3: the only architecture retained by the toy model. */
+/* Assumption 2: the only architecture retained by the toy model. */
 .embed-fig {
   display: block;
   width: 100%;
@@ -206,9 +191,9 @@
 }
 .embed-fig .ef-head { fill: var(--colloquium-title); font-size: 22px; font-weight: 700; }
 .embed-fig .ef-context { fill: var(--colloquium-code-bg); stroke: var(--colloquium-border); }
-.embed-fig .ef-code { fill: var(--colloquium-text); font-family: var(--colloquium-font-mono); font-size: 17px; }
+.embed-fig .ef-code { fill: var(--colloquium-text); font-family: var(--colloquium-font-mono); font-size: 13px; }
 .embed-fig .ef-arrow { stroke: var(--colloquium-muted); stroke-width: 2; marker-end: url(#ef-arrow); }
-.embed-fig marker path { fill: var(--colloquium-muted); }
+.embed-fig marker#ef-arrow path { fill: var(--colloquium-muted); }
 .embed-fig .ef-muted, .embed-fig .ef-random { fill: var(--colloquium-muted); font-size: 16px; }
 .embed-fig .ef-space { fill: none; stroke: var(--colloquium-muted); stroke-width: 1.6; }
 .embed-fig .ef-grid { stroke: var(--colloquium-border); stroke-width: 1.2; }
@@ -392,27 +377,24 @@
 }
 
 /* Stepped derivations: one line of maths per `<!-- step -->`, with a short note
-   in a fixed gutter on the right.  The lines are left-aligned rather than each
-   centred in its own row, so a `\phantom` on the continuation lines keeps the
-   relation symbols under one another the way `aligned` would.  Margins are
-   tighter than the theme's 0.8em because a split derivation pays them once per
-   line. */
-.eq-step {
-  display: grid;
-  grid-template-columns: 1fr 240px;
-  gap: 2rem;
+   in the column beside it.  The lines are left-aligned rather than each centred
+   in its own row, so a `\phantom` on the continuation lines keeps the relation
+   symbols under one another the way `aligned` would.  Margins are tighter than
+   the theme's 0.8em because a split derivation pays them once per line. */
+/* Layout is colloquium's own: one `===` row per line of maths, each split
+   `row-columns: 3/2` into equation and note.  What is left here is typography. */
+.eq-rows .colloquium-row {
   align-items: center;
-  margin: 0.2em 0;
 }
-.eq-step .katex-display {
+.eq-rows .katex-display {
   margin: 0.3em 0 0.3em 1.2em;
 }
 /* KaTeX centres the inner .katex block, so left-aligning has to happen there. */
-.eq-step .katex-display > .katex { text-align: left; }
+.eq-rows .katex-display > .katex { text-align: left; }
 /* The note is commentary, not part of the derivation, and carries no
    paragraph margins of its own so it stays centred on its equation. */
-.eq-step .text-sm { color: var(--colloquium-muted); }
-.eq-step .text-sm p { margin: 0; }
+.eq-rows .text-sm { color: var(--colloquium-muted); }
+.eq-rows .text-sm p { margin: 0; }
 
 /* Footnote look, but inside the slide body so a `<!-- step -->` can hold it
    back: colloquium's own footnotes render outside the fragment machinery. */
@@ -450,4 +432,130 @@
   flex: 1 1 auto;
   min-width: 0;
   margin: 0;
+}
+
+/* isoflop figure */
+/* Centring the legend on the figure is not the same as centring it on the plot: the
+   SVG box carries ~90 viewBox units of tick labels and axis title below the plot box
+   and only 18 above it, so flex centring lands the legend low.  The plot box spans
+   y = 18..308 of the 400-unit viewBox, so its middle sits 37 units above the box's
+   middle -- about 31 px at the width the figure is laid out at, measured on the ink
+   rather than on the line boxes.  A percentage would be the honest unit, but `top: %`
+   resolves against a content-sized flex row and drops to auto; the deck scales by
+   transform, so a px lift holds at every zoom. */
+.if-row > .cap-legend {
+  position: relative;
+  top: -31px;
+}
+
+/* practice-capacity slide */
+/* Two Chart.js panels side by side, each with a legend above and a caption line
+   under the pair.  The theme's 400px chart box would push the sources off the
+   bottom of the slide, so the box is shortened rather than the type. */
+.pc-slide .colloquium-chart-container {
+  height: 276px;
+  margin: 0.1em 0 0;
+}
+.pc-slide .cap-legend { margin-top: 0.3em; }
+/* The panel captions sit above their legend and read as one line each. */
+.pc-slide .colloquium-row:nth-child(2) p { margin: 0; }
+/* Both sources belong to the pair of figures, not to either column, so the
+   line is centred under the whole row. */
+.pc-slide .pc-cite { text-align: center; margin-top: 0.4em; }
+
+/* Assumption 2 figure, second pass: the embeddings are drawn as arrows on the
+   unit circle rather than as scattered dots, so this slide and the later
+   "Interference" spheres share one visual language -- same arrow heads, same
+   stroke weight, same palette as `.sphere-fig` above.  The coloured tab beside
+   each context box is what ties a context to its arrow. */
+.embed-fig .ef-vec {
+  stroke-width: 2.4;
+  stroke-linecap: round;
+}
+.embed-fig .ef-vec.ef-navy  { stroke: #0f3460; fill: none; }
+.embed-fig .ef-vec.ef-red   { stroke: #c0392b; fill: none; }
+.embed-fig .ef-vec.ef-green { stroke: #27ae60; fill: none; }
+.embed-fig .ef-fill-navy  { fill: #0f3460; }
+.embed-fig .ef-fill-red   { fill: #c0392b; }
+.embed-fig .ef-fill-green { fill: #27ae60; }
+/* The bars are the distribution predicted for the first (navy) context, so they
+   carry its hue; the non-argmax entries get a tint of the same. */
+.embed-fig .ef-navy-light { fill: #b6c3d1; }
+
+/* "Interference" slide, left column: a pictorial reminder of the Hebbian
+   weights from the previous slide.  Each term is one correct next token
+   (the coloured word, standing for the one-hot z_i) mapped to the context
+   embedding it is glued onto (the arrow on the unit circle, e_i).  The four
+   hues are the ones the `.sphere-fig` vectors carry on the right, so a term
+   here and a vector there are the same context.  Stroke weights, arrow
+   heads and type sizes follow `.sphere-fig` so the pair reads as one
+   figure rather than as two. */
+.hebb-fig {
+  display: block;
+  width: 100%;
+  height: auto;
+  margin: 0.4em auto 0;
+  font-family: var(--colloquium-font-body);
+}
+.hebb-fig text { fill: var(--colloquium-text); font-size: 22px; }
+.hebb-fig .hb-math {
+  font-family: "Latin Modern Math", "Cambria Math", Georgia, serif;
+  font-style: italic;
+  font-size: 27px;
+  fill: var(--colloquium-title);
+}
+.hebb-fig .hb-plus {
+  fill: var(--colloquium-muted);
+  font-size: 24px;
+}
+/* The sum runs on: three dots under the last unit circle rather than a
+   `⋯` glyph, which the body face does not carry. */
+.hebb-fig .hb-dot { fill: var(--colloquium-muted); }
+.hebb-fig .hb-tok { font-weight: 700; }
+.hebb-fig .hb-map {
+  stroke: var(--colloquium-muted);
+  stroke-width: 2;
+  marker-end: url(#hb-arrow);
+}
+.hebb-fig marker#hb-arrow path { fill: var(--colloquium-muted); }
+.hebb-fig .hb-circle {
+  fill: none;
+  stroke: var(--colloquium-muted);
+  stroke-width: 1.5;
+}
+.hebb-fig .hb-vec {
+  stroke-width: 2.4;
+  stroke-linecap: round;
+  fill: none;
+}
+.hebb-fig .hb-vec.hb-navy   { stroke: #0f3460; }
+.hebb-fig .hb-vec.hb-red    { stroke: #c0392b; }
+.hebb-fig .hb-vec.hb-green  { stroke: #27ae60; }
+.hebb-fig .hb-vec.hb-orange { stroke: #e67e22; }
+.hebb-fig .hb-tok.hb-navy   { fill: #0f3460; }
+.hebb-fig .hb-tok.hb-red    { fill: #c0392b; }
+.hebb-fig .hb-tok.hb-green  { fill: #27ae60; }
+.hebb-fig .hb-tok.hb-orange { fill: #e67e22; }
+/* The carry line moved into the right column when the reminder took the
+   left one, so the rise-in animation has to follow it there. */
+.slide.carry-line .colloquium-grid > .col > p:first-child {
+  animation: colloquium-carry-up 0.45s ease-out both;
+}
+.colloquium-capture .slide.carry-line .colloquium-grid > .col > p:first-child {
+  animation: none;
+}
+@media print {
+  .slide.carry-line .colloquium-grid > .col > p:first-child { animation: none; }
+}
+
+/* theory-capacity slide */
+/* The chart column is much shorter than the commentary beside it, so left
+   top-aligned it reads as if it had slipped up the slide.  There is no
+   per-column `valign` directive -- `valign: center` acts on the slide and
+   `.slide-content` already claims the spare height -- so the column itself
+   becomes the flex context and centres its own chart. */
+.ct-slide .colloquium-grid > .col:first-child {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
 }
