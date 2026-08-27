@@ -26,9 +26,12 @@ Nicolas Zucchet -- [nzucchet@stanford.edu](mailto:nzucchet@stanford.edu)
 September 8th 2026
 
 <!-- The deck's stylesheet, for every slide: colloquium has no hook for an
-     external sheet, and a <link> in the body is honoured all the same. -->
+     external sheet, and a <link> in the body is honoured all the same.  The
+     script beside it tidies the punctuation of the reference list colloquium
+     generates at the end of the deck. -->
 
 <link rel="stylesheet" href="assets/slides.css">
+<script src="assets/references.js"></script>
 
 ---
 
