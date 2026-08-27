@@ -128,7 +128,7 @@
 <circle cx="578.0" cy="309.9" r="3.4" fill="#0d366b"/>
 <circle cx="585.0" cy="309.9" r="3.4" fill="#0d366b"/>
 <circle cx="604.1" cy="303.0" r="3.4" fill="#0d366b"/>
-<g class="fragment" data-fragment-index="1">
+<g class="fragment" data-colloquium-fragment="1">
 <g clip-path="url(#cc-if-a)">
 <path d="M 179.1 72.4 L 189.9 79.9 L 200.7 86.7 L 211.5 92.8 L 222.3 98.1 L 233.0 102.6 L 243.8 106.4 L 254.6 109.3 L 265.4 111.5 L 276.2 112.8 L 287.0 113.3 L 297.7 113.0 L 308.5 111.9 L 319.3 109.9 L 330.1 107.2 L 340.9 103.6 L 351.7 99.3 L 362.5 94.2 L 373.2 88.3 L 384.0 81.7 L 394.8 74.3 L 405.6 66.3 L 416.4 57.5 L 427.2 48.2 L 437.9 38.1" fill="none" stroke="#86b6ef" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>
 <path d="M 227.4 130.3 L 236.8 136.0 L 246.3 141.3 L 255.8 146.0 L 265.3 150.3 L 274.8 154.1 L 284.3 157.5 L 293.8 160.3 L 303.3 162.6 L 312.8 164.4 L 322.3 165.6 L 331.8 166.4 L 341.3 166.6 L 350.7 166.4 L 360.2 165.6 L 369.7 164.3 L 379.2 162.4 L 388.7 160.1 L 398.2 157.3 L 407.7 153.9 L 417.2 150.1 L 426.7 145.7 L 436.2 140.9 L 445.7 135.7 L 455.2 129.9" fill="none" stroke="#6da7ec" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>
@@ -144,12 +144,12 @@
 <path d="M 473.2 293.6 L 479.2 299.6 L 473.2 305.6 L 467.2 299.6 Z" fill="#184f95" stroke="#fcfcfb" stroke-width="1.6"/>
 <path d="M 495.4 325.3 L 501.4 331.3 L 495.4 337.3 L 489.4 331.3 Z" fill="#0d366b" stroke="#fcfcfb" stroke-width="1.6"/>
 </g>
-<g class="fragment" data-fragment-index="2">
+<g class="fragment" data-colloquium-fragment="1">
 <g clip-path="url(#cc-if-a)">
 <path class="pf-guide" d="M 288.3 113.3 L 340.9 166.6 L 393.4 216.4 L 433.0 260.5 L 473.2 299.6 L 495.4 331.3"/>
 </g>
 </g>
-<g class="fragment" data-fragment-index="3">
+<g class="fragment" data-colloquium-fragment="1">
 <line class="pf-axis" x1="820" y1="170" x2="1160" y2="170"/>
 <line class="pf-axis" x1="820" y1="170" x2="820" y2="18"/>
 <line class="pf-axis" x1="838" y1="170" x2="838" y2="178"/>

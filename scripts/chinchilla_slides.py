@@ -52,6 +52,8 @@ import sys
 
 import numpy as np
 
+from _steps import Steps
+
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
 
 from chinchilla_svg import RAMP, Panel, num, sup  # noqa: E402
@@ -239,8 +241,10 @@ def svg_open(label: str, panels) -> list[str]:
             *[p.defs() for p in panels], "</defs>"]
 
 
-def fragment(index: int, inner: list[str]) -> list[str]:
-    return [f'<g class="fragment" data-fragment-index="{index}">', *inner, "</g>"]
+def fragment(step, index: int, inner: list[str]) -> list[str]:
+    """One reveal group.  *step* is the figure's Steps allocator -- see _steps.py:
+    the attribute has to be a marker colloquium can count, not a bare index."""
+    return [f'<g class="fragment"{step.attr(index)}>', *inner, "</g>"]
 
 
 def panels_for(kind: str, x_left, y_left, x_right, y_top, y_bot):
@@ -297,6 +301,7 @@ def pareto_svg(pf: dict) -> str:
              "dataset size that own each stretch of that front, against compute, with "
              "their fitted power laws.")
     x_ticks = [1e19, 1e20, 1e21, 1e22]
+    steps = Steps()
     s = svg_open(label, (a, b, c))
     s += a.axes('compute <tspan class="pf-var">C</tspan> (flops)', "loss",
                 x_ticks, (2.2, 2.5, 3.0, 4.0, 5.0), x_fmt=pow10,
@@ -314,16 +319,16 @@ def pareto_svg(pf: dict) -> str:
     # beat 1: the front itself, over the same family
     front = pf["front"]
     step = [(x, y) for x, y in zip(front["c"], front["loss"])]
-    s += fragment(1, a.clipped(
+    s += fragment(steps, 1, a.clipped(
         [f'<path class="pf-front" d="{a.path(step[::12] + step[-1:])}"/>']))
 
     # beat 2: an empty group whose .visible state drives the dimming, nothing drawn
-    s.append('<g class="cp-dim fragment" data-fragment-index="2"></g>')
+    s.append(f'<g class="cp-dim fragment"{steps.attr(2)}></g>')
 
     # beat 3: the power law through the front
     law = pf["laws"]["l_of_c"]
     line = a.power_line(law["pref"], law["exp"], 6e18, 1.6e22)
-    s += fragment(3, a.clipped([f'<path class="pf-guide" d="{a.path(line)}"/>'])
+    s += fragment(steps, 3, a.clipped([f'<path class="pf-guide" d="{a.path(line)}"/>'])
                   + [a.label_on(a.at(*line[0]), a.at(*line[-1]), 0.72,
                                 '<tspan class="pf-var">C</tspan>',
                                 f'{law["exp"]:.3f}', off=30)])
@@ -335,7 +340,7 @@ def pareto_svg(pf: dict) -> str:
         marks_b.append(b.curve([(c0, n), (c1, n)], col, width=3.4, cls="cp-tread"))
         marks_c.append(c.curve([(c0, c0 / (6 * n)), (c1, c1 / (6 * n))], col,
                                width=3.4, cls="cp-tread"))
-    s += fragment(4, right_pair(b, c, pf["laws"],
+    s += fragment(steps, 4, right_pair(b, c, pf["laws"],
                                 b.clipped(marks_b), c.clipped(marks_c), x_ticks,
                                 y_ticks_b=(1e8, 1e9, 1e10),
                                 y_ticks_c=(1e10, 1e11)))
@@ -361,6 +366,7 @@ def isoflop_svg(iso: dict) -> str:
              "model size and dataset size at those minima against compute, with their "
              "fitted power laws.")
     x_ticks = [1e19, 1e20, 1e21]
+    steps = Steps()
     s = svg_open(label, (a, b, c))
     s += a.axes('model size <tspan class="pf-var">N</tspan>', "loss",
                 [10.0**k for k in a.sx.decades()], (2.2, 2.4, 2.6, 3.0),
@@ -376,18 +382,18 @@ def isoflop_svg(iso: dict) -> str:
         par.append(a.curve(p["curve"], col, width=2.4))
     tips = [a.diamond(p["n_star"], p["loss_star"], col)
             for p, col in zip(iso["profiles"], RAMP)]
-    s += fragment(1, a.clipped(par) + tips)
+    s += fragment(steps, 1, a.clipped(par) + tips)
 
     # beat 2: the envelope through the minima
     env = [(p["n_star"], p["loss_star"]) for p in iso["profiles"]]
-    s += fragment(2, a.clipped([f'<path class="pf-guide" d="{a.path(env)}"/>']))
+    s += fragment(steps, 2, a.clipped([f'<path class="pf-guide" d="{a.path(env)}"/>']))
 
     # beat 3: the same minima against their own compute
     marks_b = [b.diamond(p["c"], p["n_star"], col)
                for p, col in zip(iso["profiles"], RAMP)]
     marks_c = [c.diamond(p["c"], p["d_star"], col)
                for p, col in zip(iso["profiles"], RAMP)]
-    s += fragment(3, right_pair(b, c, iso["laws"], marks_b, marks_c, x_ticks,
+    s += fragment(steps, 3, right_pair(b, c, iso["laws"], marks_b, marks_c, x_ticks,
                                y_ticks_b=(3e8, 1e9, 3e9),
                                y_ticks_c=(1e10, 3e10, 1e11)))
     s.append("</svg>")
@@ -426,6 +432,7 @@ def parametric_svg(iso: dict, paper: dict) -> str:
     label = ("The five-constant Chinchilla loss surface sliced at the same six compute "
              "budgets, drawn through the measured IsoFLOP profiles, with the "
              "compute-optimal model size it implies marked on each slice.")
+    steps = Steps()
     s = [f'<svg class="plot-fig cp-fig" viewBox="0 0 {PW} {PH}" role="img" '
          f'aria-label="{label}">', "<defs>", p.defs(), "</defs>"]
     s += p.axes('model size <tspan class="pf-var">N</tspan>', "loss",
@@ -443,14 +450,14 @@ def parametric_svg(iso: dict, paper: dict) -> str:
         n_s = imp["n_pref"] * c ** imp["n_exp"]
         tips.append(p.diamond(n_s, pm["E"] + pm["A"] * n_s ** -pm["alpha"]
                               + pm["B"] * (c / (6 * n_s)) ** -pm["beta"], col))
-    s += fragment(1, p.clipped(curves))
+    s += fragment(steps, 1, p.clipped(curves))
     ridge = []
     for prof in iso["profiles"]:
         c = prof["c"]
         n_s = imp["n_pref"] * c ** imp["n_exp"]
         ridge.append((n_s, pm["E"] + pm["A"] * n_s ** -pm["alpha"]
                       + pm["B"] * (c / (6 * n_s)) ** -pm["beta"]))
-    s += fragment(2, p.clipped([f'<path class="pf-guide" d="{p.path(ridge)}"/>'])
+    s += fragment(steps, 2, p.clipped([f'<path class="pf-guide" d="{p.path(ridge)}"/>'])
                   + tips)
     s.append("</svg>")
     return "\n".join(s)
@@ -481,8 +488,9 @@ def exponents_md(pf: dict, iso: dict, paper: dict) -> str:
             "2. IsoFLOP": (iso["laws"]["n_of_c"]["exp"],
                            iso["laws"]["d_of_c"]["exp"]),
             "3. Parametric fit": (imp["n_exp"], imp["d_exp"])}
-    def cell(cls: str, step: int, text: str) -> str:
-        return (f'<div class="{cls} fragment" data-fragment-index="{step}">'
+    steps = Steps()
+    def cell(cls: str, at: int, text: str) -> str:
+        return (f'<div class="{cls} fragment"{steps.attr(at)}>'
                 f"{text}</div>")
 
     # The row divider is a full-width grid item of its own rather than a border on each

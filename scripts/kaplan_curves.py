@@ -38,6 +38,8 @@ import pathlib
 
 import numpy as np
 
+from _steps import Steps
+
 ROOT = pathlib.Path(__file__).resolve().parents[1]
 FIG_TOKENS = ROOT / "figures/kaplan-tokens-fig.md"
 FIG_COMPUTE = ROOT / "figures/kaplan-compute-fig.md"
@@ -333,13 +335,15 @@ def compute_svg() -> str:
                  f'stroke-width="2.6" stroke-linecap="round"/>')
     s.append("</g>")
 
-    # The frontier, and the point on each run where that run is the optimal one.  One
-    # reveal group with an explicit index so it lands on the same click as the prose
-    # step about compute-optimal training stopping short of convergence.
+    # The frontier, and the point on each run where that run is the optimal one.  The
+    # group carries a marker colloquium can count (see scripts/_steps.py); the prose
+    # step about compute-optimal training stopping short of convergence keeps the
+    # matching explicit index, so the two land on the same click.
     ends = [frontier_loss(n) for n in SIZES]
     span = np.geomspace(max(ends) * 1.10, min(ends) / 1.10, 40)
     fc, _ = frontier(span)
-    s += ['<g class="fragment" data-fragment-index="1">',
+    steps = Steps()
+    s += [f'<g class="fragment"{steps.attr(1)}>',
           '<g clip-path="url(#kc-box)">',
           f'<path d="{polyline(fc, span, sx, sy)}" fill="none" stroke="{FRONTIER}" '
           f'stroke-width="2.6" stroke-dasharray="7 5" stroke-linecap="round"/>',

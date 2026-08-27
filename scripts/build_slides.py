@@ -69,6 +69,72 @@ def expand(text: str) -> str:
     return PLACEHOLDER.sub(lambda m: figure(m.group(1)), text)
 
 
+STEP_GUARD_DOC = """Every animation step has to be *reachable*.
+
+colloquium counts a slide's steps by counting the markers it generated itself --
+`<!-- step -->` in prose, or `data-colloquium-fragment="1"` in a figure -- and
+writes the total into `data-fragment-count`.  The presentation engine reads only
+that attribute:
+
+    this.fragmentCounts = this.slides.map(
+        s => parseInt(s.getAttribute('data-fragment-count') || '0', 10)
+
+A hand-written `data-fragment-index="k"` is passed through untouched and *not*
+counted.  So a slide whose reveals are all hand-indexed reports zero steps: the
+right-arrow key skips straight to the next slide and every one of those elements
+stays invisible for the whole talk.  That is not visible in `colloquium capture`,
+which forces all fragments on, so it has to be checked here.
+
+The rule this enforces: on every slide, `data-fragment-count` must be at least
+the largest hand-written `data-fragment-index`.  Explicit indices are still the
+right tool for syncing a figure element to a prose beat -- they just need at
+least that many marker-generated steps on the same slide to back them.
+"""
+
+SECTION = re.compile(r'<section class="slide[^"]*"([^>]*)>(.*?)</section>', re.S)
+FRAG_COUNT = re.compile(r'data-fragment-count="(\d+)"')
+FRAG_INDEX = re.compile(r'data-fragment-index="(\d+)"')
+SLIDE_INDEX = re.compile(r'data-index="(\d+)"')
+HEADING = re.compile(r"<h[12][^>]*>(.*?)</h[12]>", re.S)
+TAG = re.compile(r"<[^>]+>")
+
+
+def unreachable_steps(html: str) -> list[tuple[int, str, int, int]]:
+    """Slides whose hand-indexed reveals outnumber the steps colloquium counted.
+
+    Returns one (slide number, title, declared count, highest index) per
+    offending slide.
+    """
+    bad = []
+    for attrs, body in SECTION.findall(html):
+        index = SLIDE_INDEX.search(attrs)
+        if not index:
+            continue
+        number = int(index.group(1)) + 1
+        declared = FRAG_COUNT.search(attrs)
+        declared = int(declared.group(1)) if declared else 0
+        indices = [int(i) for i in FRAG_INDEX.findall(body)]
+        if not indices:
+            continue
+        highest = max(indices)
+        if highest > declared:
+            title = HEADING.search(body)
+            title = TAG.sub("", title.group(1)).strip() if title else "(no heading)"
+            bad.append((number, title, declared, highest))
+    return bad
+
+
+def report_steps(html: str) -> int:
+    """Print the unreachable-step report.  Returns the number of bad slides."""
+    bad = unreachable_steps(html)
+    for number, title, declared, highest in bad:
+        print(f"  UNREACHABLE  slide {number}: declares {declared} step(s) but "
+              f"hand-indexes up to {highest} -- "
+              f"{highest - declared} reveal(s) can never be shown  ({title})",
+              file=sys.stderr)
+    return len(bad)
+
+
 def check(text: str) -> int:
     """Report placeholders that cannot be resolved and figures nothing uses."""
     used = keys(text)
@@ -101,6 +167,23 @@ def run(argv: list[str]) -> None:
         built = BUILD_MD.with_suffix(".html")
         if built.exists():
             built.replace(ROOT / "slides.html")
+
+
+def build_to_string() -> str:
+    """Build the deck and return the HTML without touching slides.html.
+
+    `--check` needs to inspect colloquium's output -- step counts only exist
+    after it has run -- but must not overwrite the committed build.
+    """
+    BUILD_MD.write_text(expand(SLIDES.read_text()))
+    built = BUILD_MD.with_suffix(".html")
+    try:
+        subprocess.run(["colloquium", "build", str(BUILD_MD)], check=True, cwd=ROOT,
+                       capture_output=True)
+        return built.read_text()
+    finally:
+        BUILD_MD.unlink(missing_ok=True)
+        built.unlink(missing_ok=True)
 
 
 def watch_paths() -> list[pathlib.Path]:
@@ -184,7 +267,16 @@ def main() -> None:
 
     text = SLIDES.read_text()
     if args.check:
-        raise SystemExit(check(text))
+        status = check(text)
+        # Step reachability can only be read off colloquium's output, so this
+        # half of the check needs a build of its own.  See STEP_GUARD_DOC.
+        if report_steps(build_to_string()):
+            print("\nSome animation steps are unreachable and will never show "
+                  "during the talk.", file=sys.stderr)
+            status = 1
+        else:
+            print("  ok       every animation step is reachable")
+        raise SystemExit(status)
 
     if args.serve:
         serve(args.port)
@@ -193,6 +285,8 @@ def main() -> None:
     run(["build"])
     n = len(keys(text))
     print(f"Built: slides.html ({n} figures from figures/)")
+    if report_steps((ROOT / "slides.html").read_text()):
+        raise SystemExit("Refusing to call that a good build: see above.")
 
 
 if __name__ == "__main__":
