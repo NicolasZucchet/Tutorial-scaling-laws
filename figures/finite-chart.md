@@ -5,7 +5,7 @@
      Copy the `excess_star` field (not `excess_best`).  Raising the budget from the
      original 102,400 steps moved BOTH curves: see README, "Why 409,600 steps". -->
 <div class="cap-legend">
-<span><svg width="30" height="10" viewBox="0 0 30 10" aria-hidden="true"><line x1="1" y1="5" x2="29" y2="5" stroke="#0f3460" stroke-width="2.2"/><circle cx="15" cy="5" r="2.8" fill="#0f3460"/></svg>first 10k contexts</span>
+<span class="fragment" data-fragment-index="1"><svg width="30" height="10" viewBox="0 0 30 10" aria-hidden="true"><line x1="1" y1="5" x2="29" y2="5" stroke="#0f3460" stroke-width="2.2"/><circle cx="15" cy="5" r="2.8" fill="#0f3460"/></svg>first 10k contexts</span>
 <span><svg width="30" height="10" viewBox="0 0 30 10" aria-hidden="true"><line x1="1" y1="5" x2="29" y2="5" stroke="#c0392b" stroke-width="2.2"/><circle cx="15" cy="5" r="2.8" fill="#c0392b"/></svg>infinite context pool</span>
 </div>
 

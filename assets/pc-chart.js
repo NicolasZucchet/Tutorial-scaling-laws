@@ -30,7 +30,7 @@
       ds.tension = 0;   // log-log data: straight segments, no invented curvature
       ds.pointBackgroundColor = ds.borderColor;
       if (label.indexOf("ref:") === 0) {   // yardsticks: dashed, unmarked, behind
-        ds.borderDash = label.indexOf("1 bit") !== -1 ? [2, 4] : [6, 5];
+        ds.borderDash = [6, 5];
         ds.borderWidth = 1.6;
         ds.pointRadius = 0;
         ds.order = 10;

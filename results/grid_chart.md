@@ -5,8 +5,8 @@ at $8$--$16\times$ the fitting budget.
 
 <div class="fit-matrix">
 <div></div><div class="fm-head">fit region</div><div class="fm-head">extrapolation</div>
-<div class="fm-label fm-red">Chinchilla</div><div class="fm-value fm-red">3.2%</div><div class="fm-value fm-red">4.8%</div>
-<div class="fm-label fm-navy">Skaling</div><div class="fm-value fm-navy">0.4%</div><div class="fm-value fm-navy">0.6%</div>
+<div class="fm-label fm-red fragment" data-colloquium-fragment="1">Chinchilla</div><div class="fm-value fm-red fragment" data-fragment-index="1">3.2%</div><div class="fm-value fm-red fragment" data-fragment-index="1">4.8%</div>
+<div class="fm-label fm-navy fragment" data-colloquium-fragment="1">Skaling</div><div class="fm-value fm-navy fragment" data-fragment-index="2">0.4%</div><div class="fm-value fm-navy fragment" data-fragment-index="2">0.6%</div>
 </div>
 
 <div class="inline-footnote">

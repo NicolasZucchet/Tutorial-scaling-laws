@@ -9,9 +9,9 @@ No plot or chart lives in slides.md: every figure sits in its own
 
 Some fragments are hand-edited (`zipf-fig`, `embed-fig`, `w-build-fig`,
 `sphere-fig`, `loss-step-fig`, `scaling-twin-fig`, `pc-facts`,
-`pc-bitstrings`, `finite-chart`); three are owned and overwritten by the script
+`pc-bitstrings`, `finite-chart`); four are owned and overwritten by the script
 that computes their numbers (`capacity-chart`, `isoflop-figure`,
-`results-alpha`) and say so in a header comment.
+`results-alpha`, `emergence-chart`) and say so in a header comment.
 
 colloquium has no include directive -- it reads nothing but its own theme files
 at build time -- so the placeholders have to be expanded before it runs.  That
@@ -21,10 +21,12 @@ is this script's whole job:
     uv run python scripts/build_slides.py --check    # placeholders resolve?
     uv run python scripts/build_slides.py --serve    # dev server (see below)
 
-The expansion goes to a temporary file next to slides.md, so `assets/` and
-`figures/` resolve the same way they do for a plain build, and the temporary
-file is removed afterwards.  `colloquium build slides.md` still runs, but every
-figure comes out empty -- use this script instead.
+For a static build, the expansion goes to a temporary file next to slides.md
+and is moved back to slides.html. In serve mode, an isolated live directory
+keeps an expanded slides.md synchronized with the authored slides, figures,
+bibliography, and assets, while exposing the stable `/slides.html` URL.
+`colloquium build slides.md` still runs, but every figure comes out empty --
+use this script instead.
 """
 
 from __future__ import annotations
@@ -35,6 +37,8 @@ import pathlib
 import re
 import subprocess
 import sys
+import tempfile
+import time
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
 SLIDES = ROOT / "slides.md"
@@ -99,13 +103,83 @@ def run(argv: list[str]) -> None:
             built.replace(ROOT / "slides.html")
 
 
+def watch_paths() -> list[pathlib.Path]:
+    """Files whose changes should trigger a fresh placeholder expansion."""
+    paths = [SLIDES, ROOT / "refs.bib"]
+    paths.extend(sorted(FIGURES.glob("*.md")))
+    paths.extend(sorted(p for p in (ROOT / "assets").rglob("*") if p.is_file()))
+    return paths
+
+
+def signature(paths: list[pathlib.Path]) -> tuple[tuple[str, int, int], ...]:
+    """Cheap polling signature that notices edits, additions, and removals."""
+    result = []
+    for path in paths:
+        try:
+            stat = path.stat()
+        except FileNotFoundError:
+            continue
+        result.append((str(path), stat.st_mtime_ns, stat.st_size))
+    return tuple(result)
+
+
+def serve(port: int) -> None:
+    """Serve an expanded deck and keep it synchronized with its sources."""
+    # Colloquium names its output after its input. An isolated input named
+    # `slides.md` gives us the stable `/slides.html` route without overwriting
+    # the authored slides.md in the repository.
+    with tempfile.TemporaryDirectory(prefix=".slides.live.", dir=ROOT) as tmp:
+        live_root = pathlib.Path(tmp)
+        live_md = live_root / "slides.md"
+
+        # Keep all browser and bibliography-relative paths valid inside the
+        # isolated serving directory while continuing to serve the real files.
+        for name in ("assets", "fonts", "refs.bib"):
+            source = ROOT / name
+            if source.exists():
+                (live_root / name).symlink_to(source, target_is_directory=source.is_dir())
+
+        live_md.write_text(expand(SLIDES.read_text()))
+        watched = watch_paths()
+        previous = signature(watched)
+
+        process = subprocess.Popen(
+            ["colloquium", "serve", "-p", str(port), "slides.md"],
+            cwd=live_root,
+        )
+        interrupted = False
+        try:
+            while process.poll() is None:
+                time.sleep(0.5)
+                current_paths = watch_paths()
+                current = signature(current_paths)
+                if current == previous:
+                    continue
+                live_md.write_text(expand(SLIDES.read_text()))
+                watched = current_paths
+                previous = current
+                print("Sources changed; refreshed expanded deck.", flush=True)
+        except KeyboardInterrupt:
+            interrupted = True
+            process.terminate()
+        finally:
+            if process.poll() is None:
+                process.terminate()
+            returncode = process.wait()
+
+        if returncode and not interrupted:
+            raise subprocess.CalledProcessError(returncode, process.args)
+
+
 def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--check", action="store_true",
                     help="verify every placeholder resolves, then exit")
     ap.add_argument("--serve", action="store_true",
-                    help="run colloquium's dev server on the expanded deck; it "
-                         "watches the expanded copy, so re-run after editing")
+                    help="serve the expanded deck and rebuild it when slides, "
+                         "figures, bibliography, or assets change")
+    ap.add_argument("-p", "--port", type=int, default=8090,
+                    help="port for --serve (default: 8090)")
     args = ap.parse_args()
 
     text = SLIDES.read_text()
@@ -113,11 +187,7 @@ def main() -> None:
         raise SystemExit(check(text))
 
     if args.serve:
-        BUILD_MD.write_text(expand(text))
-        try:
-            subprocess.run(["colloquium", "serve", str(BUILD_MD)], check=True, cwd=ROOT)
-        finally:
-            BUILD_MD.unlink(missing_ok=True)
+        serve(args.port)
         return
 
     run(["build"])

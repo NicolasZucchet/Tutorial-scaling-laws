@@ -1,14 +1,16 @@
-// Emergence charts (slides "Digression: emergent behavior under the hood"): marker
+// Emergence chart (slide "Digression: emergent behavior under the hood"): marker
 // styling, and power-of-ten tick labels on the model-size axis.
 //
-// Referenced by the generated chart blocks in slides.md; scripts/emergence.py emits
-// only the <script src> tag, so this file is the single source of truth for how those
-// two charts look.  They are identified by their shared y-axis title, which no other
-// chart in the deck uses, so this file never touches the capacity or results charts.
+// Loaded from the <script src> tag at the end of figures/emergence-chart.md, which
+// scripts/emergence.py writes together with the chart block; the tag carries no styling
+// of its own, so this file is the single source of truth for how the chart looks.  It is
+// identified by its y-axis title, which no other chart in the deck uses, so this file
+// never touches the capacity, results or finite-data charts.
 //
-// The tag is emitted once per chart, i.e. twice in the deck, because the marker pass
-// below runs at parse time and only sees the canvases parsed so far.  The tick plugin
-// must not be registered twice, so it is guarded by a flag on window.
+// The tag sits *after* the chart block because the marker pass below runs at parse time
+// and only sees the canvases parsed so far.  Only one chart carries the tag today, but
+// the tick plugin must not be registered twice if a second one ever does, so its
+// registration is guarded by a flag on window.
 (function () {
   var Y_TITLE = "top-1 accuracy";
 
@@ -21,9 +23,11 @@
     return ((((cfg.options || {}).scales || {}).x) || {}).type === "logarithmic";
   }
 
-  // The model-size chart is nine measured models: markers.  The over-training chart is
-  // a dense checkpoint curve, where markers would only add ink.  No tension either
-  // way: a sigmoid read off 9 points must not be given curvature it did not earn.
+  // The model-size chart is nine measured models, so it gets filled markers on straight
+  // segments, like the capacity and finite-data charts.  A dense over-training curve on a
+  // linear x axis would get markerless lines instead, markers being only ink there.  No
+  // tension either way: a sigmoid read off 9 points must not be given curvature it did
+  // not earn.
   document.querySelectorAll("canvas[data-chart-config]").forEach(function (c) {
     var cfg = JSON.parse(c.getAttribute("data-chart-config"));
     if (!isEmergenceChart(cfg)) return;

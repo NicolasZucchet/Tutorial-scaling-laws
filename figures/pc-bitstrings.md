@@ -1,9 +1,9 @@
 <div class="cap-legend">
-<span><svg width="30" height="10" viewBox="0 0 30 10" aria-hidden="true"><line x1="1" y1="5" x2="29" y2="5" stroke="#7ba3cc" stroke-width="2.2"/><circle cx="15" cy="5" r="2.8" fill="#7ba3cc"/></svg>0.17M</span>
-<span><svg width="30" height="10" viewBox="0 0 30 10" aria-hidden="true"><line x1="1" y1="5" x2="29" y2="5" stroke="#4a7db0" stroke-width="2.2"/><circle cx="15" cy="5" r="2.8" fill="#4a7db0"/></svg>0.5M</span>
-<span><svg width="30" height="10" viewBox="0 0 30 10" aria-hidden="true"><line x1="1" y1="5" x2="29" y2="5" stroke="#26598f" stroke-width="2.2"/><circle cx="15" cy="5" r="2.8" fill="#26598f"/></svg>2.5M</span>
-<span><svg width="30" height="10" viewBox="0 0 30 10" aria-hidden="true"><line x1="1" y1="5" x2="29" y2="5" stroke="#0f3460" stroke-width="2.2"/><circle cx="15" cy="5" r="2.8" fill="#0f3460"/></svg>7M params</span>
-<span><svg width="30" height="10" viewBox="0 0 30 10" aria-hidden="true"><line x1="1" y1="5" x2="29" y2="5" stroke="#9ca3af" stroke-width="1.6" stroke-dasharray="6 5"/></svg>bits in the data</span>
+<span><svg width="22" height="10" viewBox="0 0 22 10" aria-hidden="true"><line x1="1" y1="5" x2="21" y2="5" stroke="#7ba3cc" stroke-width="2.2"/><circle cx="11" cy="5" r="2.8" fill="#7ba3cc"/></svg>0.17M</span>
+<span><svg width="22" height="10" viewBox="0 0 22 10" aria-hidden="true"><line x1="1" y1="5" x2="21" y2="5" stroke="#4a7db0" stroke-width="2.2"/><circle cx="11" cy="5" r="2.8" fill="#4a7db0"/></svg>0.5M</span>
+<span><svg width="22" height="10" viewBox="0 0 22 10" aria-hidden="true"><line x1="1" y1="5" x2="21" y2="5" stroke="#26598f" stroke-width="2.2"/><circle cx="11" cy="5" r="2.8" fill="#26598f"/></svg>2.5M</span>
+<span><svg width="22" height="10" viewBox="0 0 22 10" aria-hidden="true"><line x1="1" y1="5" x2="21" y2="5" stroke="#0f3460" stroke-width="2.2"/><circle cx="11" cy="5" r="2.8" fill="#0f3460"/></svg>7M params</span>
+<span><svg width="22" height="10" viewBox="0 0 22 10" aria-hidden="true"><line x1="1" y1="5" x2="21" y2="5" stroke="#9ca3af" stroke-width="1.6" stroke-dasharray="6 5"/></svg>bits in the data</span>
 </div>
 
 ```chart

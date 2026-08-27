@@ -1,4 +1,4 @@
-<svg class="embed-fig" viewBox="0 0 1160 380" role="img" aria-label="Three contexts encoded as three unit-norm embedding vectors, then classified into a next-token distribution">
+<svg class="embed-fig" viewBox="0 0 1160 380" role="img" aria-label="Three contexts encoded as three unit-norm embedding vectors, then turned into a next-token distribution">
 <defs>
 <marker id="ef-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z"/></marker>
 <marker id="ef-head-navy" viewBox="0 0 6 6" refX="0.6" refY="3" markerWidth="6" markerHeight="6" orient="auto"><path d="M0,0.5 L6,3 L0,5.5 z" fill="#0f3460"/></marker>
@@ -28,7 +28,7 @@
 <text class="ef-vector" x="662" y="328" text-anchor="middle">e₃</text>
 <text class="ef-muted" x="575" y="353" text-anchor="middle">unit circle</text>
 <line class="ef-arrow" x1="711" y1="205" x2="791" y2="205"/>
-<text class="ef-muted" x="751" y="183" text-anchor="middle">classify</text>
+<text class="ef-muted" x="751" y="183" text-anchor="middle">predict</text>
 <g>
 <text class="ef-token" x="835" y="139">mat</text><rect class="ef-bar ef-fill-navy" x="900" y="122" width="183" height="22" rx="3"/><text class="ef-prob" x="1096" y="140">.52</text>
 <text class="ef-token" x="835" y="183">couch</text><rect class="ef-bar ef-navy-light" x="900" y="166" width="81" height="22" rx="3"/><text class="ef-prob" x="994" y="184">.23</text>

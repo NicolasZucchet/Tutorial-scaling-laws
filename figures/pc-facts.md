@@ -4,7 +4,6 @@
 <span><svg width="16" height="10" viewBox="0 0 16 10" aria-hidden="true"><circle cx="8" cy="5" r="3" fill="#26598f"/></svg>1M</span>
 <span><svg width="16" height="10" viewBox="0 0 16 10" aria-hidden="true"><circle cx="8" cy="5" r="3" fill="#0f3460"/></svg>2M facts</span>
 <span><svg width="30" height="10" viewBox="0 0 30 10" aria-hidden="true"><line x1="1" y1="5" x2="29" y2="5" stroke="#9ca3af" stroke-width="1.6" stroke-dasharray="6 5"/></svg>2 bits/param</span>
-<span><svg width="30" height="10" viewBox="0 0 30 10" aria-hidden="true"><line x1="1" y1="5" x2="29" y2="5" stroke="#c0392b" stroke-width="1.6" stroke-dasharray="2 4"/></svg>1 bit/param</span>
 </div>
 
 ```chart
@@ -67,11 +66,6 @@ data:
       data:
         - {x: 0.6, y: 1.2}
         - {x: 600, y: 1200}
-    - label: "ref: 1 bit/param"
-      color: "#c0392b"
-      data:
-        - {x: 0.6, y: 0.6}
-        - {x: 600, y: 600}
 options:
   plugins:
     legend: {display: false}

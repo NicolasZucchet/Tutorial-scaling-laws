@@ -1,0 +1,70 @@
+{
+ "source": "https://arxiv.org/html/2203.15556v1",
+ "note": "Table 2 and Section D.2 of Hoffmann et al. 2022, transcribed from the arXiv HTML.",
+ "table_2": [
+  {
+   "approach": "1. Pareto front",
+   "paper": "Minimum over training curves",
+   "a": 0.5,
+   "a_ci": [
+    0.488,
+    0.502
+   ],
+   "b": 0.5,
+   "b_ci": [
+    0.501,
+    0.512
+   ]
+  },
+  {
+   "approach": "2. IsoFLOP",
+   "paper": "IsoFLOP profiles",
+   "a": 0.49,
+   "a_ci": [
+    0.462,
+    0.534
+   ],
+   "b": 0.51,
+   "b_ci": [
+    0.483,
+    0.529
+   ]
+  },
+  {
+   "approach": "3. Parametric fit",
+   "paper": "Parametric modelling of the loss",
+   "a": 0.46,
+   "a_ci": [
+    0.454,
+    0.455
+   ],
+   "b": 0.54,
+   "b_ci": [
+    0.542,
+    0.543
+   ]
+  },
+  {
+   "approach": "Kaplan et al. (2020)",
+   "paper": "Kaplan et al. (2020)",
+   "a": 0.73,
+   "a_ci": null,
+   "b": 0.27,
+   "b_ci": null
+  }
+ ],
+ "parametric": {
+  "E": 1.69,
+  "A": 406.4,
+  "B": 410.7,
+  "alpha": 0.34,
+  "beta": 0.28
+ },
+ "parametric_implied": {
+  "n_exp": 0.45161290322580644,
+  "d_exp": 0.5483870967741935,
+  "l_exp": -0.1535483870967742,
+  "n_pref": 0.5986950904970205,
+  "d_pref": 0.2783832192916506
+ }
+}

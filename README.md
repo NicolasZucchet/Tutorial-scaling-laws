@@ -362,7 +362,7 @@ longer streams are that file concatenated with a separately stored, independentl
 extension (`stream_ext_s0.npz`). `tests/test_stream.py` asserts the base fingerprint and
 the nesting, and `build_extension` refuses to clobber.
 
-## The emergence experiment (slides "Digression: emergent behavior under the hood")
+## The emergence experiment (slide "Digression: emergent behavior under the hood")
 
 The scan above reports one number, the excess loss averaged over the whole Zipf tail, and it
 is a clean power law. Ask the *same* runs a **threshold** question instead — for a band of
@@ -375,7 +375,7 @@ export PYTHONPATH=src
 uv run python scripts/emergence.py --run          # 9 models, h = 32...8192, full stream (~67 min)
 uv run python scripts/emergence.py --report       # the switch-on tables
 uv run python scripts/emergence.py --figures      # figures/emergence.png, six panels
-uv run python scripts/emergence.py --write-slide  # inject both chart blocks into slides.md
+uv run python scripts/emergence.py --write-slide  # figures/emergence-chart.md, the deck's figure
 uv run python tests/test_emergence.py             # ~15 s
 ```
 
@@ -444,7 +444,7 @@ Method notes, because "accuracy" needs a protocol as much as "capacity" does:
 Cost 1.33·10¹⁵ flops and 67 min of wall clock, billed to `results/emergence_ledger.jsonl`
 (no budget, like the scan; the closed 10¹³ student ledger is untouched). Outputs:
 `results/emergence.json` (every checkpoint of every run, plus the `--report` analysis),
-`results/emergence_chart.md`, `figures/emergence.png`.
+`results/emergence_chart.md`, `figures/emergence-chart.md`, `figures/emergence.png`.
 
 ## The finite-context-pool sweep (slide "What if data was finite?")
 
@@ -589,16 +589,16 @@ series are at `D = 2.62e7`. `assets/finite-chart.js` styles its markers.
 | `scripts/isoflop_sweep.py` | six widths per compute budget, centred on `N*`: the sweep the IsoFLOP figure is fitted to |
 | `scripts/isoflop_slide.py` | the IsoFLOP construction: parabolas, minima, `N*(C)`, as a generated SVG with two reveals; `--write-slide` writes `figures/isoflop-figure.md` and the inline `isoflop-exponents` sentence in `slides.md` |
 | `assets/results-chart.js` | the alpha result slide's line and marker styling |
-| `scripts/emergence.py` | the emergence sweep, its figure, and its two deck slides (`--write-slide`) |
-| `assets/emergence-chart.js` | the emergence charts' marker styling and log tick labels |
+| `scripts/emergence.py` | the emergence sweep, its six-panel figure, and the deck's accuracy-vs-`N` chart: `--write-slide` writes `figures/emergence-chart.md` (legend and styling script included), the figure on "Digression: emergent behavior under the hood" |
+| `assets/emergence-chart.js` | the emergence chart's marker styling and log tick labels, loaded from the `<script src>` tag at the end of `figures/emergence-chart.md` |
 | `scripts/finite_context_sweep.py` | the finite-context-pool sweep: online truncated Zipf, exact frequency-weighted eval |
 | `assets/finite-chart.js` | the finite-data chart's filled markers (colloquium draws line points hollow by default) |
 | `assets/pc-chart.js` | the two practice-capacity charts (digitised from Allen-Zhu & Li and Morris et al.): filled markers, dashed yardsticks, decade-only ticks written `1k` / `1M`. One file for the pair — the pass is shared and the tick plugin must be registered once — loaded from the `<script src>` tag at the end of `figures/pc-bitstrings.md`, which sits after both chart blocks |
 | `slides.md` | the deck (colloquium). Build it with **`uv run python scripts/build_slides.py`**, not `colloquium build` — see below |
 | `figures/*.html` | the deck's six hand-drawn SVG figures, one file each: `embed-fig`, `zipf-fig`, `w-build-fig`, `sphere-fig`, `loss-step-fig`, `scaling-twin-fig`. `slides.md` refers to each by a one-line `<!-- figure: <key> -->` placeholder and holds no SVG itself |
 | `figures/pc-facts.md`, `figures/pc-bitstrings.md`, `figures/finite-chart.md` | the three *hand-written* chart figures — digitised or copied numbers, no generator script — each with its `cap-legend`. `slides.md` keeps only the placeholder, the surrounding prose and, on the finite-data slide, the `cap-cue` marker that belongs to the step sequence |
-| `figures/capacity-chart.md`, `figures/isoflop-figure.md`, `figures/results-alpha.md` | the same placeholder mechanism for the three *plotted* figures, each written by its generator (`capacity_sweep.py`, `isoflop_slide.py`, `grid_slide.py` with `--write-slide`) together with its legend and its `assets/*.js` styling tag. Generated files: edit the script, not these |
-| `scripts/build_slides.py` | expands those placeholders and runs colloquium: `build_slides.py` → `slides.html`, `--check` verifies every placeholder resolves and no figure is orphaned, `--serve` runs the dev server. colloquium has no include directive, so `colloquium build slides.md` on its own renders the six figures empty |
+| `figures/capacity-chart.md`, `figures/isoflop-figure.md`, `figures/results-alpha.md`, `figures/emergence-chart.md` | the same placeholder mechanism for the four *plotted* figures, each written by its generator (`capacity_sweep.py`, `isoflop_slide.py`, `grid_slide.py`, `emergence.py` with `--write-slide`) together with its legend and its `assets/*.js` styling tag. Generated files: edit the script, not these |
+| `scripts/build_slides.py` | expands those placeholders and runs colloquium: `build_slides.py` → `slides.html`, `--check` verifies every placeholder resolves and no figure is orphaned, and `--serve [-p 8090]` watches the slides, figures, bibliography, and assets while serving the expanded deck at `/slides.html`. Colloquium has no include directive, so `colloquium build slides.md` on its own renders the figures empty |
 | `assets/slides.css` | the deck's stylesheet, pulled in by the `<link>` on the title slide; font URLs are relative to `assets/`, so it needs to sit next to `slides.html` |
 | `assets/capacity-chart.js`, `assets/scaling-slider.js` | the deck's two scripts: capacity-chart markers and tick labels, and the α slider on the twin-axis scaling-law slide |
 
