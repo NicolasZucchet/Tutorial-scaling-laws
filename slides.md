@@ -156,7 +156,7 @@ Performance improves as we scale models up, but this does not look as smooth as 
 
 <div class="inline-footnote">
 
-Training curves of [@kaplan2020scaling], Figure 2, evaluated from the paper's own fitted law $L(N, S_{\min})$ with its published constants.
+The training curves of Figure 2 of [@kaplan2020scaling], read off the published figure: axes and model sizes calibrated from its own gridlines, ticks and color bar. Six of the fifteen runs recovered.
 
 </div>
 
@@ -177,13 +177,13 @@ The same runs against compute. The **envelope** -- the best loss any model reach
 
 <div class="fragment" data-fragment-index="1">
 
-A compute-optimal model is **undertrained**: on the frontier, training stops while the loss is still about $10\%$ above what that model would reach at convergence.
+A compute-optimal model is **undertrained**: along the frontier, training stops with the loss still a median $9\%$ above what that model reaches at convergence.
 
 </div>
 
 <div class="inline-footnote">
 
-Same curves against $C = 6ND$; the frontier is the exact envelope of the family, $L \propto C^{-0.052}$, against the $C^{-0.050}$ measured in [@kaplan2020scaling].
+The same runs against compute, in the figure's own petaflop-days ($1$ PF-day $= 8.64\times10^{19}$ FLOPs). The frontier is the lower envelope of all fifteen digitized runs and falls as $C^{-0.059}$, against the $C^{-0.050}$ [@kaplan2020scaling] fits to its own frontier.
 
 </div>
 
@@ -269,19 +269,19 @@ $$L-L_\infty=\frac{A}{N^{a}}+\frac{B}{D^{b}}$$
 
 <div class="chin-consts">
 
-$L_\infty=1.69$, $A=406$, $a=0.34$, $B=411$, $b=0.28$
+$L_\infty=1.81$, $A=476$, $a=0.35$, $B=1799$, $b=0.36$
 
 </div>
 
 <div class="fragment" data-fragment-index="1">
 
-**Five numbers for 400 runs.** Every profile is the *same* surface, sliced at a different budget.
+**Five numbers for every run.** Every profile is the *same* surface, sliced at a different budget.
 
 </div>
 
 <div class="fragment" data-fragment-index="2">
 
-Minimizing under $C=6ND$: $N^*\propto C^{0.45}$, $D^*\propto C^{0.55}$, $L-L_\infty\propto C^{-0.15}$.
+Minimizing under $C=6ND$: $N^*\propto C^{0.51}$, $D^*\propto C^{0.49}$ -- **about 20 tokens per parameter**, and the same answer as the two constructions before.
 
 </div>
 
@@ -295,7 +295,7 @@ Minimizing under $C=6ND$: $N^*\propto C^{0.45}$, $D^*\propto C^{0.55}$, $L-L_\in
 
 <div class="inline-footnote">
 
-The five constants are the paper's own [@hoffmann2022training]; nothing is refitted here.
+Fitted on the $234$ runs trained past **one token per parameter**. The paper's own constants miss them $3.7\times$ more and imply $50$ tokens per parameter; [@besiroglu2024chinchilla] refit and get essentially this.
 
 </div>
 
@@ -383,7 +383,7 @@ Since $a \approx b$, $D^*/N^* \propto C^{\frac{a-b}{a+b}} = C^{0.10}$ is essenti
 
 <div class="text-sm fragment" data-fragment-index="3">
 
-Chinchilla itself: $70$B, $1.4$T tokens. Its published $A$, $B$ are a little off; a refit recovers the $20$ [@besiroglu2024chinchilla].
+Chinchilla itself: $70$B, $1.4$T tokens. Its published $A$, $B$ imply $50$ tokens per parameter, not $20$; refitting the same form recovers it (slide 17, and [@besiroglu2024chinchilla]).
 
 </div>
 

@@ -192,12 +192,64 @@ def isoflop(runs, budgets, tol=BUDGET_TOL, cut=CUT) -> dict:
     }
 
 
+# A model trained on fewer tokens than it has parameters is not in the regime an
+# additive law describes, and eleven of the reconstructed runs are there -- one at
+# 0.036 tokens per parameter.  They are what makes the paper's published constants
+# look so wrong here, and they wreck a refit too: fitting all 245 runs gives
+# b = 0.66 and N* ~ C^0.64, contradicting the front and the IsoFLOP minima.  Cut
+# them and the same functional form fits to 0.014 nats and lands on C^0.51, which
+# is what the other two constructions say.
+TOKENS_PER_PARAM_MIN = 1.0
+
+
+def parametric_refit(runs: list[dict]) -> dict:
+    """Least-squares fit of L = E + A/N^a + B/D^b over the sensible runs."""
+    from scipy.optimize import least_squares
+
+    keep = [r for r in runs if r["d"] / r["n"] > TOKENS_PER_PARAM_MIN]
+    n = np.array([r["n"] for r in keep])
+    d = np.array([r["d"] for r in keep])
+    l = np.array([r["loss"] for r in keep])
+
+    def residual(theta):
+        E, log_a, log_b, a, b = theta
+        return E + np.exp(log_a) / n ** a + np.exp(log_b) / d ** b - l
+
+    sol = least_squares(residual, [1.7, np.log(400), np.log(400), 0.34, 0.28],
+                        bounds=([0, -5, -5, 0.05, 0.05], [3.5, 14, 14, 1.2, 1.2]))
+    E, log_a, log_b, a, b = sol.x
+    r = residual(sol.x)
+    return {"E": E, "A": float(np.exp(log_a)), "B": float(np.exp(log_b)),
+            "alpha": a, "beta": b,
+            "n_exp": b / (a + b), "d_exp": a / (a + b),
+            "rmse": float(np.sqrt((r ** 2).mean())), "n_runs": len(keep),
+            "n_dropped": len(runs) - len(keep),
+            "tokens_per_param_min": TOKENS_PER_PARAM_MIN}
+
+
+def law_rmse(pm: dict, runs: list[dict]) -> float:
+    """RMSE of a set of constants over the same runs the refit uses."""
+    keep = [r for r in runs if r["d"] / r["n"] > TOKENS_PER_PARAM_MIN]
+    n = np.array([r["n"] for r in keep]); d = np.array([r["d"] for r in keep])
+    l = np.array([r["loss"] for r in keep])
+    pred = pm["E"] + pm["A"] / n ** pm["alpha"] + pm["B"] / d ** pm["beta"]
+    return float(np.sqrt(((pred - l) ** 2).mean()))
+
+
 def law_curve(pm: dict, c: float, ns) -> list[list[float]]:
-    """The paper's own surface, sliced at constant compute: L(N, C/6N)."""
+    """A set of constants, sliced at constant compute: L(N, C/6N)."""
     ns = np.asarray(ns, dtype=float)
     loss = (pm["E"] + pm["A"] * ns ** -pm["alpha"]
             + pm["B"] * (c / (6 * ns)) ** -pm["beta"])
     return [[float(n), float(l)] for n, l in zip(ns, loss)]
+
+
+def law_optimum(pm: dict, c: float) -> tuple[float, float]:
+    """Where a set of constants puts the compute-optimal model at budget *c*."""
+    ns = np.geomspace(1e6, 1e13, 40000)
+    ls = pm["E"] + pm["A"] / ns ** pm["alpha"] + pm["B"] / (c / (6 * ns)) ** pm["beta"]
+    k = int(ls.argmin())
+    return float(ns[k]), float(ls[k])
 
 
 # ------------------------------------------------------------------ svg pieces
@@ -419,15 +471,19 @@ def isoflop_md(iso: dict) -> str:
 PW, PH = 640, 600
 
 
-def parametric_svg(iso: dict, paper: dict) -> str:
-    """The paper's five constants, drawn through the six profiles they never saw.
+def parametric_svg(iso: dict, paper: dict, fit: dict) -> str:
+    """One five-constant surface, sliced at the six budgets, over the measured points.
 
-    One panel, the same axes as slide 16's left panel: nothing is fitted here, so the
-    figure's whole job is to let the audience check that a single surface passes through
-    every profile at once.  The ridge is the compute-optimal locus the same constants
-    imply, marked at each budget.
+    The same axes as slide 16's left panel, so the audience can check that a single
+    surface passes through every profile at once.  The ridge is the compute-optimal
+    locus those constants imply, marked at each budget.
+
+    The constants drawn are the deck's own fit, like the front on slide 15 and the
+    minima on slide 16 -- not the paper's published ones, which miss these points
+    badly enough to be visible: they sit a few hundredths of a nat above every
+    profile and put the optimum up to 1.9x away from the best measured run.
     """
-    pm, imp = paper["parametric"], paper["parametric_implied"]
+    pm = fit
     p = Panel("pm-a", 100, 625, 520, 20, (4e7, 2.6e10), (2.15, 3.32))
     label = ("The five-constant Chinchilla loss surface sliced at the same six compute "
              "budgets, drawn through the measured IsoFLOP profiles, with the "
@@ -447,33 +503,26 @@ def parametric_svg(iso: dict, paper: dict) -> str:
         hi = max(prof["n"]) * 1.6
         curves.append(p.curve(law_curve(pm, c, np.geomspace(lo, hi, 40)), col,
                               width=2.4))
-        n_s = imp["n_pref"] * c ** imp["n_exp"]
-        tips.append(p.diamond(n_s, pm["E"] + pm["A"] * n_s ** -pm["alpha"]
-                              + pm["B"] * (c / (6 * n_s)) ** -pm["beta"], col))
+        tips.append(p.diamond(*law_optimum(pm, c), col))
     s += fragment(steps, 1, p.clipped(curves))
-    ridge = []
-    for prof in iso["profiles"]:
-        c = prof["c"]
-        n_s = imp["n_pref"] * c ** imp["n_exp"]
-        ridge.append((n_s, pm["E"] + pm["A"] * n_s ** -pm["alpha"]
-                      + pm["B"] * (c / (6 * n_s)) ** -pm["beta"]))
+    ridge = [law_optimum(pm, prof["c"]) for prof in iso["profiles"]]
     s += fragment(steps, 2, p.clipped([f'<path class="pf-guide" d="{p.path(ridge)}"/>'])
                   + tips)
     s.append("</svg>")
     return "\n".join(s)
 
 
-def parametric_md(iso: dict, paper: dict) -> str:
+def parametric_md(iso: dict, paper: dict, fit: dict) -> str:
     labels = [budget_label(prof["c"]) for prof in iso["profiles"]]
     return (HEAD + "\n\n"
-            + row(BUDGET_HEAD, labels, parametric_svg(iso, paper), "cp-row-pm")
+            + row(BUDGET_HEAD, labels, parametric_svg(iso, paper, fit), "cp-row-pm")
             + "\n")
 
 
 # ------------------------------------------------------------------ slide 18
 
 
-def exponents_md(pf: dict, iso: dict, paper: dict) -> str:
+def exponents_md(pf: dict, iso: dict, paper: dict, fit: dict) -> str:
     """Table 2 of the paper, plus what the deck's own fits got, in `fit-matrix` style.
 
     Four rows, revealed in three beats: the three approaches together (they agree), then
@@ -482,12 +531,14 @@ def exponents_md(pf: dict, iso: dict, paper: dict) -> str:
     the two previous slides.
     """
     t2 = {r["approach"]: r for r in paper["table_2"]}
-    imp = paper["parametric_implied"]
+    # The right-hand pair is what *this* deck's fits give on the reconstruction, so
+    # the parametric row has to be our refit too.  It used to carry the paper's own
+    # constants' implication, which made the column mean two different things.
     mine = {"1. Pareto front": (pf["laws"]["n_of_c"]["exp"],
                                 pf["laws"]["d_of_c"]["exp"]),
             "2. IsoFLOP": (iso["laws"]["n_of_c"]["exp"],
                            iso["laws"]["d_of_c"]["exp"]),
-            "3. Parametric fit": (imp["n_exp"], imp["d_exp"])}
+            "3. Parametric fit": (fit["n_exp"], fit["d_exp"])}
     steps = Steps()
     def cell(cls: str, at: int, text: str) -> str:
         return (f'<div class="{cls} fragment"{steps.attr(at)}>'
@@ -586,17 +637,34 @@ def main() -> None:
 
     pf = pareto(runs, sizes)
     iso = isoflop(runs, BUDGETS)
+    fit = parametric_refit(runs)
     report(pf, iso, paper, runs)
 
+    pm = paper["parametric"]
+    print("\nApproach 3 refitted here, on the "
+          f"{fit['n_runs']} runs above {fit['tokens_per_param_min']:g} token(s) per "
+          f"parameter ({fit['n_dropped']} dropped)")
+    print(f"    E={fit['E']:.3f} A={fit['A']:.1f} a={fit['alpha']:.3f} "
+          f"B={fit['B']:.1f} b={fit['beta']:.3f}   rmse {fit['rmse']:.4f}")
+    print(f"    N* ~ C^{fit['n_exp']:.4f}, D* ~ C^{fit['d_exp']:.4f}")
+    print(f"    the paper's own constants on the same runs: "
+          f"rmse {law_rmse(pm, runs):.4f}")
+    for c in (1e21,):
+        n_s, _ = law_optimum(fit, c)
+        n_p, _ = law_optimum(pm, c)
+        print(f"    at C={c:.0e}: ours {c / (6 * n_s) / n_s:.0f} tokens/param, "
+              f"the paper's constants {c / (6 * n_p) / n_p:.0f}")
+
     FITS.write_text(json.dumps({"source": store["source"], "pareto": pf,
-                                "isoflop": iso, "paper": paper}, indent=1))
+                                "isoflop": iso, "parametric_refit": fit,
+                                "paper": paper}, indent=1))
     print(f"\nwrote {FITS.relative_to(ROOT)}")
 
     if args.write:
         for key, body in (("chinchilla-pareto", pareto_md(pf)),
                           ("chinchilla-isoflop", isoflop_md(iso)),
-                          ("chinchilla-parametric", parametric_md(iso, paper)),
-                          ("chinchilla-exponents", exponents_md(pf, iso, paper))):
+                          ("chinchilla-parametric", parametric_md(iso, paper, fit)),
+                          ("chinchilla-exponents", exponents_md(pf, iso, paper, fit))):
             (FIGURES / f"{key}.md").write_text(body)
             print(f"wrote figures/{key}.md")
 

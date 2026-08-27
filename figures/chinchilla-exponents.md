@@ -17,7 +17,7 @@
 <div class="fm-rule"></div>
 <div class="fm-label fm-navy fragment" data-fragment-index="1">2. IsoFLOP</div><div class="fm-value fragment" data-fragment-index="1">0.49</div><div class="fm-value fragment" data-fragment-index="1">0.51</div><div class="fm-value fm-soft fragment" data-fragment-index="2">0.48</div><div class="fm-value fm-soft fragment" data-fragment-index="2">0.52</div>
 <div class="fm-rule"></div>
-<div class="fm-label fm-navy fragment" data-fragment-index="1">3. Parametric fit</div><div class="fm-value fragment" data-fragment-index="1">0.46</div><div class="fm-value fragment" data-fragment-index="1">0.54</div><div class="fm-value fm-soft fragment" data-fragment-index="2">0.45</div><div class="fm-value fm-soft fragment" data-fragment-index="2">0.55</div>
+<div class="fm-label fm-navy fragment" data-fragment-index="1">3. Parametric fit</div><div class="fm-value fragment" data-fragment-index="1">0.46</div><div class="fm-value fragment" data-fragment-index="1">0.54</div><div class="fm-value fm-soft fragment" data-fragment-index="2">0.51</div><div class="fm-value fm-soft fragment" data-fragment-index="2">0.49</div>
 <div class="fm-rule"></div>
 <div class="fm-label fm-red fragment" data-colloquium-fragment="1">Kaplan et al.</div><div class="fm-value fm-red fragment" data-fragment-index="3">0.73</div><div class="fm-value fm-red fragment" data-fragment-index="3">0.27</div><div class="fm-value fm-soft fragment" data-fragment-index="3">--</div><div class="fm-value fm-soft fragment" data-fragment-index="3">--</div>
 </div>

@@ -7096,6 +7096,19 @@
    }
   }
  },
+ "parametric_refit": {
+  "E": 1.8091671270871568,
+  "A": 476.0335809028731,
+  "B": 1799.1662144490251,
+  "alpha": 0.3471184701661438,
+  "beta": 0.35877471437247815,
+  "n_exp": 0.5082563796206313,
+  "d_exp": 0.49174362037936875,
+  "rmse": 0.014071175817211238,
+  "n_runs": 234,
+  "n_dropped": 11,
+  "tokens_per_param_min": 1.0
+ },
  "paper": {
   "source": "https://arxiv.org/html/2203.15556v1",
   "note": "Table 2 and Section D.2 of Hoffmann et al. 2022, transcribed from the arXiv HTML.",

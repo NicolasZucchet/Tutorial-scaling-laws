@@ -1,31 +1,28 @@
-"""The two "Scaling laws" slides: Kaplan's Figure 2, regenerated from his own fits.
+"""The two "Scaling laws" slides: Kaplan's Figure 2, digitized off the figure itself.
 
-Kaplan et al. [kaplan2020scaling] never published the runs behind Figure 2, so the
-curves here are not traced off the figure: they are *evaluated* from the paper's fitted
-learning-curve law, so every line on the slide is a line the paper itself claims.
-
-    L(N, S_min) = (Nc/N)^alpha_N + (Sc/S_min)^alpha_S            eq. (1.6) = (5.6)
-    B_crit(L)   = B* / L^(1/alpha_B)                             eq. (1.4) = (5.3)
-    C_min       = 6 N B_crit(L) S_min                            sec. 6.1
-
-with the fitted constants of Table 3 (alpha_N, alpha_S, Nc, Sc) and eq. (1.4)
-(B*, alpha_B).  One run = one model size N, swept over S_min; the tokens it has
-processed at that point are D = B_crit(L) S_min, the *minimum* number of tokens needed
-to reach L (eq. 5.1-5.2), and its compute is C = 6ND, the deck's own accounting.
-
-That single parameterisation gives both panels of Figure 2 at once, since the two
-x-axes differ only by the factor 6N:
+Kaplan et al. [kaplan2020scaling] never published the runs behind Figure 2, and its
+fitted L(N, S_min) is a smooth power law that misses what the figure actually shows --
+the flat stretch at the initialization loss, the S-shaped drop, the noise, the plateau
+each run settles onto.  So nothing here is evaluated from a law.  Every line comes from
+`scripts/kaplan_figure2.py`, which reads the pixels of the published image and writes
+`results/kaplan_figure2.json`: 15 curves per panel, each `{n, rgb, x, loss}`.  Read that
+script's docstring for the calibration and the caveats -- the two that matter for what
+is drawn here are that N is read off the figure's own colourbar and carries about
++-10 %, and that inside the dense bundle a curve is partly painted over by its
+neighbours, so it is sampled more sparsely there.
 
     figures/kaplan-tokens-fig.md    loss against tokens processed D   (Fig. 2, left)
-    figures/kaplan-compute-fig.md   loss against compute C = 6ND      (Fig. 2, right)
+    figures/kaplan-compute-fig.md   loss against compute C, PF-days   (Fig. 2, right)
 
-The right panel also carries the **compute-efficient frontier**: at each loss, the
-compute of the *cheapest* model size that reaches it, minimised over a continuum of N
-rather than over the six plotted runs.  So the envelope is exact, not hand-drawn, and
-the diamond on each run marks where that run is the compute-optimal one -- visibly
-short of its own plateau, which is the point the slide makes.
+Six of the fifteen sizes are drawn, roughly evenly spaced in log N across the whole
+recovered range, on the deck's six-step blue ramp.  The compute panel also carries the
+**compute-efficient frontier**, computed as the true lower envelope of the digitized
+curves -- the pointwise minimum over all fifteen, not a fitted line -- with a diamond on
+each drawn run at the middle of the stretch of compute over which that run *is* the
+envelope.  The fitted law appears nowhere, not even as a comparison: the only numbers
+quoted from the paper are in the slide captions, as a contrast to what we measure.
 
-    uv run python scripts/kaplan_curves.py            # fits, ranges, sanity checks
+    uv run python scripts/kaplan_curves.py            # ranges, envelope fit, checks
     uv run python scripts/kaplan_curves.py --write     # + the two figures/*.md
 
 Both figures are generated and say so in a header comment: do not edit them by hand.
@@ -34,6 +31,7 @@ Both figures are generated and say so in a header comment: do not edit them by h
 from __future__ import annotations
 
 import argparse
+import json
 import pathlib
 
 import numpy as np
@@ -41,38 +39,26 @@ import numpy as np
 from _steps import Steps
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
+DATA = ROOT / "results/kaplan_figure2.json"
 FIG_TOKENS = ROOT / "figures/kaplan-tokens-fig.md"
 FIG_COMPUTE = ROOT / "figures/kaplan-compute-fig.md"
 
-# ---------------------------------------------------------------- the paper's numbers
-#
-# Kaplan et al. 2020, "Scaling Laws for Neural Language Models", arXiv:2001.08361.
-# Table 3 ("Fits to L(N,S)") for the learning-curve law, eq. (1.4) for the critical
-# batch size.  Nothing here is fitted by us.
-ALPHA_N, ALPHA_S = 0.077, 0.76      # Table 3
-NC, SC = 6.5e13, 2.1e3              # Table 3: non-embedding parameters, steps
-B_STAR, ALPHA_B = 2e8, 0.21         # eq. (1.4): tokens
-# eq. (1.3), quoted only as a cross-check on the envelope we compute:
-#   L(C_min) = (C_c^min / C_min)^alpha_C^min,  alpha ~ 0.050, C_c^min ~ 3.1e8 PF-days
-CC_MIN_PFD, ALPHA_C_MIN = 3.1e8, 0.050
-PF_DAY = 8.64e19                    # FLOPs in one petaflop-day (1e15 x 86400 s)
+PF_DAY = 8.64e19            # FLOPs in one petaflop-day (1e15 x 86400 s)
 
-# The six runs. The paper spans 1e3 to 1e9 non-embedding parameters; six round decades
-# fill the deck's six-step ramp, and the 1e3 end is the one the paper's own fits
-# exclude (1-layer models, see Fig. 13), so it is the one to drop.
-SIZES = (1e4, 1e5, 1e6, 1e7, 1e8, 1e9)
-LABELS = ("10k", "100k", "1M", "10M", "100M", "1B")
+# Which of the fifteen recovered sizes to draw.  Indices into the JSON's curve list,
+# which is sorted by N: these six are as evenly spaced in log N as the recovered set
+# allows (gaps of 1.3, 1.2, 1.2, 1.2, 0.9 decades) and span it end to end.  The very
+# smallest recovered curve (N ~ 5.6e2) is skipped: it is shadowed by its neighbours for
+# most of its length, so it only appears below L = 7.9.
+PICK = (1, 4, 6, 9, 12, 14)
 # Cheap to expensive, small to large: the deck's single-hue ramp, since N is *ordered*.
 RAMP = ("#86b6ef", "#6da7ec", "#5598e7", "#256abf", "#184f95", "#0d366b")
 SURFACE = "#fcfcfb"
 FRONTIER = "#c0392b"
 
-# Where to start and stop each run.  eq. (1.6) is a fit to the *power-law* part of a
-# learning curve -- the paper says outright that it breaks down very early in training
-# -- so the curves start just under the initial loss of a uniform predictor
-# (ln 50257 = 10.8 nats) and stop 1 % above their own converged loss.
-L_TOP = 10.5
-PLATEAU_TOL = 0.01
+SMOOTH = 5                  # moving mean, in samples, over the digitized loss
+RESAMPLE = 150              # points per drawn path, even in log x
+GRID = 1200                 # envelope grid, even in log C
 
 # ---------------------------------------------------------------- geometry
 #
@@ -100,77 +86,128 @@ class Log:
         return self.p0 + t * (self.p1 - self.p0)
 
 
-# ---------------------------------------------------------------- the laws
+# ---------------------------------------------------------------- the digitized data
 
 
-def l_inf(n):
-    """The converged loss of a model of size N: the first term of eq. (1.6)."""
-    return (NC / n) ** ALPHA_N
+def load() -> dict:
+    if not DATA.exists():
+        raise SystemExit(f"{DATA.relative_to(ROOT)} is missing: run "
+                         "`uv run python scripts/kaplan_figure2.py` first")
+    return json.loads(DATA.read_text())
 
 
-def loss(n, s):
-    """eq. (1.6): loss of a model of size N after S_min large-batch steps."""
-    return l_inf(n) + (SC / s) ** ALPHA_S
+def clean(curve: dict) -> tuple[np.ndarray, np.ndarray]:
+    """One digitized curve as (x, loss), sorted in x and de-jittered.
 
-
-def steps_for(n, target):
-    """Invert eq. (1.6): the S_min at which model N first reaches `target`."""
-    return SC / (target - l_inf(n)) ** (1.0 / ALPHA_S)
-
-
-def b_crit(l):
-    """eq. (1.4): the critical batch size, in tokens, at loss L."""
-    return B_STAR / l ** (1.0 / ALPHA_B)
-
-
-def run(n, points: int = 120):
-    """One training run: (tokens processed, compute in FLOPs, loss), swept over S_min.
-
-    Tokens are counted as D = B_crit(L) S_min, the minimum number a run needs to reach
-    L (eq. 5.1-5.2 define B_crit as exactly that ratio), and compute as C = 6ND, which
-    is the paper's C_min for this model size.
+    The only processing is a `SMOOTH`-sample moving mean of the loss, which takes out
+    the single-pixel jitter of the extraction (one pixel is 0.026 nats).  No monotone
+    projection, no fit: the flat top, the S-shaped drop and the plateau are the figure's
+    own, and so is what noise survives the smoothing.
     """
-    s = np.geomspace(steps_for(n, L_TOP),
-                     steps_for(n, (1 + PLATEAU_TOL) * l_inf(n)), points)
-    l = loss(n, s)
-    d = b_crit(l) * s
-    return d, 6 * n * d, l
+    x = np.asarray(curve["x"], float)
+    y = np.asarray(curve["loss"], float)
+    order = np.argsort(x)
+    x, y = x[order], y[order]
+    if SMOOTH > 1 and len(y) > SMOOTH:
+        pad = SMOOTH // 2
+        y = np.convolve(np.pad(y, pad, mode="edge"), np.ones(SMOOTH) / SMOOTH, "valid")
+    return x, y
 
 
-def frontier(losses, n_lo: float = 1e2, n_hi: float = 1e15, grid: int = 4000):
-    """The compute-efficient frontier: min over N of C_min at each target loss.
+def resample(x: np.ndarray, y: np.ndarray, n: int = RESAMPLE):
+    """The curve on `n` points even in log x: an SVG path needs no more than that."""
+    lx = np.linspace(np.log10(x[0]), np.log10(x[-1]), n)
+    return 10.0 ** lx, np.interp(lx, np.log10(x), y)
 
-    At a fixed loss the run of size N needs S_min = Sc / (L - L_inf(N))^(1/alpha_S)
-    steps, hence C = 6 N B_crit(L) S_min; only the N-dependence matters, so this is a
-    one-dimensional minimisation done on a log grid in N.  Returns (C in FLOPs, N*).
+
+def curves(data: dict, panel: str) -> list[dict]:
+    return data["curves"][panel]
+
+
+def label_of(n: float) -> str:
+    """A model size as a rounded label: 1.3k, 26k, 470k, 8.2M, 150M, 1.3B."""
+    for div, suf in ((1e9, "B"), (1e6, "M"), (1e3, "k")):
+        if n >= div:
+            v = n / div
+            return f"{v:.0f}{suf}" if v >= 10 else f"{v:.1f}{suf}"
+    return f"{n:.0f}"
+
+
+# ---------------------------------------------------------------- the envelope
+
+
+def envelope(data: dict) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+    """The compute-efficient frontier: the pointwise lower envelope of the 15 curves.
+
+    On a log grid in compute, every recovered curve is interpolated (NaN outside its own
+    range) and the minimum taken.  That is all: no law, no fit, no smoothing beyond the
+    per-curve de-jitter.  Returns (compute in PF-days, envelope loss, index of the curve
+    that owns each grid point).
     """
-    ns = np.geomspace(n_lo, n_hi, grid)
-    out_c, out_n = [], []
-    for l in np.atleast_1d(losses):
-        gap = l - l_inf(ns)
-        ok = gap > 1e-12
-        n, gap = ns[ok], gap[ok]
-        c = 6 * n * b_crit(l) * SC / gap ** (1.0 / ALPHA_S)
-        i = int(np.argmin(c))
-        out_c.append(c[i])
-        out_n.append(n[i])
-    return np.array(out_c), np.array(out_n)
+    cs = curves(data, "compute")
+    lo = min(min(c["x"]) for c in cs)
+    hi = max(max(c["x"]) for c in cs)
+    grid = np.logspace(np.log10(lo), np.log10(hi), GRID)
+    rows = []
+    for c in cs:
+        x, y = clean(c)
+        rows.append(np.interp(np.log10(grid), np.log10(x), y,
+                              left=np.nan, right=np.nan))
+    m = np.vstack(rows)
+    with np.errstate(invalid="ignore"):
+        env = np.nanmin(m, axis=0)
+    owner = np.array([int(np.nanargmin(col)) if not np.all(np.isnan(col)) else -1
+                      for col in m.T])
+    return grid, env, owner
 
 
-def frontier_loss(n_star: float, lo: float = 1.9, hi: float = 9.5) -> float:
-    """The loss at which a model of size `n_star` is the compute-optimal one.
+def plateau(curve: dict) -> float:
+    """The converged loss of a run: the lowest loss it reaches in the figure."""
+    return float(clean(curve)[1].min())
 
-    A higher target loss is an easier target, reached most cheaply by a *smaller* model,
-    so N*(L) decreases monotonically and a plain bisection on the frontier's own argmin
-    suffices.
+
+def owned(grid, env, owner, i: int, l_max: float = 9.5):
+    """The stretch of the frontier that curve `i` owns, as a boolean mask.
+
+    Restricted to the part of the envelope that has left the initialization loss: above
+    L ~ 9.5 every run is still flat at ln(50257) = 10.8 and "the cheapest model" is
+    meaningless.
     """
-    for _ in range(60):
-        mid = 0.5 * (lo + hi)
-        if frontier(mid)[1][0] < n_star:
-            hi = mid
-        else:
-            lo = mid
-    return 0.5 * (lo + hi)
+    return (owner == i) & (env < l_max) & ~np.isnan(env)
+
+
+def optimum(grid, env, owner, i: int) -> tuple[float, float]:
+    """Where model `i` is the compute-optimal one: (compute in PF-days, loss).
+
+    A size owns a *stretch* of the frontier, not a point, so we take the middle of that
+    stretch in log compute.  The endpoints are the two switch-overs to the neighbouring
+    sizes and are the noisiest part of the extraction, which is the other reason not to
+    quote them.
+    """
+    m = owned(grid, env, owner, i)
+    lx = np.log10(grid[m])
+    mid = 10.0 ** (0.5 * (lx[0] + lx[-1]))
+    return mid, float(np.interp(np.log10(mid), lx, env[m]))
+
+
+def fit_exponent(grid, env, l_max: float = 8.0) -> tuple[float, float, float]:
+    """Least squares slope of log L against log C over the envelope below `l_max`."""
+    m = (env < l_max) & ~np.isnan(env)
+    slope, intercept = np.polyfit(np.log10(grid[m]), np.log10(env[m]), 1)
+    return float(slope), float(grid[m].min()), float(grid[m].max())
+
+
+def above_convergence(data: dict, grid, env, owner, l_max: float = 8.0):
+    """How far the frontier sits above the converged loss of the size that owns it.
+
+    Sampled along the envelope, evenly in log compute, so it is a property of the
+    frontier rather than of the six sizes we happen to draw.
+    """
+    cs = curves(data, "compute")
+    plats = np.array([plateau(c) for c in cs])
+    m = (env < l_max) & ~np.isnan(env) & (owner >= 0)
+    r = env[m] / plats[owner[m]]
+    return float(np.median(r)), float(r.min()), float(r.max())
 
 
 # ---------------------------------------------------------------- svg pieces
@@ -235,12 +272,12 @@ def along(p0, p1, t: float, text: str, off: float, colour_class: str) -> str:
             f"{text}</text>")
 
 
-def legend_html() -> str:
+def legend_html(labels) -> str:
     spans = "\n".join(
         f'<span><svg width="30" height="10" viewBox="0 0 30 10" aria-hidden="true">'
         f'<line x1="1" y1="5" x2="29" y2="5" stroke="{c}" stroke-width="2.4"/>'
         f"</svg>{lab}</span>"
-        for lab, c in zip(LABELS, RAMP))
+        for lab, c in zip(labels, RAMP))
     return ('<div class="cap-legend kap-legend">\n'
             '<span class="num">parameters <em>N</em></span>\n'
             f"{spans}\n</div>")
@@ -249,54 +286,64 @@ def legend_html() -> str:
 # ---------------------------------------------------------------- the two figures
 
 Y_TICKS = (2.5, 3, 4, 6, 8, 10)
-Y_LO, Y_HI = 2.2, 11.0
+Y_LO, Y_HI = 2.3, 11.4
 
-TOKENS_LO, TOKENS_HI = 3e5, 6e12
-COMPUTE_LO, COMPUTE_HI = 2e10, 2e22
-TOKEN_TICKS = (1e6, 1e8, 1e10, 1e12)
-COMPUTE_TICKS = (1e12, 1e15, 1e18, 1e21)
+TOKENS_LO, TOKENS_HI = 3e5, 4e11
+COMPUTE_LO, COMPUTE_HI = 1e-11, 3e1
+TOKEN_TICKS = (1e6, 1e8, 1e10)
+COMPUTE_TICKS = (1e-9, 1e-6, 1e-3, 1e0)
 
-ARIA_TOKENS = ("Test loss against the number of tokens processed, log-log, one "
-               "training curve per model size from ten thousand to one billion "
-               "parameters. Each curve falls as a power law and then flattens onto "
-               "its own converged loss; the larger the model, the further left its "
-               "curve sits, so a larger model reaches any given loss after fewer "
-               "tokens.")
-ARIA_COMPUTE = ("Test loss against training compute, log-log, the same six training "
-                "curves. Their lower-left envelope is the compute-efficient "
-                "frontier, a straight line in log-log with slope minus 0.052; a "
-                "diamond marks the point on each curve at which that model size is "
-                "the compute-optimal one, well above the curve's own plateau.")
+ARIA_TOKENS = ("Test loss against the number of tokens processed, log-log, six "
+               "training curves digitized from Kaplan's Figure 2, for model sizes "
+               "from about a thousand to about a billion parameters. Every curve "
+               "starts flat at the initialization loss of 10.8 nats, drops in an "
+               "S-shape and settles onto its own converged loss, from 6.0 for the "
+               "smallest to 2.4 for the largest. The larger the model, the earlier "
+               "its curve leaves the flat top and the further left it sits, so a "
+               "larger model reaches any given loss after fewer tokens.")
+ARIA_COMPUTE = ("Test loss against training compute in petaflop-days, log-log, the "
+                "same six digitized training curves, each one shifted right of the "
+                "next smaller size. Their lower envelope, taken over all fifteen "
+                "recovered curves, is the compute-efficient frontier and is close to "
+                "a straight line in log-log with slope minus 0.06. A diamond marks "
+                "the point on each drawn curve at which that model size is the "
+                "compute-optimal one, visibly above the curve's own plateau.")
 
 
-def header(kind: str) -> str:
-    """The generated-file banner: what this draws, and every constant behind it."""
-    return "\n".join([
+def header(data: dict, kind: str, extra: list[str] | None = None) -> str:
+    """The generated-file banner: what this draws, and where every number came from."""
+    src = data["source"]
+    out = [
         "<!-- Generated by scripts/kaplan_curves.py --write -- do not edit by hand.",
         "",
         f"     {kind}",
         "",
-        "     Kaplan et al. 2020, arXiv:2001.08361, Figure 2, regenerated from the",
-        "     paper's own fits rather than traced off the published figure:",
+        f"     {src['figure']}, digitized from the published image",
+        f"     {src['image']}",
+        "     by scripts/kaplan_figure2.py -> results/kaplan_figure2.json.  Method:",
+        "     per-colour pixel extraction, continuity-tracked; the loss and compute",
+        "     axes and the model sizes are calibrated from the image's own gridlines,",
+        "     ticks and colourbar labels.  Nothing here is evaluated from the paper's",
+        "     fitted L(N, S_min): these are the curves the figure draws.",
         "",
-        "       L(N, S_min) = (Nc/N)^alpha_N + (Sc/S_min)^alpha_S     eq. (1.6)/(5.6)",
-        "       B_crit(L)   = B* / L^(1/alpha_B)                      eq. (1.4)/(5.3)",
-        "       D           = B_crit(L) S_min                         eq. (5.1)-(5.2)",
-        "       C           = 6 N D                                   sec. 2.1, 6.1",
+        "     Caveats, from that script's docstring:",
+        "       * the loss axis is linear in the original and one pixel is 0.026",
+        "         nats, so loss quantization is not an issue; the x axes are log.",
+        "       * N is read off the figure's own colourbar and carries about +-10 %.",
+        "       * inside the dense bundle a curve is partly painted over by its",
+        "         neighbours, so it is sampled more sparsely there.",
+        "     Drawn: a 5-sample moving mean of the extraction, resampled onto 150",
+        "     points even in log x.  No monotone projection and no fit.",
         "",
-        f"     alpha_N = {ALPHA_N}, alpha_S = {ALPHA_S}, Nc = {NC:.1e} non-embedding",
-        f"     parameters, Sc = {SC:.1e} steps (Table 3, 'Fits to L(N,S)');",
-        f"     B* = {B_STAR:.0e} tokens, alpha_B = {ALPHA_B} (eq. 1.4).",
-        "",
-        "     The frontier is the exact envelope of this family -- C minimised over a",
-        "     continuum of N at each loss -- and comes out as L proportional to",
-        "     C^-0.052, against the -0.054 the paper predicts in eq. (6.4) and the",
-        "     -0.050 it measures in eq. (1.3).",
-        "-->",
-    ])
+        f"     6 of the 15 recovered sizes, evenly spaced in log N: "
+        f"{', '.join(label_of(c['n']) for c in [curves(data, 'tokens')[i] for i in PICK])}.",
+    ]
+    if extra:
+        out += [""] + [f"     {line}" for line in extra]
+    return "\n".join(out + ["-->"])
 
 
-def tokens_svg() -> str:
+def tokens_svg(data: dict) -> str:
     sx = Log(TOKENS_LO, TOKENS_HI, X0, X1)
     sy = Log(Y_LO, Y_HI, YB, YT)
     s = [f'<svg class="plot-fig" viewBox="0 0 {W} {H}" role="img" '
@@ -308,15 +355,16 @@ def tokens_svg() -> str:
          *frame(sx, sy, 'tokens processed <tspan class="pf-var">D</tspan>', "loss",
                 TOKEN_TICKS, Y_TICKS),
          '<g clip-path="url(#kt-box)">']
-    for n, col in zip(SIZES, RAMP):
-        d, _, l = run(n)
-        s.append(f'<path d="{polyline(d, l, sx, sy)}" fill="none" stroke="{col}" '
+    cs = curves(data, "tokens")
+    for i, col in zip(PICK, RAMP):
+        x, y = resample(*clean(cs[i]))
+        s.append(f'<path d="{polyline(x, y, sx, sy)}" fill="none" stroke="{col}" '
                  f'stroke-width="2.6" stroke-linecap="round"/>')
     s += ["</g>", "</svg>"]
     return "\n".join(s)
 
 
-def compute_svg() -> str:
+def compute_svg(data: dict) -> str:
     sx = Log(COMPUTE_LO, COMPUTE_HI, X0, X1)
     sy = Log(Y_LO, Y_HI, YB, YT)
     s = [f'<svg class="plot-fig" viewBox="0 0 {W} {H}" role="img" '
@@ -327,91 +375,132 @@ def compute_svg() -> str:
          "</defs>",
          *frame(sx, sy,
                 'compute <tspan class="pf-var">C</tspan> = 6<tspan class="pf-var">ND'
-                "</tspan> (FLOPs)", "loss", COMPUTE_TICKS, Y_TICKS),
+                "</tspan> (PF-days)", "loss", COMPUTE_TICKS, Y_TICKS),
          '<g clip-path="url(#kc-box)">']
-    for n, col in zip(SIZES, RAMP):
-        _, c, l = run(n)
-        s.append(f'<path d="{polyline(c, l, sx, sy)}" fill="none" stroke="{col}" '
+    cs = curves(data, "compute")
+    for i, col in zip(PICK, RAMP):
+        x, y = resample(*clean(cs[i]))
+        s.append(f'<path d="{polyline(x, y, sx, sy)}" fill="none" stroke="{col}" '
                  f'stroke-width="2.6" stroke-linecap="round"/>')
     s.append("</g>")
 
-    # The frontier, and the point on each run where that run is the optimal one.  The
-    # group carries a marker colloquium can count (see scripts/_steps.py); the prose
+    # The frontier, and the point on each drawn run where that run is the optimal one.
+    # The group carries a marker colloquium can count (see scripts/_steps.py); the prose
     # step about compute-optimal training stopping short of convergence keeps the
     # matching explicit index, so the two land on the same click.
-    ends = [frontier_loss(n) for n in SIZES]
-    span = np.geomspace(max(ends) * 1.10, min(ends) / 1.10, 40)
-    fc, _ = frontier(span)
+    grid, env, owner = envelope(data)
+    # Drawn from where the smallest *drawn* size first takes over the envelope: left of
+    # that the envelope belongs to sizes this figure does not plot, and a dashed line
+    # under an empty stretch of plot reads as an error rather than as an envelope.
+    start = grid[owned(grid, env, owner, PICK[0])][0]
+    m = (grid >= start) & ~np.isnan(env)
     steps = Steps()
     s += [f'<g class="fragment"{steps.attr(1)}>',
           '<g clip-path="url(#kc-box)">',
-          f'<path d="{polyline(fc, span, sx, sy)}" fill="none" stroke="{FRONTIER}" '
-          f'stroke-width="2.6" stroke-dasharray="7 5" stroke-linecap="round"/>',
+          f'<path d="{polyline(grid[m], env[m], sx, sy)}" fill="none" '
+          f'stroke="{FRONTIER}" stroke-width="2.6" stroke-dasharray="7 5" '
+          f'stroke-linecap="round"/>',
           "</g>"]
-    for n, col, l in zip(SIZES, RAMP, ends):
-        c = frontier(l)[0][0]
+    for i, col in zip(PICK, RAMP):
+        c, l = optimum(grid, env, owner, i)
         s.append(f'<path d="{diamond(sx(c), sy(l))}" fill="{col}" stroke="{SURFACE}" '
                  f'stroke-width="1.6"/>')
-    p0 = (float(sx(fc[0])), float(sy(span[0])))
-    p1 = (float(sx(fc[-1])), float(sy(span[-1])))
+    xs, ys = grid[m], env[m]
+    p0 = (float(sx(xs[0])), float(sy(ys[0])))
+    p1 = (float(sx(xs[-1])), float(sy(ys[-1])))
     # The label hugs the underside of the frontier near its left end: that wedge --
     # below the frontier, left of every plateau -- is the one empty part of the plot,
     # and above the line the label would have to cross five descending curves.
-    s += [along(p0, p1, 0.30, "compute-efficient frontier", -50.0,
+    s += [along(p0, p1, 0.30, "compute-efficient frontier", -46.0,
                 "pf-red pf-strong"),
           "</g>", "</svg>"]
     return "\n".join(s)
 
 
-def body(svg: str) -> str:
-    return legend_html() + "\n\n" + svg
+def body(data: dict, panel: str, svg: str) -> str:
+    labels = [label_of(c["n"]) for c in [curves(data, panel)[i] for i in PICK]]
+    return legend_html(labels) + "\n\n" + svg
 
 
-def write() -> None:
+def write(data: dict) -> None:
+    grid, env, owner = envelope(data)
+    slope, c_lo, c_hi = fit_exponent(grid, env)
+    med, lo, hi = above_convergence(data, grid, env, owner)
     FIG_TOKENS.write_text(
-        header("Loss against tokens processed (Kaplan Fig. 2, left panel).")
-        + "\n\n" + body(tokens_svg()) + "\n")
+        header(data, "Loss against tokens processed (Kaplan Fig. 2, left panel).",
+               ["The paper's loss axis is linear; this one is log, so that the",
+                "horizontal shift between the plateaus reads as a shift.  Recovered",
+                "converged losses: "
+                + ", ".join(f"{label_of(curves(data, 'tokens')[i]['n'])} -> "
+                            f"{plateau(curves(data, 'tokens')[i]):.2f}"
+                            for i in PICK) + "."])
+        + "\n\n" + body(data, "tokens", tokens_svg(data)) + "\n")
     FIG_COMPUTE.write_text(
-        header("Loss against compute, with the compute-efficient frontier "
-               "revealed\n     on the second beat (Kaplan Fig. 2, right panel).")
-        + "\n\n" + body(compute_svg()) + "\n")
+        header(data, "Loss against compute in PF-days, with the compute-efficient\n"
+                     "     frontier revealed on the first beat (Kaplan Fig. 2, right "
+                     "panel).",
+               ["1 PF-day = 8.64e19 FLOPs; the paper's own x axis is in PF-days, and",
+                "the deck's C = 6ND is in FLOPs.",
+                "",
+                "The frontier is the pointwise lower envelope of all 15 recovered",
+                "curves, drawn from where the smallest plotted size takes it over.",
+                f"Fitting log L against log C below L = 8 ({c_lo:.1e} .. {c_hi:.1e}",
+                f"PF-days) gives L ~ C^{slope:+.3f}; the paper's own fit to its",
+                "compute-efficient frontier, eq. (1.3), is C^-0.050.",
+                "",
+                "Along that envelope the loss sits a median "
+                f"{100 * (med - 1):.0f} % above the converged",
+                f"loss of the size that owns it ({100 * (lo - 1):.0f} to "
+                f"{100 * (hi - 1):.0f} % over the frontier), which is what",
+                "the slide's undertraining beat quotes.  The diamonds sit at the",
+                "middle, in log compute, of each drawn size's own stretch."])
+        + "\n\n" + body(data, "compute", compute_svg(data)) + "\n")
     print(f"wrote {FIG_TOKENS.relative_to(ROOT)} and {FIG_COMPUTE.relative_to(ROOT)}")
 
 
-def report() -> None:
-    print("run ranges (loss from %.1f down to 1%% above the converged loss):" % L_TOP)
-    for n in SIZES:
-        d, c, l = run(n)
-        print(f"  N = {n:8.0e}  L_inf = {l_inf(n):5.3f}  "
-              f"D {d[0]:8.2e} -> {d[-1]:8.2e} tokens  "
-              f"C {c[0]:8.2e} -> {c[-1]:8.2e} FLOPs")
-    lo = min(run(n)[0][0] for n in SIZES), max(run(n)[0][-1] for n in SIZES)
-    ci = min(run(n)[1][0] for n in SIZES), max(run(n)[1][-1] for n in SIZES)
-    print(f"  tokens axis needs {lo[0]:.2e} .. {lo[1]:.2e} "
+def report(data: dict) -> None:
+    tok, com = curves(data, "tokens"), curves(data, "compute")
+    print(f"{len(tok)} curves recovered per panel; drawing indices {PICK}")
+    print("  drawn curves (tokens panel / compute panel):")
+    for i, col in zip(PICK, RAMP):
+        xt, yt = clean(tok[i])
+        xc, yc = clean(com[i])
+        print(f"   idx{i:2d} N = {tok[i]['n']:9.2e} '{label_of(tok[i]['n']):>5s}' {col}"
+              f"  D {xt[0]:8.1e}..{xt[-1]:8.1e}  C {xc[0]:8.1e}..{xc[-1]:8.1e} PF-d"
+              f"  L {yt.max():5.2f}->{yt[-1]:5.2f} (plateau {plateau(tok[i]):5.3f}, "
+              f"compute panel {plateau(com[i]):5.3f})")
+    dis = max(abs(plateau(t) - plateau(c)) for t, c in zip(tok, com))
+    print(f"  panels agree on every converged loss to {dis:.3f} nats")
+    print(f"  tokens axis needs {min(min(c['x']) for c in tok):.1e} .. "
+          f"{max(max(c['x']) for c in tok):.1e} "
           f"(drawn {TOKENS_LO:.0e} .. {TOKENS_HI:.0e})")
-    print(f"  compute axis needs {ci[0]:.2e} .. {ci[1]:.2e} "
+    print(f"  compute axis needs {min(min(c['x']) for c in com):.1e} .. "
+          f"{max(max(c['x']) for c in com):.1e} PF-days "
           f"(drawn {COMPUTE_LO:.0e} .. {COMPUTE_HI:.0e})")
 
-    print("\ncompute-efficient frontier, against the paper's eq. (1.3):")
-    ls = np.array([6.0, 5.0, 4.0, 3.5, 3.0, 2.5, 2.2])
-    cs, ns = frontier(ls)
-    for l, c, n in zip(ls, cs, ns):
-        pfd = c / PF_DAY
-        quoted = (CC_MIN_PFD / pfd) ** ALPHA_C_MIN
-        print(f"  L = {l:4.2f}  C_min = {pfd:9.2e} PF-days  N* = {n:9.2e}  "
-              f"eq.(1.3) would say L = {quoted:5.3f}  ({100 * (quoted / l - 1):+5.1f} %)")
-    lx = np.log10(cs / PF_DAY)
-    print(f"  fitted envelope exponent {np.polyfit(lx, np.log10(ls), 1)[0]:+.4f} "
-          f"(eq. 6.4 predicts -0.054, eq. 1.3 measures -0.050)")
-    print(f"  fitted N*(C) exponent    {np.polyfit(lx, np.log10(ns), 1)[0]:+.4f} "
-          f"(eq. 6.5 predicts +0.71, eq. 6.1 measures +0.73)")
+    grid, env, owner = envelope(data)
+    print("\ncompute-efficient frontier = lower envelope of all "
+          f"{len(com)} digitized curves:")
+    for l_max in (9.5, 8.0, 6.0, 5.0):
+        slope, c_lo, c_hi = fit_exponent(grid, env, l_max)
+        print(f"  fit below L = {l_max:4.1f} ({c_lo:8.1e} .. {c_hi:8.1e} PF-days): "
+              f"L ~ C^{slope:+.4f}")
+    print("  (the paper's own fit to its frontier, eq. 1.3, is C^-0.050)")
+    med, lo, hi = above_convergence(data, grid, env, owner)
+    print(f"  along the envelope, loss / converged loss of the owning size: "
+          f"median {med:.3f}, range {lo:.3f}..{hi:.3f}")
 
-    print("\ncompute-optimal point of each plotted run (the diamonds):")
-    for n in SIZES:
-        l = frontier_loss(n)
-        print(f"  N = {n:8.0e}  optimal at L = {l:5.3f}, "
-              f"{100 * (l / l_inf(n) - 1):4.1f} % above its converged loss "
-              f"{l_inf(n):5.3f}")
+    print("\nwhere each size owns the frontier (the diamonds, on the drawn six):")
+    for i in range(len(com)):
+        m = owned(grid, env, owner, i)
+        if m.sum() < 3:
+            print(f"   idx{i:2d} N = {com[i]['n']:9.2e}  owns nothing")
+            continue
+        c, l = optimum(grid, env, owner, i)
+        p = plateau(com[i])
+        print(f"  {'*' if i in PICK else ' '}idx{i:2d} N = {com[i]['n']:9.2e}  owns "
+              f"{grid[m][0]:8.1e}..{grid[m][-1]:8.1e} PF-days, mid C = {c:8.1e} at "
+              f"L = {l:5.3f} = {100 * (l / p - 1):4.1f} % above its plateau {p:5.3f}")
 
 
 def main() -> None:
@@ -420,9 +509,10 @@ def main() -> None:
                     help="write figures/kaplan-tokens-fig.md and "
                          "figures/kaplan-compute-fig.md")
     args = ap.parse_args()
-    report()
+    data = load()
+    report(data)
     if args.write:
-        write()
+        write(data)
 
 
 if __name__ == "__main__":
