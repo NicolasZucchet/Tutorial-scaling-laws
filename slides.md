@@ -37,57 +37,65 @@ September 8th 2026
 
 ## Why scaling laws?
 
-The early successes of large language models relied on two main observations:
-1. As we scale models and data, the next-token prediction ability of the final model improves in a predictable way.
-2. As loss improves, the ability of the model to solve tasks we ultimately care about increase.
+The early successes of large language models relied on **two main observations**:
+1. As we scale models and data, the next-token prediction improves in a **predictable way**.
+2. As loss improves, the ability of the model to **solve tasks** we ultimately care about increase.
 
-Scaling laws are the science behind **1.** and are what justified the huge investments in compute. They interesting from an engineering perspective, as they are useful tools to design models, and also from a scientific standpoint, as they suggest some universal principles underlying learning, yet to be fully discovered!
+<!-- step -->
+<div style="margin-top: 1.5em"></div>
+
+Scaling laws are the science behind **1.** and are what justified the huge investments in compute.
+
+<!-- step -->
+<div style="margin-top: 1.5em"></div>
+
+They interesting from an **engineering perspective**, as they are useful tools to design models, and also from a **scientific standpoint**, as they suggest some universal principles underlying learning, yet to be fully discovered!
+
+Here focus on LLMs, but the **principles are more general** and extend beyond
 
 ---
 
 ## Agenda
 
+### (Very) quick crash course on language modeling
+
+<!-- step -->
+<div style="margin-top: 1.5em"></div>
+
 ### Part I: scaling laws in practice
-- Some **history** and why scaling laws have been (and are) **central to the development of LLMs**
 - **What scaling laws are** and what do they tell us
 - How scaling laws guide **model and learning recipe** development
+
+<!-- step -->
+<div style="margin-top: 1.5em"></div>
 
 ### Part II: understanding where scaling laws come from with toy models
 - Scaling laws arise in a **toy associative memory model**
 - What did we **learn** from the toy model?
 
-### Part III: let's train our own model using scaling laws
-- Can we use what we learned to train the best possible model?
+<!-- step -->
+<div style="margin-top: 1.5em"></div>
+
+### Part III: train our own model using scaling laws
 
 ---
 
 <!-- layout: section-break -->
-# Part O: large language models crash course
+# (Very) quick crash course on language modeling
 
 ---
 
-<!-- columns: 1/1 -->
-## A large language model
+## Language model pretraining
+
+In modern large language models, there are many training stages; we focus on **pretraining**.
 
 **Context** in, **next-token distribution** out.
 
 <!-- figure: llm-arch-fig -->
 
-|||
-
-At inference: **sample**, append, repeat.
-
-<!-- figure: llm-sample-fig -->
-
----
-
-## The training pipeline (simplified)
-
-<!-- figure: pipeline-fig -->
-
 <!-- step -->
 
-The principles behind **pretraining** have barely changed, but labs keep improving the recipe -- and every downstream stage benefits from it.
+At inference: **sample**, append, repeat.
 
 ---
 
@@ -96,17 +104,20 @@ The principles behind **pretraining** have barely changed, but labs keep improvi
 
 --- 
 
+<!-- animate: bullets -->
 ## Loss as a function of model size, compute and data
 
 The **variables** we care about are:
 - **Loss $L$.** Next-token prediction cross-entropy, which is the **objective of learning** (in the pretraining phase).
 - **Model size $N$.** Number of the **parameters** the neural network has.
 - **Number of tokens $D$.** Total **number of tokens trained on**. Each token usually serves as target of the next token objective once, but can appear in the context much more often.
-- **Compute.** Total number of **elementary operations** (e.g., addition or multiplication in a certain numerical precision like FP16) performed to train the entire model. Proxy for how much it **cost** to train a model.
+- **Compute $C$.** Total number of **elementary operations** (e.g., addition or multiplication in a certain numerical precision like FP16) performed to train the entire model. Proxy for how much it **cost** to train a model.
+
+<!-- step -->
 
 <div style="margin-top: 1.5em"></div>
 
-$N$, $D$ and $C$ are actually **coupled**: we will see that $C = 6ND$. 
+$N$, $D$ and $C$ are actually **coupled**: we will now show that $C = 6ND$. 
 
 ---
 
@@ -121,30 +132,38 @@ $W\in\mathbb{R}^{m\times n}$ has $N=mn$ parameters.
 
 ## From one multiplication to training compute
 
-Each new token in the context goes through the same number of matrix multiplications.
-
-For every **weight** and every **token**, training performs three matrix multiplications of the same size.
+**Learning matrix weights** for **each new token** in the context requires the **same number of flops**.
 
 <!-- figure: training-flops-fig -->
 
 <!-- step -->
 
-For **Transformers**, matrix multiplications dominate the FLOPs cost, so $C = 6ND$ approximately holds; see [@kaplan2020scaling] for details.
+<div style="margin-top: 1.5em"></div>
 
-<div class="text-sm">
+For **Transformers**, matrix multiplications **dominate** the FLOPs cost (but not memory!), so $C = 6ND$ approximately holds; see [@kaplan2020scaling] for details.
 
-**Side note.** What makes an architecture good is **loss reduction per FLOP**, not FLOPs spent. Keeping the matrix units busy rather than stalled on memory helps, but Mixture-of-Experts wins by spending fewer FLOPs per parameter.
+<!-- step -->
 
-</div>
+<div style="margin-top: 1.5em"></div>
+
+**Side note.** This holds for dense Transformers; only the number of **activated** parameters matter in mixture of experts, they **increase the number of parameters** while keeping **FLOPs constant**.
 
 ---
 
-<!-- columns: 3/2 -->
 ## Scaling laws
 
-How does the loss $L$ evolve as a function of $D$, $N$, and $C$ ($C = 6ND$)?
+<!-- rows: 8 -->
 
+How does the loss $L$ evolve as a function of $D$, $N$, and $C$?
+
+===
+
+<!-- row-columns: 3/2 -->
 <!-- figure: kaplan-tokens-fig -->
+
+<div class="inline-footnote">
+Training curves from [@kaplan2020scaling].
+</div>
 
 |||
 
@@ -154,36 +173,35 @@ A **larger model** reaches any given loss after **fewer tokens**.
 
 Performance improves as we scale models up, but this does not look as smooth as what we were promised...
 
-<div class="inline-footnote">
 
-The training curves of Figure 2 of [@kaplan2020scaling], read off the published figure: axes and model sizes calibrated from its own gridlines, ticks and color bar. Six of the fifteen runs recovered.
-
-</div>
 
 ---
 
-<!-- columns: 3/2 -->
 ## Scaling laws
 
-How does the loss $L$ evolve as a function of $D$, $N$, and $C$ ($C = 6ND$)?
+<!-- rows: 8 -->
+
+How does the loss $L$ evolve as a function of $D$, $N$, and $C$?
+
+===
+
+<!-- row-columns: 3/2 -->
 
 <!-- figure: kaplan-compute-fig -->
 
+<div class="inline-footnote">
+Training curves from [@kaplan2020scaling].
+</div>
+
 |||
 
-The same runs against compute. The **envelope** -- the best loss any model reaches for a given budget -- **decreases smoothly** with compute.
+The same runs against compute. The **envelope** (best loss for a given budget) **decreases smoothly** with compute.
 
 <div style="margin-top: 1.5em"></div>
 
 <div class="fragment" data-fragment-index="1">
 
-A compute-optimal model is **undertrained**: along the frontier, training stops with the loss still a median $9\%$ above what that model reaches at convergence.
-
-</div>
-
-<div class="inline-footnote">
-
-The same runs against compute, in the figure's own petaflop-days ($1$ PF-day $= 8.64\times10^{19}$ FLOPs). The frontier is the lower envelope of all fifteen digitized runs and falls as $C^{-0.059}$, against the $C^{-0.050}$ [@kaplan2020scaling] fits to its own frontier.
+A compute-optimal model is **undertrained**: optimal training stops with loss still ~$8\%$ above convergence level.
 
 </div>
 
@@ -196,48 +214,56 @@ In traditional deep learning
 2. see how it affects **validation loss**
 3. **train the final model** using the best hyperparameters
 
+<!-- step -->
+<div style="margin-top: 1.5em"></div>
+
 **Problem:** we can only train our large language model **once**; how should we pick the hyperparameters?
+
+<!-- step -->
+<div style="margin-top: 1.5em"></div>
 
 We can leverage **scaling laws** to do that!
 
 ---
 
-## Compute optimal 
+## Compute-optimal model and dataset sizes
 
-We now know what the compute-optimal loss looks like, but not how to achieve it -- that is, how to set $N$ and $D$ for the run that matters.
+We now know what the **compute-optimal loss** looks like, but not how to achieve it (i.e. how to scale $N$ and $D$).
 
-Different strategies:
-- Pareto front
-- IsoFLOP
-- Parametric fit
+<!-- step -->
+<div style="margin-top: 1.5em"></div>
 
-All should end up with the same result, but they manipulate the data in different ways; it is great to build intuition so we review them.
+Different strategies exist:
+- **Pareto front**
+- **IsoFLOP curves**
+- **Parametric fit**
+
+<!-- step -->
+<div style="margin-top: 1.5em"></div>
+
+All should end up with the **same result**, but they manipulate the data in different ways; it is great to build **intuition** and will be **useful** for Part III, so we review them next following [@hoffmann2022training].
+
+
 
 ---
 
 ## Pareto front
 
-For each **model size**, loss against compute. The **lower envelope** is the compute-optimal front.
+For each **model size**, compare loss against compute (exactly as we did before, but this time with other data).
 
 <!-- figure: chinchilla-pareto -->
 
 <div class="inline-footnote">
 
-Six of the model sizes of [@hoffmann2022training], from the reconstruction of its Figure 4 by [@besiroglu2024chinchilla].
+All $43$ model sizes of [@hoffmann2022training] present in the reconstruction of its Figure 4 by [@besiroglu2024chinchilla]; the legend names six of them.
 
 </div>
 
-<div class="fragment" data-fragment-index="4">
 
-<div style="margin-top: 0.35em"></div>
-
-Reading the front off: $N^*\propto C^{0.50}$, $D^*\propto C^{0.50}$ -- **model and data grow together**.
-
-</div>
 
 --- 
 
-## IsoFLOP
+## IsoFLOP curves
 
 Same runs, sliced the other way: at **fixed compute budgets**, sweep the **model size**.
 
@@ -245,15 +271,12 @@ Same runs, sliced the other way: at **fixed compute budgets**, sweep the **model
 
 <div class="inline-footnote">
 
-A parabola in $\log N$ per budget; six of the nine budgets of [@hoffmann2022training].
+One $\log L$ parabola in $\log N$ fitted per compute budget, over all nine budgets of [@hoffmann2022training].
 
 </div>
 
 <div class="fragment" data-fragment-index="3">
 
-<div style="margin-top: 0.35em"></div>
-
-The minima give $N^*\propto C^{0.48}$, $D^*\propto C^{0.52}$ -- the **same answer** from a **different cut**.
 
 </div>
 
@@ -263,31 +286,24 @@ The minima give $N^*\propto C^{0.48}$, $D^*\propto C^{0.52}$ -- the **same answe
 <!-- class: chin-law -->
 ## Parametric fit
 
-One law for **all** the runs, in Part II's notation:
+One law for **all** the runs:
 
-$$L-L_\infty=\frac{A}{N^{a}}+\frac{B}{D^{b}}$$
+$$L=E + \frac{A}{N^{a}}+\frac{B}{D^{b}}$$
 
 <div class="chin-consts">
 
-$L_\infty=1.81$, $A=476$, $a=0.35$, $B=1799$, $b=0.36$
+$E=1.81$, $A=476$, $a=0.35$, $B=1799$, $b=0.36$
 
 </div>
 
-<div class="fragment" data-fragment-index="1">
+**Note.** Only this construction models the **irreducible loss** $E$, the entropy of the text itself.
 
-**Five numbers for every run.** Every profile is the *same* surface, sliced at a different budget.
+<div class="fragment" data-fragment-index="3">
 
-</div>
-
-<div class="fragment" data-fragment-index="2">
-
-Minimizing under $C=6ND$: $N^*\propto C^{0.51}$, $D^*\propto C^{0.49}$ -- **about 20 tokens per parameter**, and the same answer as the two constructions before.
+Optimizing the loss under the constraint $C=6ND$ gives $N^*\propto C^{0.51}$ and $D^*\propto C^{0.49}$.
 
 </div>
 
-<div style="margin-top: 0.5em"></div>
-
-**Exercise for later.** Derive the optimal model size and dataset size from the parametric fit.
 
 |||
 
@@ -295,23 +311,7 @@ Minimizing under $C=6ND$: $N^*\propto C^{0.51}$, $D^*\propto C^{0.49}$ -- **abou
 
 <div class="inline-footnote">
 
-Fitted on the $234$ runs trained past **one token per parameter**. The paper's own constants miss them $3.7\times$ more and imply $50$ tokens per parameter; [@besiroglu2024chinchilla] refit and get essentially this.
-
-</div>
-
----
-
-## Comparison of the different exponents
-
-As a sanity check, we can verify that the exponents match; they do!
-
-<!-- figure: chinchilla-exponents -->
-
-<div class="fragment" data-fragment-index="3">
-
-<div style="margin-top: 0.4em"></div>
-
-**Kaplan et al. do not.** Their $a=0.73$ grows the model much faster than the data -- which is how Gopher ended up 4x too big and 4x undertrained.
+Data from [@hoffmann2022training], fitting from [@besiroglu2024chinchilla] (all data points except ones that are too overparametrized).
 
 </div>
 
@@ -321,142 +321,109 @@ As a sanity check, we can verify that the exponents match; they do!
 <!-- class: eq-rows -->
 ## Chinchilla rule of thumb
 
-<!-- row-columns: 3/2 -->
 
-Look at the Chinchilla law more closely, in the notation of Part II:
+Look at the Chinchilla law more closely:
+$$L = E + A \, N^{-a} + B \, D^{-b}.$$
+The two exponents, $a=0.35$ and $b=0.36$, are **almost the same**.
 
-$$L - L_\infty = A \, N^{-a} + B \, D^{-b}.$$
-
-The two exponents are **almost the same**.
-
-|||
-
-<div class="text-sm">
-
-Constants fitted in [@hoffmann2022training], with $L_\infty$, $a$, $b$ the paper's $E$, $\alpha$, $\beta$: $A = 406.4$, $B = 410.7$, $a = 0.34$, $b = 0.28$, $L_\infty = 1.69$.
-
-</div>
-
-===
-
-<!-- row-columns: 3/2 -->
 
 <!-- step -->
+<div style="margin-top: 1.5em"></div>
 
-Optimize under the constraint $C = 6ND$: substitute $D = C/6N$ and set the derivative in $N$ to zero,
+As a result, the ratio between the compute-optimal model and dataset size remains roughly **constant**.
 
-$$a A \, N^{-a-1} = b B \, (C/6)^{-b} \, N^{\, b-1}.$$
-
-|||
-
-<div class="text-sm fragment" data-fragment-index="1">
-
-The constraint leaves **one free knob**, so one equation fixes it.
-
-</div>
-
-===
-
-<!-- row-columns: 3/2 -->
 
 <!-- step -->
+<div style="margin-top: 1.5em"></div>
 
-$$N^*(C) \propto C^{\frac{b}{a+b}} = C^{0.45}, \qquad D^*(C) \propto C^{\frac{a}{a+b}} = C^{0.55}.$$
-
-|||
-
-<div class="text-sm fragment" data-fragment-index="2">
-
-Both close to $1/2$: **scale $N$ and $D$ together**. Chinchilla's own fit gives $0.46$ and $0.54$.
-
-</div>
-
-===
-
-<!-- row-columns: 3/2 -->
+Rule of thumb: **$20$ tokens per parameter**. 
+Way less than what [@kaplan2020scaling] advocated for before [@besiroglu2024chinchilla], and the current trend is towards a larger number for other reasons.
 
 <!-- step -->
+<div style="margin-top: 1.5em"></div>
 
-Since $a \approx b$, $D^*/N^* \propto C^{\frac{a-b}{a+b}} = C^{0.10}$ is essentially constant: **about 20 tokens per parameter**, at any scale.
-
-|||
-
-<div class="text-sm fragment" data-fragment-index="3">
-
-Chinchilla itself: $70$B, $1.4$T tokens. Its published $A$, $B$ imply $50$ tokens per parameter, not $20$; refitting the same form recovers it (slide 17, and [@besiroglu2024chinchilla]).
-
-</div>
+**Exercise.** Derive the **optimal model size** and **dataset size** from the parametric fit and justify the claim that we have made here.
 
 ---
 
 ## One layer deeper
 
-So far the model size $N$ has been a single knob. But the same $N$ buys **more layers** or **wider layers** -- does the split matter?
+So far, we have only discussed **two parameters** $N$ and $D$ that we can play with.
 
 <!-- step -->
 
-**Mostly not.** Kaplan et al. varied the aspect ratio $d_\mathrm{model} / n_\mathrm{layer}$ by a factor of $40$ at fixed $N$ and paid less than $3\%$ in loss [@kaplan2020scaling]; theory says depth stops paying once it exceeds roughly $\log(\text{width})$ [@levine2020limits].
+<div style="margin-top: 1.5em"></div>
+
+What about more specific **architecture details**? e.g., number of layers, width of the model, the number of attention heads...
+
+And **optimization details**? e.g., batch size, sequence length...
 
 <!-- step -->
+<div style="margin-top: 1.5em"></div>
 
-**Except at the edges.** Below a billion parameters, deep and thin wins [@liu2024mobilellm], and the fit itself is shape-sensitive: compute-optimal prescriptions move when the shapes used to fit them move [@mcleish2025gemstones].
-
-<!-- step -->
-
-What transfers cleanly across shape is not the loss but the **hyperparameters**: $\mu$P for width [@yang2021tensor] and Depth-$\mu$P for depth [@yang2024tensor].
+Too expensive to **retune everything everytime**, so there are some choices that everyone is making (e.g., what expansion ratio should an MLP have, ratio width / depth of the network, what learning rates should be etc...)
 
 <!-- step -->
+<div style="margin-top: 1.5em"></div>
 
-**There is no fully satisfying reference here.** In practice, keep $d_\mathrm{model} / n_\mathrm{layer}$ in the range everyone else uses ($\approx 100$) and spend the tuning budget elsewhere.
+As a result, scaling laws are **recipe-specific** (on top of being data specific)!
+
+<!-- step -->
+<div style="margin-top: 1.5em"></div>
+
+That said, there are some principles that one could use: compare recipe-specific **scaling laws**.
 
 --- 
 
 ## What about other hyperparameters
 
-The single most important hyperparameter that should **always** be tuned is the learning rate. 
+How to develop a **recipe** (model / optimizer / data...) when we only have limited compute? What matters is how good it will be at **large scale**, but we can only afford **small runs**.
+
+One size cannot tell us: compare **scaling laws**.
+
+<!-- figure: recipe-trends-fig -->
+
+<!-- step -->
+
+**PSA:** Only fully trust methods that use baselines with **properly tuned learning rates**!!
 
 --- 
 
 ## Conclusion and takeaways (Part I)
 
-In next-token prediction language modeling, performance (and other observables) increases smoothly as a function of compute.
+In next-token prediction language modeling, performance (and other observables) **increases smoothly as a function of compute**.
 
+<!-- step -->
 <div style="margin-top: 1.5em"></div>
 
-Scaling laws provide us with a framework to design the best large model possible when we cannot afford to train it multiple times.
+Scaling laws provide us with a **framework** to design the **best large model** possible when we cannot afford to train it multiple times.
 
+<!-- step -->
 <div style="margin-top: 1.5em"></div>
 
 This paradigm applies elsewhere, as long as
 1. **model is powerful enough** (Transformers usually are!)
 2. **data is rich enough** and the long tail captures **behavior we care about**
 
+
+<!-- step -->
+<div style="margin-top: 1.5em"></div>
+
 Such conditions hold in **other domains**, like vision [@zhai2022scaling] or time series [@edwards2024scaling].
 
 --- 
 
-## To learn more and open questions
+<!-- animate: bullets -->
+## To learn more
 
-We have only scratched the surface of scaling laws...
+We have only **scratched the surface** of scaling laws...
 
 As large language models are becoming more and more complex and used in different practical scenarios, many questions arise:
-- data is **diverse**, e.g. many languages or many domains: how should we balance them? [@longpre2026atlas]
-- serving models also costs compute: how should we split compute between **training and inference**? [@sardana2024beyond]
-- training now has **many stages** (pretraining, midtraining, instruction fine-tuning, reinforcement learning): how does that change the tradeoffs? No law spans the stages yet, and reinforcement learning compute alone already looks **sigmoidal rather than power law** [@khatri2026art]
-
----
-
-## To learn more and open questions
-
-Two more that Part I brushed against:
-- the web is **not infinite**: what happens once we start repeating epochs? [@muennighoff2023scaling]
-- we fit laws on the loss but care about **downstream tasks**: can we predict those directly? [@ruan2024observational]
-
-<div style="margin-top: 1.5em"></div>
-
-<!-- step -->
-
-A lot of this research is happening in frontier labs, but there is still a lot of impactful academic work to be done to improve our understanding of neural networks: predicting the compute frontier of large board games from small ones [@jones2021scaling], non-vacuous generalization bounds for models up to $70$B parameters [@lotfi2024unlocking], or pinning down what small-scale experiments can and cannot tell us [@lourie2026small].
+- data is **diverse**, e.g. many languages, how should we balance them? [@longpre2026atlas]
+- what happens when we **run out** of internet data? [@muennighoff2023scaling]
+- serving models also costs compute: how to split compute between **training and inference**? [@sardana2024beyond; @jones2021scaling]
+- architectures are getting more complex, e.g. **mixture of experts** [@clark2022unified] or **different sequence layers** [@poli2024mechanistic]: do the laws carry over?
+- training now has **many stages**: how does that change the tradeoffs? [@khatri2026art]
 
 ---
 
@@ -514,7 +481,7 @@ The <strong class="tok-model">model</strong> explicitly represents **next-token 
 
 <div style="margin-top: 1em"></div>
 
-**Learning.** No structure shortcuts the learning -- nothing generalizes from one context to another, so the model has **no choice but to memorize** the mapping, context by context.
+**Assumption.** No structure shortcuts the learning; nothing generalizes from one context to another, so the model has **no choice but to memorize** the mapping, context by context.
 
 ---
 
@@ -528,7 +495,16 @@ The <strong class="tok-model">model</strong> explicitly represents **next-token 
 
 <!-- figure: embed-fig -->
 
+<!-- The sentence belongs to the figure's embedding beat, so it carries that
+     beat's index by hand instead of opening a step of its own: the figure
+     already opens both of the slide's steps, and step 1 is the one that draws
+     the unit circle. -->
+
+<div class="fragment" data-fragment-index="1">
+
 We assume that the embeddings are iid distributed **uniformly on the unit sphere**.
+
+</div>
 
 ---
 
@@ -551,6 +527,14 @@ We assume that the embeddings are iid distributed **uniformly on the unit sphere
 
 Power laws appear in many places [@newman2005power]. **Zipf's law** for word frequencies is the famous example for language: **frequency is approximately inverse to rank** [@zipf1949human].
 
+
+<!-- This step is the slide's only marker-generated one, and it is what the
+     Zipf plot in the right-hand column pins itself to: the two containers are
+     separate, so the figure repeats this beat's index by hand.  Keep this
+     marker ahead of the figure -- colloquium numbers markers in document
+     order, so moving it after the column split would renumber the beat and
+     silently strand the plot. -->
+<!-- step -->
 We assume that contexts follow a **power law**, that is
 
 $$
@@ -621,7 +605,13 @@ $$p(\cdot | i) = \mathrm{softmax}(We_i).$$
 Can we guess?
 - How many **contexts can the model store** (100% accuracy)?
 - How does the **optimal loss** scale as a function of the **model size**?
+- How does the **optimal loss** scale as a function of the **dataset size**?
 
+<div style="margin-top: 1.5em"></div>
+
+In the following:
+1. **Derivation of the capacity** of the model and scaling as a function of **model size $N$**.
+2. **Heuristic derivation** for the scaling as a function of **dataset size $D$**.
 
 ---
 
@@ -667,7 +657,7 @@ The prediction for context $i$ is perturbed by the **other embeddings close to**
 
 ## Some theoretical intuition
 
-**Hebbian model.** $W = \sum_i z_i e_i^\top$ -- each context is stored as its embedding $e_i$, **tagged by its next token**.
+**Hebbian model.** $W = \sum_i z_i e_i^\top$.
 
 <!-- figure: w-build-fig -->
 
@@ -675,7 +665,7 @@ The prediction for context $i$ is perturbed by the **other embeddings close to**
 
 <div style="margin-top: 0.4em"></div>
 
-**Querying.** $(W e_i)_y = \sum_{j \,:\, y^*_j = y} e_j^\top e_i$ -- compare the query $e_i$ with all the other embeddings and see **which color dominates**.
+**Querying.** $(W e_i)_y = \sum_{j \,:\, y^*_j = y} e_j^\top e_i$: compare the query $e_i$ with all the other embeddings and see **which color dominates**.
 
 ---
 
@@ -738,7 +728,7 @@ In practice, capacity is also **proportional to the number of parameters**. For 
 
 <div class="inline-footnote pc-caption">
 
-**Stored synthetic facts** [@allenzhu2024capacity]
+**Stored synthetic facts**, 1000 exposures each [@allenzhu2024capacity]
 
 </div>
 
@@ -898,7 +888,7 @@ Whatever the value of $\alpha$, the **bottleneck is the data** $D$: we need more
 
 <!-- step -->
 
-As $\alpha$ increases and the tail becomes rarer, the data becomes **even more of a bottleneck** -- it takes longer to see the relevant data points.
+As $\alpha$ increases and the tail becomes rarer, the data becomes **even more of a bottleneck**; it takes longer to see the relevant data points.
 
 ---
 
@@ -909,16 +899,16 @@ $$L(N, D) = \frac{A}{N^{\alpha - 1}} + \frac{B}{D^{\frac{1}{\alpha}-1}}.$$
 
 <!-- step -->
 
-Running the same optimization as on the Chinchilla rule-of-thumb slide (and some minor expression massaging), we get
+Optimizing under the constraint $C=6ND$ gives
 $$\begin{align*}
 N^*(C) &\propto C^{\frac{1}{1+\alpha}}\\
 D^*(C) &\propto C^{\frac{\alpha}{1+\alpha}}\\
-L(C) &\propto C^{\frac{\alpha - 1}{1+\alpha}}
+L(C) &\propto C^{\frac{1 - \alpha }{1+\alpha}}
 \end{align*}$$
 
 <!-- step -->
 
-Does this match what's happening **in practice**?
+Does this match what's happening **in simulations**?
 
 ---
 
@@ -959,7 +949,7 @@ We assumed the **Chinchilla scaling** and recovered similar compute exponents as
 
 <!-- row-columns: 1/1 -->
 
-$$L-L_\infty=A N^{-a}+B D^{-b}.$$
+$$L= E + A N^{-a}+B D^{-b}.$$
 
 |||
 
@@ -985,7 +975,7 @@ at $8$--$16\times$ the fitting budget.
 
 <div class="inline-footnote">
 
-Relative rms error on $L-L_\infty$; $L_\infty$ is known.
+Relative rms error on $L-E; $E$ is known here (0).
 
 </div>
 
@@ -995,11 +985,11 @@ Relative rms error on $L-L_\infty$; $L_\infty$ is known.
 
 <div class="chin-story fragment" data-fragment-index="2">
 
-**Additive scaling laws do not extrapolate as well.**
+**Additive scaling laws do not extrapolate well.**
 
 Idea: **couple model size and data**.
 
-$$L-L_\infty=\left(\frac{A}{N^a}+\frac{B}{D^b}\right)^k$$
+$$L = E + \left(\frac{A}{N^a}+\frac{B}{D^b}\right)^k$$
 
 **To learn more.** [@videau2026skaling] on why this functional form makes sense and how it better extrapolates.
 
@@ -1117,34 +1107,3 @@ We have **just touched upon** (toy) models and theories of scaling, some **cool 
 
 **Your job.** Come up with the **best model**!
 
-
----
-
-## Conclusion
-
-The toy model already produces **power laws out of a power-law data distribution**: the exponents come from the **tail of the data**, not from the architecture.
-
-<div style="margin-top: 0.8em"></div>
-
-<!-- step -->
-
-**Open questions, theoretically**
-- Real language is **not a bag of independent facts**: what happens once contexts **share structure**?
-- The toy model only **memorizes** -- what is the analogue of capacity for **generalization**?
-- Trained models beat Hebbian by an **order of magnitude**: what sets that constant?
-- **Emergence**: how do smooth power laws produce **sharp jumps** downstream?
-
----
-
-## Conclusion
-
-**Open questions, empirically**
-- Do **data curation, synthetic data and repeated epochs** move the exponents, or only the constants?
-- Do the same laws hold for **new architectures** (MoE, state-space models), and for **post-training and RL**?
-- Can we predict **benchmark performance** rather than loss? And where does **inference-time compute** fit?
-
-<div style="margin-top: 1.2em"></div>
-
-<!-- step -->
-
-The honest summary: we can **measure** scaling laws far better than we can **explain** them.

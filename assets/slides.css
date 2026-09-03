@@ -292,7 +292,15 @@
 .zipf-fig .zf-num { fill: var(--colloquium-muted); font-size: 17px; }
 .zipf-fig .zf-label { fill: var(--colloquium-text); font-size: 20px; }
 .zipf-fig .zf-note { fill: var(--colloquium-muted); font-size: 17px; }
-.zipf-fig .zf-law { fill: #0f3460; font-size: 19px; font-weight: 700; }
+/* The slope, written the way every other exponent in the deck is written:
+   muted grey, horizontal, and nothing but base^exponent.  See
+   scripts/chinchilla_svg.py for the note on why none of them are tilted. */
+.zipf-fig .zf-law { fill: var(--colloquium-muted); font-size: 20px; }
+.zipf-fig .zf-var {
+  font-family: "Latin Modern Math", "Cambria Math", Georgia, serif;
+  font-style: italic;
+  font-size: 1.05em;
+}
 
 /* Assumption 2: the only architecture retained by the toy model. */
 .embed-fig {
@@ -471,6 +479,26 @@
   font-style: italic;
   font-size: 1.05em;
 }
+/* Three-panel recipe comparison (figures/recipe-trends-fig.md).  The deck's
+   two-series pair, navy vs red, as in the twin-axis plot above -- one hue per
+   method, held across all three panels so the comparison is the same one
+   throughout.  Lines are a shade lighter than .pf-curve: there are two of them
+   crossing in one small panel, and the dots marking the 500M runs have to stay
+   readable on top of them, hence the surface-coloured halo. */
+.plot-fig .rt-line {
+  fill: none;
+  stroke-width: 2.6;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.plot-fig .rt-a { stroke: #0f3460; }
+.plot-fig .rt-b { stroke: #c0392b; }
+.plot-fig .rt-dot { stroke: #fcfcfb; stroke-width: 1.8; }
+.plot-fig .rt-fill-a { fill: #0f3460; }
+.plot-fig .rt-fill-b { fill: #c0392b; }
+/* Panel headings: the reading of each panel, so they are text-coloured and
+   bold against the muted axis annotation. */
+.plot-fig .rt-title { font-size: 21px; font-weight: 700; }
 
 /* Slider under the twin-axis plot.  `input` is in presentation.js's
    click-to-advance ignore list, so dragging it does not change slide. */
@@ -565,6 +593,18 @@
   top: -31px;
 }
 
+/* recipe-comparison slide (figures/recipe-trends-fig.md).  Same legend-column
+   row as the IsoFLOP and Chinchilla figures, with two adjustments.  The lift is
+   smaller: this viewBox is 332 units and its plot box spans y = 60..250, so the
+   plot's middle sits only 11 units above the box's middle (against 37 on the
+   IsoFLOP figure), which is ~10 px at the width the pair lays out at.  And the
+   two keys keep their series' colour and weight -- there are only two of them
+   and they are the whole comparison, unlike the six-key ramps elsewhere, where
+   the swatch alone does the identifying. */
+.rt-row > .cap-legend { top: -10px; }
+.rt-row .rt-key-a { color: #0f3460; font-weight: 700; }
+.rt-row .rt-key-b { color: #c0392b; font-weight: 700; }
+
 /* practice-capacity slide */
 /* Two Chart.js panels side by side, each with a legend above the plot and its own
    cited caption below it.  The theme's chart box would push the captions off the
@@ -581,10 +621,15 @@
 }
 /* Half-width panels: the default 1.5em between legend keys wraps the right-hand
    legend onto a second line, which would drop its plot below its neighbour's.
-   Tighter keys keep both legends one line tall, so the two panels line up. */
+   Tighter keys keep both legends one line tall, so the two panels line up.
+   0.9em was enough while the left panel named four dataset sizes; it now names
+   six plus the 2 bits/param yardstick, seven keys in a 744px column, and needed
+   another ~0.3em off the gap to stay on one line.  Both legends tighten together
+   so the pair still matches.  If you add an eighth key, expect to reach for the
+   font size instead -- the gap has no more room to give. */
 .pc-slide .cap-legend {
   margin-top: 0.3em;
-  gap: 0.2em 0.9em;
+  gap: 0.2em 0.6em;
   font-size: 0.66em;
 }
 /* Same `rows:` de-stretching as `.eq-rows` below: the two bands (lead-in text,
@@ -650,22 +695,26 @@
 }
 
 /* "Building W" figure (`figures/w-build-fig.md`), on the slide that turns the
-   Hebbian sum into a picture.  Two panels read left to right: four contexts
-   tagged by their next token (two `mat`, two `floor`), then the four random
-   unit embeddings in those two colours.  Same palette, arrow heads, 2.4
-   stroke and type sizes as `.embed-fig` and `.sphere-fig`, so the figures
-   read as one family; the vectors are shortened by 13px so the head's tip,
-   not the line's end, lands on the circle.
-   The circle is the same centre (cx = 590) and radius (r = 104) as the middle
-   sphere of `.sphere-fig` on the next slide, and the negative top margin is
-   what makes the two land on the same screen pixel: clicking forward leaves
-   the circle exactly where it was.  Re-measure both if either slide's text
-   above the figure changes. */
+   Hebbian sum into a picture.  Three panels read left to right: four contexts,
+   the random unit embedding each one gets, and the next token each embedding is
+   paired with -- the same left-to-right grammar as `.embed-fig`, and the same
+   palette, arrow heads, 2.4 stroke and type sizes as `.embed-fig` and
+   `.sphere-fig`, so the figures read as one family; the vectors are shortened
+   by 13px so the head's tip, not the line's end, lands on the circle.
+   Registration with the next slide: the embedding arrows start at viewBox
+   x = 590, which is where the middle sphere of `.sphere-fig` sits, and both
+   figures are full-width children of `.slide-content` with a 1180-unit
+   viewBox, so that x renders to the same screen pixel on both slides -- click
+   forward and the arrows stay put.  The vertical half of that alignment is
+   *not* done here: a positive margin-top would collapse with the paragraph
+   above (0 and 0.37em measure identically), so the figure carries the offset
+   itself, as 9 units of top padding in its viewBox.  Re-measure both slides if
+   either one's text above the figure changes. */
 .wbuild-fig {
   display: block;
   width: 100%;
   height: auto;
-  margin: -1.1em auto 1.8em;
+  margin: 0 auto 1.8em;
   font-family: var(--colloquium-font-body);
 }
 .wbuild-fig .wb-head { fill: var(--colloquium-title); font-size: 22px; font-weight: 700; }
@@ -805,19 +854,22 @@
    is tightened to match. */
 .kap-legend { gap: 0.1em 0.95em; }
 .kap-legend span { gap: 0.3em; }
-/* The frontier's in-plot label needs no rule of its own: `.pf-red .pf-strong` is
-   already the deck's "this is the one line that matters" pair, used the same way on
-   the twin-axis figure a few slides later. */
+/* The frontier's in-plot label needs no rule of its own: `.pf-muted .pf-strong` is
+   already the deck's "a guide, named" pair.  It is deliberately not `.pf-red`, which
+   the deck reserves for the one quantity a slide is *about* -- here the frontier is
+   the construction, and the curves it envelopes are the measurement. */
 
-/* ===== Chinchilla: the three compute-optimal slides (15-17) and their table (18).
+/* ===== Chinchilla: the three compute-optimal slides (15-17).
    All three figures are generated by scripts/chinchilla_slides.py and share the
    .plot-fig look of the Part II IsoFLOP slide; only what is new to them lives here. */
 
-/* The Pareto front on slide 15.  Red, like the capacity marker in Part II: it is the
-   one quantity the slide is about, and it has to read *against* the family of curves
-   it is the envelope of -- in navy it disappears into the darkest of them, which is
-   the curve that owns the right-hand end of the front.  Solid and heavy because,
-   unlike the power law drawn over it a click later, it is a measurement. */
+/* The Pareto front on slide 15, and the compute-optimal frontier of slide 17's
+   contour map, which is the same object arrived at a third way.  Red, like the
+   capacity marker in Part II: it is the one quantity the slide is about, and it has to
+   read *against* the family of curves it is the envelope of -- in navy it disappears
+   into the darkest of them, which is the curve that owns the right-hand end of the
+   front.  Solid and heavy because, unlike the power law drawn over it a click later,
+   it is a measurement. */
 .plot-fig .pf-front {
   fill: none;
   stroke: #c0392b;
@@ -840,41 +892,26 @@
   .cp-fig .cp-fade { opacity: 0.2; }
 }
 
-/* Slide 18's table is the fit-matrix of slide 44 with two more columns: the paper's
-   own exponents and the deck's refit of them, side by side under spanning heads.
-   Five columns and two header rows, so the base rule's :nth-child(n+4) row divider
-   would land mid-header: the generator marks the cells that open a data row instead. */
-.fit-matrix.chin-matrix {
-  grid-template-columns: 1.6fr 0.8fr 0.8fr 0.8fr 0.8fr;
-  font-size: 0.92em;
-  margin-top: 0.9em;
+/* Slide 17's contour map lays lines of constant compute over the fitted iso-loss
+   contours.  Both families run the same way across the plane and cross at a shallow
+   angle, so the constraint has to be the lighter of the two: `pf-guide`'s weight with
+   a finer dash, which reads as a grid rather than as a fit. */
+.plot-fig .cp-isoc {
+  stroke-width: 1.3;
+  stroke-dasharray: 2 5;
 }
-.chin-matrix > div { padding: 0.5em 0.35em; }
-.chin-matrix > div:nth-child(n+4) { border-top: none; }
-.chin-matrix > div.fm-rule {
-  grid-column: 1 / -1;
-  padding: 0;
-  border-top: 1px solid var(--colloquium-border);
+/* The frontier's own label sits on top of the contours it is tangent to -- there is
+   no clear ground beside a line that everything else crosses -- so it is drawn with a
+   background-coloured outline under the glyphs.  `paint-order` is what makes that an
+   outline rather than a smear over them. */
+.plot-fig .cp-halo {
+  stroke: #fcfcfb;
+  stroke-width: 5;
+  stroke-linejoin: round;
+  paint-order: stroke fill;
 }
-/* The two spanning group heads sit above the a/b pair they label, hairline-ruled so
-   the pairing reads without a box. */
-.chin-matrix .fm-group {
-  grid-column: span 2;
-  text-align: center;
-  color: var(--colloquium-muted);
-  font-size: 0.86em;
-  padding-bottom: 0.15em;
-  border-bottom: 1px solid var(--colloquium-border);
-}
-.chin-matrix .fm-head { text-align: center; }
-.chin-matrix .fm-value { text-align: center; }
-/* The reconstruction's own numbers are a corroboration, not the claim: grey.  The
-   column heads above them are not numbers and stay at the weight of the other heads. */
-.chin-matrix .fm-soft { color: var(--colloquium-muted); font-weight: 600; }
-.chin-matrix .fm-head.fm-soft { font-weight: 400; }
-.chin-matrix .fm-value:not(.fm-soft):not(.fm-red) { color: var(--colloquium-title); }
 
-/* Slide 17: the equation and, under it, the five numbers the paper fitted.  The
+/* Slide 17: the equation and, under it, the five constants fitted here.  The
    constants line is markdown rather than hand-written spans -- `$L_\infty$` inside a
    raw HTML span never reaches KaTeX, it just prints the dollars -- so it needs the
    blank lines around it and gets its margins trimmed here instead. */
@@ -885,187 +922,62 @@
 .chin-consts .katex,
 .chin-consts .katex * { color: var(--colloquium-title); }
 
-/* "A large language model" (slide 5). Two panels: on the left the
-   architecture, drawn bottom-up as five token lanes running through a
-   sequence layer (navy, mixes across tokens) and a feedforward layer (green,
-   per token), then a prediction head (blue, the same accent as the model's
-   distribution on the "Simplifying language modeling" slide) and the one
-   target token the sentence supplies (red, the data's accent there). On the
-   right, four rounds of sampling. */
+/* "Language model pretraining" (slide 5).  One full-width, left-to-right chain:
+   the context, the sequence model, the embedding, the prediction head, the
+   next-token distribution, and the observed token the loss compares it against.
+   The figure is a single row of nodes, so it lays out very wide and short -- see
+   the geometry comment in figures/llm-arch-fig.md; at a full-width column it
+   renders at roughly its own viewBox width, which makes the sizes below close to
+   real pixels.  Colours are the roles the deck already uses: navy for the
+   model's internals, blue for what it predicts, red for anything from the data. */
 .llmarch-fig {
   display: block;
   width: 100%;
   height: auto;
-  max-height: 66vh;
-  margin: 0.5em auto 0;
+  margin: 1.5em auto 1.2em;
   font-family: var(--colloquium-font-body);
 }
 .llmarch-fig text { fill: var(--colloquium-text); }
-.llmarch-fig .la-head { fill: var(--colloquium-title); font-size: 17px; font-weight: 700; }
-.llmarch-fig .la-gloss,
-.llmarch-fig .la-sub,
-.llmarch-fig .la-note,
-.llmarch-fig .la-tgt-head { fill: var(--colloquium-muted); font-size: 13.5px; }
-.llmarch-fig .la-tgt-head { font-size: 14px; }
-.llmarch-fig .la-xent { fill: var(--colloquium-muted); font-size: 12px; }
 
-/* Candidate next tokens and their probabilities. */
-.llmarch-fig .la-cand text {
-  font-family: var(--colloquium-font-mono);
-  font-size: 15px;
-}
-.llmarch-fig .la-bar rect { fill: #2980b9; }
-.llmarch-fig .la-prob text {
-  fill: var(--colloquium-title);
-  font-size: 15px;
-  font-weight: 700;
-  font-variant-numeric: tabular-nums;
-}
+/* The four nodes share one caption baseline, 32 units clear of everything above
+   it, so these read as one row of names under the figure rather than as text
+   crowding it. */
+.llmarch-fig .lp-cap { fill: var(--colloquium-muted); font-size: 19px; }
+/* What each arrow does: the two model components, named.  Set on two lines in
+   the figure -- that is what buys the horizontal air the row needs. */
+.llmarch-fig .lp-step { fill: var(--colloquium-title); font-size: 18px; font-weight: 600; }
 
-/* The single target token: same red as `.tok-data`, since it comes from data. */
-.llmarch-fig .la-tgt-box { fill: #f4dede; stroke: #c0392b; stroke-width: 1.4; }
-.llmarch-fig .la-tgt {
+/* The context, and the rule that its caption hangs off. */
+.llmarch-fig .lp-ctx { font-family: var(--colloquium-font-mono); font-size: 22px; }
+.llmarch-fig .lp-rule { stroke: var(--colloquium-muted); stroke-width: 1.8; }
+.llmarch-fig .lp-arrow { fill: none; stroke: var(--colloquium-muted); stroke-width: 2.2; }
+.llmarch-fig marker#lp-head-grey path { fill: var(--colloquium-muted); }
+
+/* The embedding: the circle and one vector on it, as on the "Simplifying
+   language modeling" slide -- one vector rather than that figure's three,
+   because here there is only one context. */
+.llmarch-fig .lp-space { fill: none; stroke: var(--colloquium-muted); stroke-width: 1.6; }
+.llmarch-fig .lp-vec { fill: none; stroke: #0f3460; stroke-width: 2.6; }
+
+/* The predicted distribution: candidates and bars, deliberately unlabelled --
+   see the figure's header comment. */
+.llmarch-fig .lp-tok { font-family: var(--colloquium-font-mono); font-size: 19px; }
+.llmarch-fig .lp-bar rect { fill: #9ac7e2; }
+.llmarch-fig .lp-bar rect.lp-bar-top { fill: #2980b9; }
+
+/* The observed token and the loss between it and the prediction: red, the
+   deck's accent for anything the data supplies.  The arrow is plain: dashed
+   read as "tentative" next to the figure's other, solid arrows, when this one
+   is the most concrete relation on the slide. */
+.llmarch-fig .lp-obs-box { fill: #f4dede; stroke: #c0392b; stroke-width: 1.6; }
+.llmarch-fig .lp-obs {
   fill: #c0392b;
   font-family: var(--colloquium-font-mono);
-  font-size: 18px;
+  font-size: 24px;
   font-weight: 700;
 }
-.llmarch-fig .la-tgt-arrow {
-  fill: none;
-  stroke: #c0392b;
-  stroke-width: 1.6;
-  stroke-dasharray: 5 4;
-}
-
-/* Prediction head. */
-.llmarch-fig .la-headbox { fill: #dce9f5; stroke: #2980b9; stroke-width: 1.6; }
-.llmarch-fig .la-headlabel { fill: #2980b9; font-size: 19px; font-weight: 700; }
-.llmarch-fig .la-flow-blue { fill: none; stroke: #2980b9; stroke-width: 2.2; }
-.llmarch-fig .la-flow-navy,
-.llmarch-fig .la-in-arrow path { fill: none; stroke: #0f3460; stroke-width: 2.2; }
-
-/* The block repeated L times. */
-.llmarch-fig .la-block {
-  fill: none;
-  stroke: var(--colloquium-border);
-  stroke-width: 1.4;
-  stroke-dasharray: 6 5;
-}
-.llmarch-fig .la-lane path {
-  fill: none;
-  stroke: var(--colloquium-border);
-  stroke-width: 1.4;
-  stroke-dasharray: 3 4;
-}
-.llmarch-fig .la-bracket {
-  fill: none;
-  stroke: var(--colloquium-title);
-  stroke-width: 2.2;
-  stroke-linecap: round;
-}
-.llmarch-fig .la-times { fill: var(--colloquium-title); font-size: 22px; font-weight: 700; }
-
-/* Feedforward layer: per-token, nothing crosses. */
-.llmarch-fig .la-ff-band { fill: #dcefe3; stroke: #27ae60; stroke-width: 1.4; }
-.llmarch-fig .la-ff-name { fill: #27ae60; font-size: 16px; font-weight: 700; }
-.llmarch-fig .la-ff-arrow path { fill: none; stroke: #27ae60; stroke-width: 2.2; }
-
-/* Sequence layer: the last token collects from the ones before it. */
-.llmarch-fig .la-sq-band { fill: #dce5ef; stroke: #0f3460; stroke-width: 1.4; }
-.llmarch-fig .la-sq-name { fill: #0f3460; font-size: 16px; font-weight: 700; }
-.llmarch-fig .la-sq-arrow path,
-.llmarch-fig .la-sq-spine { fill: none; stroke: #0f3460; stroke-width: 1.8; }
-.llmarch-fig .la-sq-dot circle { fill: #0f3460; }
-
-/* Context tokens. */
-.llmarch-fig .la-tokbox rect {
-  fill: var(--colloquium-code-bg);
-  stroke: var(--colloquium-border);
-  stroke-width: 1.3;
-}
-.llmarch-fig .la-tok text {
-  font-family: var(--colloquium-font-mono);
-  font-size: 17px;
-}
-.llmarch-fig .la-ctx-brace {
-  fill: none;
-  stroke: var(--colloquium-muted);
-  stroke-width: 1.6;
-}
-.llmarch-fig .la-ctx {
-  fill: var(--colloquium-muted);
-  font-size: 16px;
-  letter-spacing: 0.06em;
-}
-
-/* Right panel: sampling, one row per round. */
-.llm-sample {
-  margin: 0.7em 0 0;
-  font-size: 0.62em;
-  line-height: 1.4;
-}
-.llm-sample .ls-head,
-.llm-sample .ls-row {
-  display: grid;
-  grid-template-columns: 1fr 150px 78px;
-  align-items: center;
-  column-gap: 0.9em;
-}
-.llm-sample .ls-head {
-  color: var(--colloquium-muted);
-  letter-spacing: 0.04em;
-  padding-bottom: 0.35em;
-  border-bottom: 1px solid var(--colloquium-border);
-}
-.llm-sample .ls-head span:last-child { text-align: right; }
-.llm-sample .ls-row {
-  padding: 0.55em 0;
-  border-bottom: 1px solid var(--colloquium-border);
-}
-.llm-sample .ls-ctx {
-  font-family: var(--colloquium-font-mono);
-  color: var(--colloquium-text);
-  white-space: nowrap;
-}
-.llm-sample .ls-ctx b { color: #0f3460; }
-
-/* One stacked bar per round: the drawn segment is filled, the rest of the
-   probability mass is the flat grey tail. */
-.llm-sample .ls-bar {
-  display: flex;
-  height: 17px;
-  gap: 2px;
-  overflow: hidden;
-}
-.llm-sample .ls-seg {
-  display: block;
-  box-sizing: border-box;
-  min-width: 3px;
-  border-radius: 2px;
-  background: #dce9f5;
-  color: #2980b9;
-  font-size: 0.74em;
-  line-height: 17px;
-  padding: 0 0.25em;
-  overflow: hidden;
-  white-space: nowrap;
-}
-.llm-sample .ls-seg.ls-pick { background: #2980b9; color: #fff; font-weight: 700; }
-.llm-sample .ls-seg.ls-rest { background: var(--colloquium-code-bg); }
-.llm-sample .ls-draw {
-  font-family: var(--colloquium-font-mono);
-  font-weight: 700;
-  color: #0f3460;
-  text-align: right;
-  white-space: nowrap;
-}
-.llm-sample .ls-draw::before { content: "\2192\00a0"; color: var(--colloquium-muted); font-weight: 400; }
-.llm-sample .ls-aside {
-  margin-top: 0.5em;
-  color: var(--colloquium-muted);
-}
-.llm-sample .ls-aside b { color: var(--colloquium-muted); font-weight: 700; }
-.llm-sample .ls-foot { margin-top: 0.9em; }
+.llmarch-fig .lp-xarrow { fill: none; stroke: #c0392b; stroke-width: 1.8; }
+.llmarch-fig .lp-xlab { fill: #c0392b; font-size: 17px; font-weight: 700; }
 
 /* The Chinchilla figures reuse .if-row (legend column, then plot) but their plot box
    sits differently inside its viewBox, so the lift that centres the legend on the
@@ -1075,65 +987,6 @@
    panels need every pixel of width they can get. */
 .cp-row { gap: 0.9em; }
 .cp-row > .cap-legend { top: -30px; font-size: 0.66em; }
-/* Slide 17's figure is one taller panel in a half-width column: y = 20..498 of a
-   580-unit box, so the lift is smaller and the box is laid out narrower. */
+/* Slide 17's figure is one near-square panel in a half-width column: y = 30..508 of
+   a 600-unit box, so the lift is smaller and the box is laid out narrower. */
 .cp-row-pm > .cap-legend { top: -21px; }
-
-/* Slide 5, sampling panel: wider probability bar so the top two segment
-   labels fit, and a wider drawn-token column for `purred`. */
-.llm-sample .ls-head,
-.llm-sample .ls-row { grid-template-columns: 1fr 232px 92px; }
-.llm-sample .ls-row { padding: 0.75em 0; }
-.llm-sample .ls-seg { font-size: 0.7em; }
-
-/* Slide 5, second pass. Larger type in the architecture panel (it renders at
-   roughly its own viewBox width, so the units are close to real pixels), and
-   the sampling panel reflowed to two lines per round -- the context on its
-   own line, the distribution and the drawn token underneath -- which buys
-   enough width to keep the type legible as the context grows. */
-.llmarch-fig { max-height: none; }
-.llmarch-fig .la-head { font-size: 19px; }
-.llmarch-fig .la-gloss,
-.llmarch-fig .la-sub,
-.llmarch-fig .la-note { font-size: 15.5px; }
-.llmarch-fig .la-tgt-head { font-size: 16px; }
-.llmarch-fig .la-xent { font-size: 14px; }
-.llmarch-fig .la-cand text { font-size: 16.5px; }
-.llmarch-fig .la-prob text { font-size: 16.5px; }
-.llmarch-fig .la-headlabel { font-size: 21px; }
-.llmarch-fig .la-ff-name,
-.llmarch-fig .la-sq-name { font-size: 18px; }
-.llmarch-fig .la-tok text { font-size: 19px; }
-.llmarch-fig .la-ctx { font-size: 18px; }
-.llmarch-fig .la-times { font-size: 24px; }
-
-.llm-sample { font-size: 0.66em; margin-top: 1.1em; }
-.llm-sample .ls-row {
-  display: block;
-  padding: 0 0 0.6em;
-  margin-bottom: 0.6em;
-  border-bottom: 1px solid var(--colloquium-border);
-}
-.llm-sample .ls-line {
-  display: flex;
-  align-items: center;
-  gap: 0.8em;
-  margin-top: 0.4em;
-}
-.llm-sample .ls-plab {
-  flex: 0 0 7.6em;
-  color: var(--colloquium-muted);
-  font-size: 0.82em;
-}
-.llm-sample .ls-bar { flex: 0 0 260px; }
-.llm-sample .ls-draw { text-align: left; }
-
-/* Slide 5, third pass: pull the architecture panel up a little and give the
-   sampling rounds slightly more air. */
-.llmarch-fig { margin-top: 0.1em; }
-.llm-sample .ls-row { padding-bottom: 0.75em; margin-bottom: 0.75em; }
-.llm-sample .ls-line { margin-top: 0.5em; }
-.llm-sample .ls-aside { margin-top: 0.7em; }
-
-/* Slide 5: darker labels inside the unpicked probability segments. */
-.llm-sample .ls-seg { color: #17507d; }

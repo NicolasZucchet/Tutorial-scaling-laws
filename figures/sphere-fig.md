@@ -1,3 +1,9 @@
+<!-- Three unit spheres.  The middle one is the query case, and its four arrows
+     are shared with `w-build-fig` on the previous slide: same angles, same
+     colours, offset only by the 19 units between the two circles' centres
+     (cy 148 here, 167 there).  The two slides are one example seen twice --
+     embeddings built, then queried -- so if you move an arrow here, move the
+     matching one there. -->
 <svg class="sphere-fig" viewBox="0 0 1180 356" role="img" aria-label="Three unit spheres of random context embeddings, one arrow per context coloured by its correct next token: in the first the query's own colour dominates, in the second two same-coloured neighbours outvote it, in the third the embeddings are close to orthogonal and the prediction is correct again.">
 <defs>
 <marker id="sf-head-navy" viewBox="0 0 6 6" refX="0.6" refY="3" markerWidth="6" markerHeight="6" orient="auto"><path d="M0,0.5 L6,3 L0,5.5 z" fill="#0f3460"/></marker>

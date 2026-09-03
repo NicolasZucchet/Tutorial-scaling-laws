@@ -18,7 +18,7 @@ at build time -- so the placeholders have to be expanded before it runs.  That
 is this script's whole job:
 
     uv run python scripts/build_slides.py            # -> slides.html
-    uv run python scripts/build_slides.py --check    # placeholders resolve?
+    uv run python scripts/build_slides.py --check    # placeholders, divs, steps
     uv run python scripts/build_slides.py --serve    # dev server (see below)
 
 For a static build, the expansion goes to a temporary file next to slides.md
@@ -90,6 +90,71 @@ the largest hand-written `data-fragment-index`.  Explicit indices are still the
 right tool for syncing a figure element to a prose beat -- they just need at
 least that many marker-generated steps on the same slide to back them.
 """
+
+
+DIV_GUARD_DOC = """A slide's `<div>`s have to balance.
+
+colloquium wraps a slide's body in its own `<div class="slide-content">` and then
+appends the footer inside the `<section>`.  A stray `</div>` in the slide source
+closes that wrapper early, and colloquium's own closing `</div>` then has no div
+of its own to close.  HTML's "have an element in scope" test does *not* treat
+`<section>` as a barrier for a `</div>`, so the parser pops the section *and*
+`<div class="colloquium-deck">` to find one -- and from that point on the deck is
+over.  The offending slide's footer becomes a child of `<body>`, and so does
+every slide after it.
+
+What that looks like in a browser: two footers on screen at once (the orphaned
+one, pinned to the bottom of the viewport, plus the current slide's own), and
+every later slide laid out unscaled, ignoring the deck's 1280x720 transform.  It
+is invisible in `colloquium capture`, which prints from the stacked print
+stylesheet, and it does not show up as a Python error anywhere -- the markdown is
+perfectly well-formed as far as the build is concerned.  Hence this check.
+
+Counted per slide over the *expanded* source, figures included, and after HTML
+comments are stripped (`<div>` inside a comment is prose, not markup).
+"""
+
+# colloquium splits a deck on `\n---\s*\n` and nothing else (parse.py), and
+# drops the blocks that strip to nothing, so the numbering below is its
+# numbering.  The generated reference slides come after all of these.
+SLIDE_SPLIT = re.compile(r"\n---\s*\n")
+COMMENT = re.compile(r"<!--.*?-->", re.S)
+DIV_OPEN = re.compile(r"<div\b")
+DIV_CLOSE = re.compile(r"</div>")
+
+
+def unbalanced_divs(text: str) -> list[tuple[int, str, int]]:
+    """Slides whose `<div>`/`</div>` counts differ, over the expanded source.
+
+    Returns one (slide number, title, opens - closes) per offending slide.  The
+    slide number counts the same `---`-separated blocks colloquium turns into
+    slides, so it matches the deck's own numbering.
+    """
+    # The first block is the frontmatter, which colloquium consumes before it
+    # splits; slide 1 is the one after it.
+    blocks = SLIDE_SPLIT.split(text)[1:]
+    bad, number = [], 0
+    for block in blocks:
+        if not block.strip():
+            continue
+        number += 1
+        body = COMMENT.sub("", expand(block))
+        delta = len(DIV_OPEN.findall(body)) - len(DIV_CLOSE.findall(body))
+        if delta:
+            title = re.search(r"(?m)^#+ (.*)$", block)
+            bad.append((number, title.group(1).strip() if title else "(no heading)",
+                        delta))
+    return bad
+
+
+def report_divs(text: str) -> int:
+    """Print the div-balance report.  Returns the number of offending slides."""
+    bad = unbalanced_divs(text)
+    for number, title, delta in bad:
+        kind = ("an unclosed <div>" if delta > 0 else "a stray </div>")
+        print(f"  UNBALANCED   slide {number}: {abs(delta)} x {kind} -- "
+              f"this breaks the deck from here on  ({title})", file=sys.stderr)
+    return len(bad)
 
 SECTION = re.compile(r'<section class="slide[^"]*"([^>]*)>(.*?)</section>', re.S)
 FRAG_COUNT = re.compile(r'data-fragment-count="(\d+)"')
@@ -268,6 +333,14 @@ def main() -> None:
     text = SLIDES.read_text()
     if args.check:
         status = check(text)
+        # Div balance is a source-level property, so it needs no build.  See
+        # DIV_GUARD_DOC for what an imbalance does to the rendered deck.
+        if report_divs(text):
+            print("\nUnbalanced <div>s tear the deck apart from that slide on: "
+                  "see above.", file=sys.stderr)
+            status = 1
+        else:
+            print("  ok       every slide's <div>s balance")
         # Step reachability can only be read off colloquium's output, so this
         # half of the check needs a build of its own.  See STEP_GUARD_DOC.
         if report_steps(build_to_string()):
@@ -282,6 +355,8 @@ def main() -> None:
         serve(args.port)
         return
 
+    if report_divs(text):
+        raise SystemExit("Refusing to build: see above.")
     run(["build"])
     n = len(keys(text))
     print(f"Built: slides.html ({n} figures from figures/)")

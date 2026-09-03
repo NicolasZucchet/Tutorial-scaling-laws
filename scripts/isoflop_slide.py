@@ -7,7 +7,7 @@ the deck's own reveal mechanism, so the audience sees it built in three beats:
     beat 1   the line through the six minima -- the envelope, whose slope is -(alpha - 1),
              the model-size exponent read off the minima alone; drawn unlabelled
     beat 2   the same minima against their own compute, N*(C), measured and fitted, with
-             the fitted exponent set along the line itself
+             the fitted exponent set flat beside the line
 
 Everything is fitted here and written out; the deck holds only numbers.  The SVG is
 generated rather than hand-written because the point of the slide is that these are
@@ -175,27 +175,33 @@ def sup(exp: str, tail: str = "", gap: float = 4.0) -> str:
     return out + (f'<tspan dy="9">{tail}</tspan>' if tail else "")
 
 
-def exponent_label(x: float, y: float, base: str, exp: str, anchor: str = "end",
-                   turn: float | None = None) -> str:
-    """`base` with a raised exponent, in the muted grey the fitted lines are drawn in."""
-    rot = "" if turn is None else f' transform="rotate({turn:.1f} {x:.1f} {y:.1f})"'
-    return (f'<text class="pf-muted pf-small" x="{x:.1f}" y="{y:.1f}"{rot} '
+def exponent_label(x: float, y: float, base: str, exp: str,
+                   anchor: str = "end") -> str:
+    """`base` with a raised exponent, in the muted grey the fitted lines are drawn in.
+
+    Always horizontal, and never anything but `base^exp`: every exponent in the deck
+    is set the same way, so the room reads them as one family of annotations rather
+    than as four differently-dressed captions.  See the same note in
+    scripts/chinchilla_svg.py, whose labels this matches.
+    """
+    return (f'<text class="pf-muted pf-small" x="{x:.1f}" y="{y:.1f}" '
             f'text-anchor="{anchor}">{base}{sup(exp)}</text>')
 
 
 def on_line(p0, p1, t: float, base: str, exp: str, off: float = 15.0) -> str:
-    """The same label, laid along a fitted line and lifted clear of it.
+    """The same label, set beside a fitted line and lifted clear of it.
 
-    Set at the fraction `t` of the way along p0 -> p1, rotated to the line's own angle
-    and pushed `off` units up its normal, so the exponent reads as the line's slope
-    rather than as a caption floating somewhere near it.
+    Placed at the fraction `t` of the way along p0 -> p1 and pushed `off` units up its
+    normal, so the exponent reads as belonging to that line rather than as a caption
+    floating somewhere near it.  It is *not* rotated to the line's angle: a tilted
+    `C^0.449` is the one piece of type on these slides a room has to work at, so it
+    earns its attachment from position alone.
     """
     (x0, y0), (x1, y1) = p0, p1
     dx, dy = x1 - x0, y1 - y0
     n = float(np.hypot(dx, dy))
     x, y = x0 + t * dx + off * dy / n, y0 + t * dy - off * dx / n
-    return exponent_label(x, y, base, exp, anchor="middle",
-                          turn=float(np.degrees(np.arctan2(dy, dx))))
+    return exponent_label(x, y, base, exp, anchor="middle")
 
 
 # ------------------------------------------------------------------ the figure

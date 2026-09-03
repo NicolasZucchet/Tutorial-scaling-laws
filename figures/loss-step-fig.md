@@ -54,7 +54,9 @@
 <!-- Step 3: sweep N and the single point becomes the law. -->
 <g class="fragment" data-colloquium-fragment="1">
 <path class="pf-curve" d="M 730 90 L 1090 270"/>
-<text class="pf-navy pf-small" x="880" y="140" text-anchor="middle"><tspan class="pf-var">N</tspan><tspan dy="-9" font-size="0.72em">1&#8722;<tspan class="pf-var">&#945;</tspan></tspan></text>
+<!-- The exponent, in the deck's one style for exponents: muted grey,
+     horizontal, nothing but base^exp.  See figures/scaling-twin-fig.md. -->
+<text class="pf-muted pf-small" x="880" y="140" text-anchor="middle"><tspan class="pf-var">N</tspan><tspan dy="-9" font-size="0.72em">1&#8722;<tspan class="pf-var">&#945;</tspan></tspan></text>
 </g>
 <!-- The dot belongs to step 2 with the leader, but SVG has no z-index: paint
      order is document order, so a dot written up there would be crossed out by

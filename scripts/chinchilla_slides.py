@@ -1,14 +1,14 @@
 """The three compute-optimal slides of Part I, read off one Chinchilla point cloud.
 
-Slides 15-18 are deliberately three views of the *same* 245 runs plus the table that
-checks they agree, so all four are generated here, from
-results/chinchilla_runs.json (see scripts/chinchilla_data.py for where those runs come
-from -- a reconstruction of the paper's Figure 4, not DeepMind's logs) and
-results/chinchilla_paper.json (the paper's own published numbers).
+Slides 15-17 are deliberately three views of the *same* 245 runs, so all three are
+generated here, from results/chinchilla_runs.json (see scripts/chinchilla_data.py for
+where those runs come from -- a reconstruction of the paper's Figure 4, not DeepMind's
+logs) and results/chinchilla_paper.json (the paper's own published numbers, which the
+report prints beside ours so the agreement can be checked).
 
     uv run python scripts/chinchilla_data.py            # once, writes the two JSONs
     uv run python scripts/chinchilla_slides.py          # fits, prints, writes results/
-    uv run python scripts/chinchilla_slides.py --write  # + the four figures/*.md
+    uv run python scripts/chinchilla_slides.py --write  # + the three figures/*.md
 
 The construction on each slide, and the beats it is revealed in:
 
@@ -16,30 +16,30 @@ The construction on each slide, and the beats it is revealed in:
       beat 0  loss against compute, one polyline per model size, log-log
       beat 1  the lower envelope of that family: the Pareto front
       beat 2  the family dimmed to 0.2, so only the front is left
-      beat 3  a power law fitted to the front, its exponent set along it
+      beat 3  a power law fitted to the front, its exponent beside it
       beat 4  N*(C) and D*(C): which model size owns which stretch of the front,
               as a staircase in the same colours, and the power law through it
 
   chinchilla-isoflop (slide 16) -- Approach 2, the same data sliced the other way
-      beat 0  loss against model size at six of the paper's nine FLOP budgets
+      beat 0  loss against model size at each of the paper's nine FLOP budgets
       beat 1  a parabola in log N per budget, its minimum marked
-      beat 2  the envelope through the six minima
-      beat 3  N*(C) and D*(C) from those minima, measured and fitted
+      beat 2  the envelope through those minima
+      beat 3  N*(C) and D*(C) from the minima, measured and fitted
 
-  chinchilla-parametric (slide 17) -- Approach 3
-      the paper's own five constants, no refitting: one surface drawn through the
-      same six profiles, plus the compute-optimal ridge it implies
+  chinchilla-parametric (slide 17) -- Approach 3, in the paper's own Figure-4 axes
+      beat 0  every run in the (model size N, training tokens D) plane, log-log,
+              each point coloured by its own measured loss
+      beat 1  iso-loss contours of the refitted surface L = E + A/N^a + B/D^b
+      beat 2  iso-FLOP lines: C = 6ND is a slope -1 line in these axes
+      beat 3  the compute-optimal frontier, through the points where each iso-FLOP
+              line is tangent to a contour
 
-  chinchilla-exponents (slide 18)
-      Table 2 of the paper, in the deck's `fit-matrix` style, with the deck's own
-      measured exponents beside it and the Kaplan row last.
-
-Which six model sizes and which six budgets is a choice, and it is made by rule rather
-than by eye: the sizes are a factor-2.1 ladder from 175M to 6.8B among those with at
-least seven reconstructed runs, and the budgets are the six of the paper's nine that
-sit at 1 or 3 times a power of ten.  Every fitted number the slides show is printed by
-this script, and the fits over all 43 sizes / all 9 budgets are printed next to them so
-the effect of the choice is visible.
+Every figure draws all of the reconstruction: all 43 model sizes on slide 15, all nine
+of the paper's FLOP budgets on slide 16, all 245 runs on slide 17.  That is far more
+lines than a legend can name and stay legible, so a line's colour is interpolated on
+the deck's single-hue blue ramp by its position in log N (or log C, or in loss) and the
+legend names an evenly log-spaced six of them -- see `ramp_at` in chinchilla_svg.py and
+`legend_keys` below.  Every fitted number the slides show is printed by this script.
 """
 
 from __future__ import annotations
@@ -56,7 +56,7 @@ from _steps import Steps
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
 
-from chinchilla_svg import RAMP, Panel, num, sup  # noqa: E402
+from chinchilla_svg import RAMP, Panel, num, ramp_at, sup  # noqa: E402
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
 RUNS = ROOT / "results/chinchilla_runs.json"
@@ -64,9 +64,6 @@ PAPER = ROOT / "results/chinchilla_paper.json"
 FITS = ROOT / "results/chinchilla_fits.json"
 FIGURES = ROOT / "figures"
 
-# The six model sizes drawn on slide 15 and the six budgets on slides 16 and 17.
-SIZES_M = (175, 425, 816, 1609, 2980, 6796)
-BUDGETS = (1e19, 3e19, 1e20, 3e20, 1e21, 3e21)
 # A run counts towards a budget if its reconstructed FLOP count is within 20 % of it,
 # and towards that budget's parabola if its loss is within CUT nats of the profile's
 # best -- the reconstruction contains runs an order of magnitude off the optimum
@@ -74,6 +71,10 @@ BUDGETS = (1e19, 3e19, 1e20, 3e20, 1e21, 3e21)
 # those and the bottom of the curve.
 BUDGET_TOL = 0.08
 CUT = 0.35
+# How many of the lines a figure draws get named in its legend.  Six is what the
+# legend column was sized for when the figures drew six curves and nothing else has
+# grown, so six is what it stays at now that they draw all of them.
+LEGEND_KEYS = 6
 
 HEAD = ("<!-- generated by scripts/chinchilla_slides.py --write -- do not edit "
         "by hand -->\n<!-- Runs: 245 (N, C, loss) triples reconstructed from Figure 4\n"
@@ -118,7 +119,7 @@ def pareto(runs, sizes) -> dict:
     log-log within its own compute range and nowhere outside it.  N*(C) then comes out
     as a staircase -- the model size that owns each stretch of the front -- and the
     power laws are least squares over that grid, which is the continuous L2 fit of a
-    staircase and does not depend on how the six sizes happen to be spaced.
+    staircase and does not depend on how the model sizes happen to be spaced.
     """
     per_size = by_size(runs)
     curves = {n: per_size[n] for n in sizes}
@@ -158,7 +159,7 @@ def pareto(runs, sizes) -> dict:
 
 
 def isoflop(runs, budgets, tol=BUDGET_TOL, cut=CUT) -> dict:
-    """Approach 2: a parabola in log N per FLOP budget, and the six minima it gives."""
+    """Approach 2: a parabola in log N per FLOP budget, and the minima it gives."""
     profiles = []
     for b in budgets:
         d = collections.defaultdict(list)
@@ -198,7 +199,8 @@ def isoflop(runs, budgets, tol=BUDGET_TOL, cut=CUT) -> dict:
 # look so wrong here, and they wreck a refit too: fitting all 245 runs gives
 # b = 0.66 and N* ~ C^0.64, contradicting the front and the IsoFLOP minima.  Cut
 # them and the same functional form fits to 0.014 nats and lands on C^0.51, which
-# is what the other two constructions say.
+# is what the other two constructions say.  Slide 17 plots all 245 anyway -- the
+# eleven hollow, so the exclusion is on the figure and not only in the footnote.
 TOKENS_PER_PARAM_MIN = 1.0
 
 
@@ -236,14 +238,6 @@ def law_rmse(pm: dict, runs: list[dict]) -> float:
     return float(np.sqrt(((pred - l) ** 2).mean()))
 
 
-def law_curve(pm: dict, c: float, ns) -> list[list[float]]:
-    """A set of constants, sliced at constant compute: L(N, C/6N)."""
-    ns = np.asarray(ns, dtype=float)
-    loss = (pm["E"] + pm["A"] * ns ** -pm["alpha"]
-            + pm["B"] * (c / (6 * ns)) ** -pm["beta"])
-    return [[float(n), float(l)] for n, l in zip(ns, loss)]
-
-
 def law_optimum(pm: dict, c: float) -> tuple[float, float]:
     """Where a set of constants puts the compute-optimal model at budget *c*."""
     ns = np.geomspace(1e6, 1e13, 40000)
@@ -260,6 +254,33 @@ def pow10(v: float) -> str:
     return f"10{sup(f'{int(round(np.log10(v)))}', gap=1)}"
 
 
+def ramp_for(values) -> list[str]:
+    """One ramp colour per value, by where the value falls in log across the set.
+
+    Ordered hue rather than a palette: the figures draw more lines than the legend
+    names, and this is what makes an unnamed one readable anyway.
+    """
+    lo, hi = np.log10(min(values)), np.log10(max(values))
+    span = (hi - lo) or 1.0
+    return [ramp_at((np.log10(v) - lo) / span) for v in values]
+
+
+def legend_keys(values, k: int = LEGEND_KEYS) -> list[float]:
+    """*k* of the values, evenly spaced in log, to stand for all of them in a legend.
+
+    Both ends are always among them, so the six named entries bracket the ramp instead
+    of sampling its middle: an unnamed line then reads off the two named neighbours it
+    sits between, which is all the legend has to do once colour is continuous.
+    """
+    vs = sorted(values)
+    if len(vs) <= k:
+        return vs
+    lo, hi = np.log10(vs[0]), np.log10(vs[-1])
+    picks = {min(vs, key=lambda v, t=t: abs(np.log10(v) - (lo + t * (hi - lo))))
+             for t in np.linspace(0.0, 1.0, k)}
+    return sorted(picks)
+
+
 def legend(head: str, labels, colours=RAMP) -> str:
     spans = "\n".join(
         f'<span><svg width="30" height="10" viewBox="0 0 30 10" aria-hidden="true">'
@@ -270,7 +291,7 @@ def legend(head: str, labels, colours=RAMP) -> str:
             f"{spans}\n</div>")
 
 
-def row(head: str, labels, svg: str, cls: str = "") -> str:
+def row(head: str, labels, svg: str, cls: str = "", colours=RAMP) -> str:
     """Legend column, then the plot: the deck's .if-row, from the IsoFLOP slide.
 
     Vertical space is what runs out on these slides, and a legend line above the figure
@@ -278,8 +299,8 @@ def row(head: str, labels, svg: str, cls: str = "") -> str:
     instead buys back about 60 px, which is the difference between the closing sentence
     fitting on the slide and not.
     """
-    return (f'<div class="if-row cp-row {cls}">\n' + legend(head, labels) + "\n"
-            + svg + "\n</div>")
+    return (f'<div class="if-row cp-row {cls}">\n' + legend(head, labels, colours)
+            + "\n" + svg + "\n</div>")
 
 
 def size_label(v: float) -> str:
@@ -335,9 +356,12 @@ def right_pair(b: Panel, c: Panel, laws: dict, marks_b, marks_c,
         line = p.power_line(law["pref"], law["exp"], p.sx.lo, p.sx.hi)
         out += p.clipped([f'<path class="pf-guide" d="{p.path(line)}"/>'])
         out += marks
-        out.append(p.label_on(p.at(*line[0]), p.at(*line[-1]), 0.5,
-                              '<tspan class="pf-var">C</tspan>',
-                              f'{law["exp"]:.3f}', off=17))
+        # Left of centre and well above the line: these two laws rise, so the space
+        # over their left half is the emptiest part of a panel that is otherwise full
+        # of treads or diamonds all the way to the right edge.
+        out.append(p.label_beside(p.at(*line[0]), p.at(*line[-1]), 0.3,
+                                 '<tspan class="pf-var">C</tspan>',
+                                 f'{law["exp"]:.3f}', off=26))
     return out
 
 
@@ -345,13 +369,14 @@ def right_pair(b: Panel, c: Panel, laws: dict, marks_b, marks_c,
 
 
 def pareto_svg(pf: dict) -> str:
-    a, b, c = panels_for("pt", (4e18, 2.2e22), (2.02, 5.4),
-                         (4e18, 2.2e22), (8.5e7, 1.7e10), (3.4e9, 4.4e11))
+    a, b, c = panels_for("pt", (1.1e18, 2.2e22), (2.02, 5.4),
+                         (1.1e18, 2.2e22), (5.5e7, 1.5e10), (2.2e9, 5.5e11))
     label = ("Left: final loss against training compute, one line per model size, "
-             "log-log; the lower envelope of the family is the compute-optimal Pareto "
-             "front, and a power law is fitted to it. Right: the model size and the "
-             "dataset size that own each stretch of that front, against compute, with "
-             "their fitted power laws.")
+             "log-log, for all 43 model sizes in the reconstruction; the lower "
+             "envelope of the family is the compute-optimal Pareto front, and a power "
+             "law is fitted to it. Right: the model size and the dataset size that own "
+             "each stretch of that front, against compute, with their fitted power "
+             "laws.")
     x_ticks = [1e19, 1e20, 1e21, 1e22]
     steps = Steps()
     s = svg_open(label, (a, b, c))
@@ -359,13 +384,17 @@ def pareto_svg(pf: dict) -> str:
                 x_ticks, (2.2, 2.5, 3.0, 4.0, 5.0), x_fmt=pow10,
                 y_fmt=lambda v: f"{v:g}", ylab_dx=88, xlab_dy=62)
 
-    # beat 0: the family.  Dimmed from beat 2 on by the .cp-fade rule in slides.css.
+    # beat 0: the family, all of it.  Forty-three polylines in one box is a thicket
+    # rather than a set of readable curves, which is the honest picture -- the front is
+    # read off a cloud -- so the strokes and dots go thin enough to let the front, drawn
+    # over them a click later, stay the heaviest thing on the panel.  Dimmed from beat 2
+    # on by the .cp-fade rule in slides.css.
     fam = []
-    for n, col in zip(pf["sizes"], RAMP):
+    for n, col in zip(pf["sizes"], ramp_for(pf["sizes"])):
         cur = pf["curves"][f"{n:.6g}"]
         pts = list(zip(cur["c"], cur["loss"]))
-        fam.append(a.curve(pts, col, width=2.2))
-        fam += [a.dot(x, y, col, r=3.4) for x, y in pts]
+        fam.append(a.curve(pts, col, width=1.5))
+        fam += [a.dot(x, y, col, r=2.2) for x, y in pts]
     s += ['<g class="cp-fade">', *a.clipped(fam), "</g>"]
 
     # beat 1: the front itself, over the same family
@@ -379,19 +408,23 @@ def pareto_svg(pf: dict) -> str:
 
     # beat 3: the power law through the front
     law = pf["laws"]["l_of_c"]
-    line = a.power_line(law["pref"], law["exp"], 6e18, 1.6e22)
+    line = a.power_line(law["pref"], law["exp"], 2e18, 1.6e22)
     s += fragment(steps, 3, a.clipped([f'<path class="pf-guide" d="{a.path(line)}"/>'])
-                  + [a.label_on(a.at(*line[0]), a.at(*line[-1]), 0.72,
-                                '<tspan class="pf-var">C</tspan>',
-                                f'{law["exp"]:.3f}', off=30)])
+                  + [a.label_beside(a.at(*line[0]), a.at(*line[-1]), 0.78,
+                                    '<tspan class="pf-var">C</tspan>',
+                                    f'{law["exp"]:.3f}', off=34)])
 
-    # beat 4: which size owns which stretch, as a staircase in the same colours
+    # beat 4: which size owns which stretch, as a staircase in the same colours.  With
+    # every size in play this is twenty treads rather than six, so it reads as a trend
+    # and not as a row of bars -- and each tread is narrow enough that a 3.4-wide
+    # stroke would be a blob, hence 2.6 and a round cap to keep the short ones visible.
     marks_b, marks_c = [], []
-    for seg, col in zip(pf["segments"], RAMP):
+    seg_cols = ramp_for([seg["n"] for seg in pf["segments"]])
+    for seg, col in zip(pf["segments"], seg_cols):
         n, c0, c1 = seg["n"], seg["c0"], seg["c1"]
-        marks_b.append(b.curve([(c0, n), (c1, n)], col, width=3.4, cls="cp-tread"))
+        marks_b.append(b.curve([(c0, n), (c1, n)], col, width=2.6, cls="cp-tread"))
         marks_c.append(c.curve([(c0, c0 / (6 * n)), (c1, c1 / (6 * n))], col,
-                               width=3.4, cls="cp-tread"))
+                               width=2.6, cls="cp-tread"))
     s += fragment(steps, 4, right_pair(b, c, pf["laws"],
                                 b.clipped(marks_b), c.clipped(marks_c), x_ticks,
                                 y_ticks_b=(1e8, 1e9, 1e10),
@@ -401,39 +434,42 @@ def pareto_svg(pf: dict) -> str:
 
 
 def pareto_md(pf: dict) -> str:
-    labels = [size_label(n) for n in pf["sizes"]]
+    keys = legend_keys(pf["sizes"])
+    cols = dict(zip(pf["sizes"], ramp_for(pf["sizes"])))
     return (HEAD + "\n\n"
-            + row('model size <em>N</em>', labels, pareto_svg(pf)) + "\n")
+            + row('model size <em>N</em>', [size_label(n) for n in keys],
+                  pareto_svg(pf), colours=[cols[n] for n in keys]) + "\n")
 
 
 # ------------------------------------------------------------------ slide 16
 
 
 def isoflop_svg(iso: dict) -> str:
-    a, b, c = panels_for("if", (4e7, 2.6e10), (2.15, 3.32),
-                         (7e18, 5e21), (2.1e8, 6.5e9), (4.4e9, 2.4e11))
-    label = ("Left: final loss against model size at six fixed compute budgets, each a "
-             "U-shaped IsoFLOP profile with a parabola in log N fitted to it and its "
-             "minimum marked; a dashed line runs through the six minima. Right: the "
-             "model size and dataset size at those minima against compute, with their "
-             "fitted power laws.")
+    a, b, c = panels_for("if", (4e7, 2.6e10), (2.15, 3.45),
+                         (4e18, 5e21), (1.5e8, 6.5e9), (2.8e9, 2.4e11))
+    label = ("Left: final loss against model size at each of the paper's nine fixed "
+             "compute budgets, each a U-shaped IsoFLOP profile with a parabola in "
+             "log N fitted to it and its minimum marked; a dashed line runs through "
+             "the minima. Right: the model size and dataset size at those minima "
+             "against compute, with their fitted power laws.")
     x_ticks = [1e19, 1e20, 1e21]
+    cols = ramp_for([p["c"] for p in iso["profiles"]])
     steps = Steps()
     s = svg_open(label, (a, b, c))
     s += a.axes('model size <tspan class="pf-var">N</tspan>', "loss",
-                [10.0**k for k in a.sx.decades()], (2.2, 2.4, 2.6, 3.0),
+                [10.0**k for k in a.sx.decades()], (2.2, 2.4, 2.6, 3.0, 3.4),
                 y_fmt=lambda v: f"{v:g}", ylab_dx=88, xlab_dy=62)
 
     # beat 0: the measurements
-    for p, col in zip(iso["profiles"], RAMP):
-        s += [a.dot(x, y, col, r=3.4) for x, y in zip(p["n"], p["loss"])]
+    for p, col in zip(iso["profiles"], cols):
+        s += [a.dot(x, y, col, r=3.0) for x, y in zip(p["n"], p["loss"])]
 
     # beat 1: a parabola per budget, and where each one bottoms out
     par = []
-    for p, col in zip(iso["profiles"], RAMP):
-        par.append(a.curve(p["curve"], col, width=2.4))
-    tips = [a.diamond(p["n_star"], p["loss_star"], col)
-            for p, col in zip(iso["profiles"], RAMP)]
+    for p, col in zip(iso["profiles"], cols):
+        par.append(a.curve(p["curve"], col, width=2.2))
+    tips = [a.diamond(p["n_star"], p["loss_star"], col, r=5.0)
+            for p, col in zip(iso["profiles"], cols)]
     s += fragment(steps, 1, a.clipped(par) + tips)
 
     # beat 2: the envelope through the minima
@@ -441,10 +477,10 @@ def isoflop_svg(iso: dict) -> str:
     s += fragment(steps, 2, a.clipped([f'<path class="pf-guide" d="{a.path(env)}"/>']))
 
     # beat 3: the same minima against their own compute
-    marks_b = [b.diamond(p["c"], p["n_star"], col)
-               for p, col in zip(iso["profiles"], RAMP)]
-    marks_c = [c.diamond(p["c"], p["d_star"], col)
-               for p, col in zip(iso["profiles"], RAMP)]
+    marks_b = [b.diamond(p["c"], p["n_star"], col, r=5.0)
+               for p, col in zip(iso["profiles"], cols)]
+    marks_c = [c.diamond(p["c"], p["d_star"], col, r=5.0)
+               for p, col in zip(iso["profiles"], cols)]
     s += fragment(steps, 3, right_pair(b, c, iso["laws"], marks_b, marks_c, x_ticks,
                                y_ticks_b=(3e8, 1e9, 3e9),
                                y_ticks_c=(1e10, 3e10, 1e11)))
@@ -453,169 +489,218 @@ def isoflop_svg(iso: dict) -> str:
 
 
 def budget_label(v: float) -> str:
-    """A budget in units of 1e18, so the legend reads 10, 30, 100, 300, 1k, 3k."""
+    """A budget in units of 1e18, so the legend reads 6, 10, 30, ... 1k, 3k."""
     return num(round(v / 1e18))
 
 
 def isoflop_md(iso: dict) -> str:
-    labels = [budget_label(p["c"]) for p in iso["profiles"]]
-    return HEAD + "\n\n" + row(BUDGET_HEAD, labels, isoflop_svg(iso)) + "\n"
+    """Nine budgets, and all nine named: the exception to `legend_keys`.
+
+    Naming six of forty-three model sizes reads as a key to a ramp.  Naming six of nine
+    budgets would read as a failed one-to-one match, because nine U-curves is few
+    enough that an audience will try to pair them off -- and nine two-character labels
+    still cost less height than the plot beside them.
+    """
+    budgets = [p["c"] for p in iso["profiles"]]
+    return (HEAD + "\n\n"
+            + row(BUDGET_HEAD, [budget_label(v) for v in budgets], isoflop_svg(iso),
+                  colours=ramp_for(budgets)) + "\n")
 
 
 # ------------------------------------------------------------------ slide 17
 
 # Slide 17's figure sits in one of two equal columns, so it gets a box of its own
-# rather than the three-panel one.  Narrow and tall: the six profiles are stacked
-# vertically, so height is what they want, and a narrower viewBox at the same laid-out
-# width is what makes the 20-unit tick type legible at half the slide.
+# rather than the three-panel one: near-square, because it is a contour map of the
+# (N, D) plane and neither axis is the subordinate one.
 PW, PH = 640, 600
 
+# The six iso-loss levels drawn, high to low, one per stop of the ramp.  Chosen so
+# each one crosses the window rather than clipping a corner of it: the window's own
+# corners are L = 4.79 (small model, little data) and L = 2.03, and below E = 1.81
+# there is no contour at all.
+CONTOURS = (3.0, 2.8, 2.6, 2.4, 2.2, 2.1)
+# The iso-FLOP lines laid over them.  C = 6ND is a slope -1 line in these axes.  These
+# three are exactly the decades that enter the window through its *top* edge, which is
+# what lets all three be labelled in the headroom above the box: inside it there is no
+# corner free of contours, and a decade lower the line comes in through the left edge,
+# where the label would land on the y ticks.
+ISO_C = (1e20, 1e21, 1e22)
+# The ramp position of each drawn contour: one stop per level, so `loss_colour` below
+# is the exact inverse of "which colour did we give this contour".
+_CONTOUR_T = [k / (len(CONTOURS) - 1) for k in range(len(CONTOURS))]
 
-def parametric_svg(iso: dict, paper: dict, fit: dict) -> str:
-    """One five-constant surface, sliced at the six budgets, over the measured points.
 
-    The same axes as slide 16's left panel, so the audience can check that a single
-    surface passes through every profile at once.  The ridge is the compute-optimal
-    locus those constants imply, marked at each budget.
+def loss_colour(loss: float) -> str:
+    """A run's measured loss, on the same ramp the iso-loss contours are drawn with.
 
-    The constants drawn are the deck's own fit, like the front on slide 15 and the
-    minima on slide 16 -- not the paper's published ones, which miss these points
-    badly enough to be visible: they sit a few hundredths of a nat above every
-    profile and put the optimum up to 1.9x away from the best measured run.
+    The point of colouring the cloud rather than greying it is that a run then lands on
+    the contour of its *own* colour -- the fit is checkable by eye, one point at a time,
+    instead of only in aggregate.  So the mapping cannot be "loss, rescaled": it has to
+    be the inverse of the contour colouring, and the six levels are not evenly spaced
+    (3.0, 2.8, 2.6, 2.4, 2.2, 2.1), so it interpolates through the levels themselves.
+
+    Outside the drawn levels the colour saturates, which is the honest rendering: there
+    is no contour out there for a point to match.  39 of the 245 runs sit above L = 3.0
+    and one below L = 2.1, so about a sixth of the cloud is at the light end's stop --
+    those are the badly over-parameterized runs, and they are the ones the fit drops.
     """
-    pm = fit
-    p = Panel("pm-a", 100, 625, 520, 20, (4e7, 2.6e10), (2.15, 3.32))
-    label = ("The five-constant Chinchilla loss surface sliced at the same six compute "
-             "budgets, drawn through the measured IsoFLOP profiles, with the "
-             "compute-optimal model size it implies marked on each slice.")
+    return ramp_at(float(np.interp(loss, CONTOURS[::-1], _CONTOUR_T[::-1])))
+
+
+def loss_contour(pm: dict, level: float, p: Panel) -> list[tuple[float, float]]:
+    """The level set L(N, D) = *level* of the fitted surface, as D against N.
+
+    E + A/N^a + B/D^b = level solves for D at every N whose own term is already under
+    the level, and at no smaller N: which is why every contour runs into a vertical
+    asymptote on the left and settles onto a horizontal one on the right.  Sampled in
+    log N a little past both edges of the panel, so the curve is cut off by the box
+    rather than stopping inside it.
+    """
+    n_min = (pm["A"] / (level - pm["E"])) ** (1 / pm["alpha"])
+    lo, hi = max(p.sx.lo / 1.4, n_min * 1.0002), p.sx.hi * 1.4
+    if lo >= hi:
+        return []
+    out = []
+    for n in np.geomspace(lo, hi, 240):
+        rest = level - pm["E"] - pm["A"] * n ** -pm["alpha"]
+        if rest > 0:
+            out.append((float(n), float((pm["B"] / rest) ** (1 / pm["beta"]))))
+    return out
+
+
+def parametric_svg(runs: list[dict], pm: dict) -> str:
+    """The fitted surface as the paper draws it: iso-loss contours in the (N, D) plane.
+
+    This is the left panel of Hoffmann et al.'s Figure 4, rebuilt from the deck's own
+    refitted constants.  It is the one picture of the three that shows the whole
+    surface rather than a slice of it, and the whole construction is visible in it:
+    the contours are the model, the slope -1 lines are the compute constraint, and
+    the compute-optimal frontier is the locus where the two are tangent -- spend a
+    budget anywhere else on its iso-FLOP line and you land on a worse contour.
+
+    Every run is plotted, including the eleven the fit excludes; those are drawn hollow
+    so that "fitted on 234 of 245" is something the audience can see and not just read.
+    Each point carries its *measured* loss as its colour, on the same ramp as the
+    contours, so the fit is checkable point by point: a run should sit on the contour
+    of its own shade, and where the cloud shades differently from the contour under it
+    is exactly where the five constants are missing it.
+    """
+    # The top of the box is 44 rather than 20 units down: the iso-FLOP lines are
+    # labelled above it, and that label needs a line's height of clear headroom.
+    p = Panel("pm-a", 118, 612, 508, 44, (3.5e7, 3e10), (2e8, 4e11))
+    label = ("Iso-loss contours of the fitted five-constant Chinchilla law in the "
+             "plane of model size against training tokens, log-log, over all 245 "
+             "reconstructed runs, each shaded by its own measured loss on the same "
+             "scale as the contours, with lines of constant compute C = 6ND and the "
+             "compute-optimal frontier that runs through the points where the two "
+             "families are tangent.")
     steps = Steps()
     s = [f'<svg class="plot-fig cp-fig" viewBox="0 0 {PW} {PH}" role="img" '
          f'aria-label="{label}">', "<defs>", p.defs(), "</defs>"]
-    s += p.axes('model size <tspan class="pf-var">N</tspan>', "loss",
-                [10.0**k for k in p.sx.decades()], (2.2, 2.4, 2.6, 3.0),
-                y_fmt=lambda v: f"{v:g}", ylab_dx=66, xlab_dy=62)
-    for prof, col in zip(iso["profiles"], RAMP):
-        s += [p.dot(x, y, col, r=3.4) for x, y in zip(prof["n"], prof["loss"])]
-    curves, tips = [], []
-    for prof, col in zip(iso["profiles"], RAMP):
-        c = prof["c"]
-        lo = min(prof["n"]) / 1.6
-        hi = max(prof["n"]) * 1.6
-        curves.append(p.curve(law_curve(pm, c, np.geomspace(lo, hi, 40)), col,
-                              width=2.4))
-        tips.append(p.diamond(*law_optimum(pm, c), col))
+    s += p.axes('model size <tspan class="pf-var">N</tspan>',
+                'training tokens <tspan class="pf-var">D</tspan>',
+                [10.0**k for k in p.sx.decades()],
+                [10.0**k for k in p.sy.decades()],
+                x_fmt=pow10, y_fmt=pow10, ylab_dx=84, xlab_dy=62)
+
+    # beat 0: the runs, each coloured by its own measured loss on the same ramp the
+    # contours will use, so that when the contours arrive on the next beat every point
+    # should be sitting on the contour of its own shade -- that agreement *is* the
+    # slide's claim, and this is the one view of the three that can show it per run.
+    # Small (r = 2.6) because there are 245 of them in a box 500 units wide, and drawn
+    # darkest-last so the sparse low-loss corner is not painted over by the bulk.
+    dots = []
+    for r in sorted(runs, key=lambda r: -r["loss"]):
+        col = loss_colour(r["loss"])
+        fitted = r["d"] / r["n"] > TOKENS_PER_PARAM_MIN
+        dots.append(p.dot(r["n"], r["d"], col, r=2.6) if fitted
+                    else f'<circle cx="{p.sx(r["n"]):.1f}" cy="{p.sy(r["d"]):.1f}" '
+                         f'r="2.6" fill="none" stroke="{col}" stroke-width="1.4"/>')
+    s += p.clipped(dots)
+
+    # beat 1: the surface, as its contours.  Light is the high-loss corner and dark
+    # the low-loss one, so the ramp runs cheap -> expensive here exactly as it does
+    # over model size on slide 15 and over budget on slide 16.
+    curves = [p.curve(loss_contour(pm, lev, p), col, width=2.2)
+              for lev, col in zip(CONTOURS, RAMP)]
     s += fragment(steps, 1, p.clipped(curves))
-    ridge = [law_optimum(pm, prof["c"]) for prof in iso["profiles"]]
-    s += fragment(steps, 2, p.clipped([f'<path class="pf-guide" d="{p.path(ridge)}"/>'])
-                  + tips)
+
+    # beat 2: the constraint.  Each line is named where it crosses the top of the box,
+    # in the headroom above it -- outside the plot, so no label has to be fitted into a
+    # panel that has contours running through every part of it.  Only the leftmost
+    # carries the "C =", the way an axis is named once.
+    iso, iso_lab = [], []
+    for v in ISO_C:
+        ends = [(n, v / (6 * n)) for n in (p.sx.lo / 1.4, p.sx.hi * 1.4)]
+        iso.append(f'<path class="pf-guide cp-isoc" d="{p.path(ends)}"/>')
+        x = p.sx(v / (6 * p.sy.hi))
+        head = ('<tspan class="pf-var">C</tspan> = ' if v == ISO_C[0] else "")
+        iso_lab.append(f'<text class="pf-muted pf-small" x="{x + 7:.0f}" '
+                       f'y="{p.y1 - 14:.0f}">{head}{pow10(v)}</text>')
+    s += fragment(steps, 2, p.clipped(iso) + iso_lab)
+
+    # beat 3: the frontier, and the tangency points it is drawn through.  Red and
+    # heavy, like the Pareto front on slide 15: it is the same object, and this is the
+    # third construction of it.
+    ridge = []
+    for v in np.geomspace(3e17, 3e23, 60):
+        n_s, _ = law_optimum(pm, v)
+        ridge.append((n_s, v / (6 * n_s)))
+    tips = []
+    for v in ISO_C:
+        n_s, _ = law_optimum(pm, v)
+        tips.append(p.diamond(n_s, v / (6 * n_s), "#c0392b", r=5.4))
+    # The frontier's own name goes right beside it, in the middle where it is least
+    # ambiguous which line is meant.  There is no clear ground anywhere along it -- the
+    # contours it is tangent to cross it from both sides -- so the label knocks out
+    # what is behind it with a background-coloured halo instead, the same trick the
+    # diamonds use.
+    n_s, _ = law_optimum(pm, 1e21)
+    x, y = p.at(n_s, 1e21 / (6 * n_s))
+    s += fragment(steps, 3,
+                  p.clipped([f'<path class="pf-front" d="{p.path(ridge)}"/>'] + tips)
+                  + [f'<text class="pf-red pf-strong pf-small cp-halo" '
+                     f'x="{x - 16:.0f}" y="{y - 14:.0f}" '
+                     'text-anchor="end">compute-optimal</text>'])
     s.append("</svg>")
     return "\n".join(s)
 
 
-def parametric_md(iso: dict, paper: dict, fit: dict) -> str:
-    labels = [budget_label(prof["c"]) for prof in iso["profiles"]]
+def parametric_md(runs: list[dict], pm: dict) -> str:
+    # One legend for two things: the contour levels and the shading of the run cloud
+    # are the same scale by construction (`loss_colour`), so naming it once is honest.
     return (HEAD + "\n\n"
-            + row(BUDGET_HEAD, labels, parametric_svg(iso, paper, fit), "cp-row-pm")
-            + "\n")
-
-
-# ------------------------------------------------------------------ slide 18
-
-
-def exponents_md(pf: dict, iso: dict, paper: dict, fit: dict) -> str:
-    """Table 2 of the paper, plus what the deck's own fits got, in `fit-matrix` style.
-
-    Four rows, revealed in three beats: the three approaches together (they agree), then
-    the Kaplan row (it does not).  The measured column is this deck's refit of the
-    reconstruction, so the audience can see the same numbers come out of the data on
-    the two previous slides.
-    """
-    t2 = {r["approach"]: r for r in paper["table_2"]}
-    # The right-hand pair is what *this* deck's fits give on the reconstruction, so
-    # the parametric row has to be our refit too.  It used to carry the paper's own
-    # constants' implication, which made the column mean two different things.
-    mine = {"1. Pareto front": (pf["laws"]["n_of_c"]["exp"],
-                                pf["laws"]["d_of_c"]["exp"]),
-            "2. IsoFLOP": (iso["laws"]["n_of_c"]["exp"],
-                           iso["laws"]["d_of_c"]["exp"]),
-            "3. Parametric fit": (fit["n_exp"], fit["d_exp"])}
-    steps = Steps()
-    def cell(cls: str, at: int, text: str) -> str:
-        return (f'<div class="{cls} fragment"{steps.attr(at)}>'
-                f"{text}</div>")
-
-    # The row divider is a full-width grid item of its own rather than a border on each
-    # cell: the cells are fragments, and a border on a not-yet-revealed cell is
-    # invisible too, which leaves the rules stopping halfway across the table on the
-    # first two clicks.
-    rule = '<div class="fm-rule"></div>\n'
-    rows = []
-    for key in ("1. Pareto front", "2. IsoFLOP", "3. Parametric fit"):
-        r, (ma, mb) = t2[key], mine[key]
-        rows.append(rule
-                    + cell("fm-label fm-navy", 1, key)
-                    + cell("fm-value", 1, f'{r["a"]:.2f}')
-                    + cell("fm-value", 1, f'{r["b"]:.2f}')
-                    + cell("fm-value fm-soft", 2, f"{ma:.2f}")
-                    + cell("fm-value fm-soft", 2, f"{mb:.2f}"))
-    k = t2["Kaplan et al. (2020)"]
-    rows.append(rule
-                + cell("fm-label fm-red", 3, "Kaplan et al.")
-                + cell("fm-value fm-red", 3, f'{k["a"]:.2f}')
-                + cell("fm-value fm-red", 3, f'{k["b"]:.2f}')
-                + cell("fm-value fm-soft", 3, "--")
-                + cell("fm-value fm-soft", 3, "--"))
-    body = "\n".join(rows)
-    return f"""{HEAD}
-
-<div class="fit-matrix chin-matrix">
-<div></div>
-<div class="fm-group">Chinchilla paper</div><div class="fm-group">redone here</div>
-<div></div>
-<div class="fm-head"><em>a</em></div><div class="fm-head"><em>b</em></div>
-<div class="fm-head fm-soft"><em>a</em></div><div class="fm-head fm-soft"><em>b</em></div>
-{body}
-</div>
-
-<div class="inline-footnote">
-
-$N^*\\propto C^{{a}}$, $D^*\\propto C^{{b}}$. Left pair: Table 2 of
-[@hoffmann2022training]. Right pair: the same three constructions, redone here.
-
-</div>
-"""
+            + row('loss <em>L</em>', [f"{lev:.1f}" for lev in CONTOURS],
+                  parametric_svg(runs, pm), "cp-row-pm") + "\n")
 
 
 # ------------------------------------------------------------------ driver
 
 
-def report(pf: dict, iso: dict, paper: dict, runs) -> None:
-    print("Approach 1, Pareto front over "
-          f"{len(pf['sizes'])} model sizes ({', '.join(num(n) for n in pf['sizes'])})")
+def report(pf: dict, iso: dict, paper: dict) -> None:
+    print("Approach 1, Pareto front over all "
+          f"{len(pf['sizes'])} model sizes, {num(min(pf['sizes']))}"
+          f"..{num(max(pf['sizes']))}")
     for seg in pf["segments"]:
         print(f"    {num(seg['n']):>7s} owns the front over C = "
               f"{seg['c0']:.2e}..{seg['c1']:.2e}")
     for k, v in pf["laws"].items():
         print(f"    {k:8s} exponent {v['exp']:+.4f}  r2 {v['r2']:.4f}")
-    all_pf = pareto(runs, sorted({r["n"] for r in runs}))
-    print("    over all 43 sizes: "
-          + ", ".join(f"{k} {v['exp']:+.4f}" for k, v in all_pf["laws"].items()))
 
-    print("\nApproach 2, IsoFLOP profiles")
+    print(f"\nApproach 2, all {len(iso['profiles'])} IsoFLOP profiles")
     for p in iso["profiles"]:
         print(f"    C = {p['c']:.0e}  {len(p['n']):2d} sizes  N* = {num(p['n_star']):>7s}"
               f"  D* = {num(p['d_star']):>7s}  L* = {p['loss_star']:.4f}  "
               f"rms {p['rms']:.4f}  {p['d_star'] / p['n_star']:.0f} tokens/param")
     for k, v in iso["laws"].items():
         print(f"    {k:8s} exponent {v['exp']:+.4f}  r2 {v['r2']:.4f}")
-    all_iso = isoflop(runs, json.loads(RUNS.read_text())["isoflop_budgets"])
-    print("    over all 9 budgets: "
-          + ", ".join(f"{k} {v['exp']:+.4f}" for k, v in all_iso["laws"].items()))
 
     imp = paper["parametric_implied"]
     print("\nApproach 3, the paper's own constants")
     print(f"    N* ~ C^{imp['n_exp']:.4f}, D* ~ C^{imp['d_exp']:.4f}, "
           f"L-L_inf ~ C^{imp['l_exp']:.4f}")
+    # No slide shows Table 2 any more, but it is still what the three exponents above
+    # are meant to reproduce, so it stays in the report as the check on them.
     print("\nTable 2 of the paper: "
           + "; ".join(f"{r['approach']} a={r['a']} b={r['b']}"
                       for r in paper["table_2"]))
@@ -624,29 +709,28 @@ def report(pf: dict, iso: dict, paper: dict, runs) -> None:
 def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--write", action="store_true",
-                    help="write the four figures/chinchilla-*.md files")
+                    help="write the three figures/chinchilla-*.md files")
     args = ap.parse_args()
 
     store = json.loads(RUNS.read_text())
     paper = json.loads(PAPER.read_text())
     runs = store["runs"]
-    sizes = [float(m) * 1e6 for m in SIZES_M]
-    missing = [n for n in sizes if n not in {r["n"] for r in runs}]
-    if missing:
-        raise SystemExit(f"model sizes {missing} are not in the reconstruction")
 
-    pf = pareto(runs, sizes)
-    iso = isoflop(runs, BUDGETS)
+    pf = pareto(runs, sorted({r["n"] for r in runs}))
+    iso = isoflop(runs, store["isoflop_budgets"])
     fit = parametric_refit(runs)
-    report(pf, iso, paper, runs)
+    report(pf, iso, paper)
 
     pm = paper["parametric"]
     print("\nApproach 3 refitted here, on the "
           f"{fit['n_runs']} runs above {fit['tokens_per_param_min']:g} token(s) per "
-          f"parameter ({fit['n_dropped']} dropped)")
+          f"parameter ({fit['n_dropped']} dropped, plotted hollow on slide 17)")
     print(f"    E={fit['E']:.3f} A={fit['A']:.1f} a={fit['alpha']:.3f} "
           f"B={fit['B']:.1f} b={fit['beta']:.3f}   rmse {fit['rmse']:.4f}")
     print(f"    N* ~ C^{fit['n_exp']:.4f}, D* ~ C^{fit['d_exp']:.4f}")
+    print(f"    slides say: E={fit['E']:.2f}, A={fit['A']:.0f}, a={fit['alpha']:.2f}, "
+          f"B={fit['B']:.0f}, b={fit['beta']:.2f}, "
+          f"N* ~ C^{fit['n_exp']:.2f}, D* ~ C^{fit['d_exp']:.2f}")
     print(f"    the paper's own constants on the same runs: "
           f"rmse {law_rmse(pm, runs):.4f}")
     for c in (1e21,):
@@ -663,8 +747,7 @@ def main() -> None:
     if args.write:
         for key, body in (("chinchilla-pareto", pareto_md(pf)),
                           ("chinchilla-isoflop", isoflop_md(iso)),
-                          ("chinchilla-parametric", parametric_md(iso, paper, fit)),
-                          ("chinchilla-exponents", exponents_md(pf, iso, paper, fit))):
+                          ("chinchilla-parametric", parametric_md(runs, fit))):
             (FIGURES / f"{key}.md").write_text(body)
             print(f"wrote figures/{key}.md")
 

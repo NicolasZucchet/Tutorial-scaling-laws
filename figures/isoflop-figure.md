@@ -116,7 +116,7 @@
 <path d="M 988.7 133.0 L 994.7 139.0 L 988.7 145.0 L 982.7 139.0 Z" fill="#256abf" stroke="#fcfcfb" stroke-width="1.6"/>
 <path d="M 1052.8 93.9 L 1058.8 99.9 L 1052.8 105.9 L 1046.8 99.9 Z" fill="#184f95" stroke="#fcfcfb" stroke-width="1.6"/>
 <path d="M 1116.9 56.1 L 1122.9 62.1 L 1116.9 68.1 L 1110.9 62.1 Z" fill="#0d366b" stroke="#fcfcfb" stroke-width="1.6"/>
-<text class="pf-muted pf-small" x="969.4" y="135.3" transform="rotate(-32.3 969.4 135.3)" text-anchor="middle"><tspan class="pf-var">C</tspan><tspan dx="4" dy="-9" font-size="0.72em">0.449</tspan></text>
+<text class="pf-muted pf-small" x="969.4" y="135.3" text-anchor="middle"><tspan class="pf-var">C</tspan><tspan dx="4" dy="-9" font-size="0.72em">0.449</tspan></text>
 </g>
 </svg>
 </div>

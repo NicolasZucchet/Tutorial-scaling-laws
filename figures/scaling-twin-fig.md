@@ -24,8 +24,15 @@
 <path class="pf-curve" id="sl-line-n" d="M 170 100 L 890 244"/>
 <path class="pf-curve pf-curve-d" id="sl-line-d" d="M 170 100 L 890 203"/>
 </g>
-<text class="pf-navy pf-small" id="sl-label-n" x="902" y="238"><tspan class="pf-var">N</tspan><tspan dy="-9" font-size="0.72em">1&#8722;<tspan class="pf-var">&#945;</tspan></tspan></text>
-<text class="pf-red pf-strong pf-small" id="sl-label-d" x="902" y="197"><tspan class="pf-var">D</tspan><tspan dy="-9" font-size="0.72em">1/<tspan class="pf-var">&#945;</tspan>&#8722;1</tspan></text>
+<!-- The two exponents are set in the same muted grey, horizontal, base^exp
+     form as every other exponent in the deck (chinchilla-*, isoflop-figure,
+     kaplan-compute-fig, zipf-fig).  They used to take their curve's colour;
+     they do not need it, because the base letter already names the curve, and
+     one colour for every exponent in the talk is worth more than the second
+     cue here.  The legend keys below keep the two hues -- those are the curve
+     names, not exponents. -->
+<text class="pf-muted pf-small" id="sl-label-n" x="902" y="238"><tspan class="pf-var">N</tspan><tspan dy="-9" font-size="0.72em">1&#8722;<tspan class="pf-var">&#945;</tspan></tspan></text>
+<text class="pf-muted pf-small" id="sl-label-d" x="902" y="197"><tspan class="pf-var">D</tspan><tspan dy="-9" font-size="0.72em">1/<tspan class="pf-var">&#945;</tspan>&#8722;1</tspan></text>
 <line class="pf-curve" x1="314" y1="478" x2="358" y2="478"/>
 <text class="pf-navy pf-small" x="368" y="485">model size <tspan class="pf-var">N</tspan></text>
 <line class="pf-curve pf-curve-d" x1="568" y1="478" x2="612" y2="478"/>

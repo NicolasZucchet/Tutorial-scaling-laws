@@ -5,7 +5,7 @@ scripts/isoflop_slide.py draws the same kind of figure for the toy model, but it
 The Chinchilla slides need a wide main panel plus two stacked half-height panels, so
 the geometry has to travel with the axis rather than with the module.  Everything else
 -- the log axis, the ticks outside a hairline frame, the dashed fitted line with its
-exponent set along it -- is the same construction and deliberately the same look.
+exponent set beside it -- is the same construction and deliberately the same look.
 
 Nothing here knows anything about Chinchilla; see scripts/chinchilla_slides.py.
 """
@@ -18,6 +18,30 @@ import numpy as np
 RAMP = ("#86b6ef", "#6da7ec", "#5598e7", "#256abf", "#184f95", "#0d366b")
 # The slide background, for the halo a marker gets so it keeps its edge over a curve.
 SURFACE = "#fcfcfb"
+
+
+def _rgb(hexcode: str) -> tuple[int, int, int]:
+    h = hexcode.lstrip("#")
+    return tuple(int(h[i:i + 2], 16) for i in (0, 2, 4))  # type: ignore[return-value]
+
+
+def ramp_at(t: float) -> str:
+    """RAMP sampled at position *t* in [0, 1], interpolated between its six stops.
+
+    Six stops is how many curves the Chinchilla figures used to draw -- one slot per
+    curve.  They now draw every model size and every FLOP budget in the reconstruction,
+    which is more lines than a legend can name, so a line's colour has to come from a
+    continuous ramp rather than from a slot in a list: it is the line's position in
+    log N (or log C), so an unnamed curve reads as sitting between the two named ones
+    it sits between, and the picture stays one ordered hue.
+    """
+    t = min(max(float(t), 0.0), 1.0)
+    u = t * (len(RAMP) - 1)
+    k = min(int(u), len(RAMP) - 2)
+    f = u - k
+    lo, hi = _rgb(RAMP[k]), _rgb(RAMP[k + 1])
+    return "#%02x%02x%02x" % tuple(
+        int(round(p + f * (q - p))) for p, q in zip(lo, hi))
 
 
 def num(v: float) -> str:
@@ -146,22 +170,29 @@ class Panel:
 
     # -------------------------------------------------------------- labels
 
-    def label_on(self, p0, p1, t: float, base: str, exp: str, off: float = 15.0,
-                 cls: str = "pf-muted pf-small") -> str:
-        """An exponent label laid along the fitted line p0 -> p1 and lifted clear.
+    def label_beside(self, p0, p1, t: float, base: str, exp: str, off: float = 15.0,
+                     nudge: tuple[float, float] = (0.0, 0.0),
+                     anchor: str = "middle",
+                     cls: str = "pf-muted pf-small") -> str:
+        """An exponent label set beside the fitted line p0 -> p1, always horizontal.
 
-        Set at the fraction `t` of the way along the line, rotated to its angle and
-        pushed `off` units up its normal, so the exponent reads as the line's slope
-        rather than as a caption floating near it.  Both points are in viewBox units.
+        Placed at the fraction `t` of the way along the line and pushed `off` units up
+        its normal, so it reads as belonging to that line and not to whatever else is
+        nearby; `nudge` then moves it in plain viewBox units where the normal alone puts
+        it into a curve or a tick.  Both points are in viewBox units.
+
+        It used to be rotated to the line's angle -- the slope drawn as well as
+        written.  A tilted `C^0.518` is the one piece of type on these slides that a
+        room has to work at, though, and there are now four of them, so they are all
+        set flat and earn their attachment from position instead.
         """
         (x0, y0), (x1, y1) = p0, p1
         dx, dy = x1 - x0, y1 - y0
         n = float(np.hypot(dx, dy)) or 1.0
-        x, y = x0 + t * dx + off * dy / n, y0 + t * dy - off * dx / n
-        turn = float(np.degrees(np.arctan2(dy, dx)))
+        x = x0 + t * dx + off * dy / n + nudge[0]
+        y = y0 + t * dy - off * dx / n + nudge[1]
         return (f'<text class="{cls}" x="{x:.1f}" y="{y:.1f}" '
-                f'transform="rotate({turn:.1f} {x:.1f} {y:.1f})" '
-                f'text-anchor="middle">{base}{sup(exp)}</text>')
+                f'text-anchor="{anchor}">{base}{sup(exp)}</text>')
 
     def power_line(self, pref: float, exp: float, lo: float, hi: float,
                    n: int = 3) -> list[tuple[float, float]]:

@@ -1,75 +1,101 @@
-<!-- What an LLM is, drawn bottom-up: a context of tokens, an alternating stack
-     of sequence layers (mix across tokens) and feedforward layers (transform
-     each token on its own) repeated L times, then a prediction head that turns
-     the last token's representation into a distribution over next tokens.
-     The four candidate tokens and their probabilities are the deck's running
-     example, reused verbatim from the `tok-example` block on the
-     "Simplifying language modeling" slide (model column: 0.31 / 0.24 / 0.19 /
-     0.02); the target token `mat` is that slide's data column. -->
-<svg class="llmarch-fig" viewBox="0 0 700 610" role="img" aria-label="A large language model drawn from the bottom up. At the bottom, the context 'the cat sat on the' as five token boxes. Above it, a block repeated L times containing a sequence layer, in which each token reads the tokens before it, and a feedforward layer, which transforms each token on its own. The last token's representation then goes through a prediction head and a softmax to give a probability distribution over next tokens: mat 0.31, couch 0.24, floor 0.19, roof 0.02. At training time the sentence supplies exactly one target token, mat.">
+<!-- Pretraining in one line, read left to right: the context, a sequence model
+     that turns it into an embedding, a prediction head that turns the embedding
+     into a distribution over next tokens, and -- at the far right -- the token
+     the data actually says came next.  The double-headed arrow between those
+     last two is the whole training signal, so it carries the name of the loss:
+     everything else on the slide exists to make that comparison possible.
+
+     The chain is built in three beats, so the slide can be walked rather than
+     read: the context alone, then the sequence model and the embedding, then the
+     prediction head and the distribution, then the loss and the observed token.
+     Each beat is a fragment group carrying colloquium's step marker, which it
+     replaces with a sequential index, so the order is document order and the
+     written value is never the step number.  (The marker attribute is not spelt
+     out anywhere in this comment: colloquium rewrites it wherever it appears,
+     comments included, and a mention inside one counts as a step of its own --
+     an invisible extra click at the head of the slide.)  Everything, the four
+     captions included, lives inside the <svg>, so a reveal cannot reflow the
+     slide.
+
+     The visual idiom is the `embed-fig` figure on the "Simplifying language
+     modeling" slide, simplified: one context instead of three, one embedding
+     vector on the circle instead of three, and token/bar rows with no
+     probabilities on them.  The numbers are deliberately gone -- an architecture
+     this schematic has no particular distribution to report, and printed values
+     would only invite the audience to read them.  The phrase and the four
+     candidates are the deck's running example, kept purely so the boxes have
+     something legible in them.
+
+     Colours are the roles the rest of the deck already assigns: navy for the
+     model's internals, blue for what the model predicts, red for anything that
+     comes from the data.
+
+     Geometry: viewBox 1160 x 234.  1160 is the width `embed-fig` uses, and at a
+     full-width column the deck lays an SVG out at roughly 1 unit = 1 px, so the
+     font sizes in slides.css are close to real pixels.  Do not widen it to gain
+     room: every type size here is in viewBox units and would shrink against the
+     rest of the deck.
+
+     Everything is centred on the chain axis y = 112.  The three arrow labels are
+     set on *two* lines, baselines y = 44 and y = 68, which is what buys the
+     horizontal air: "sequence model" on one line needed ~138 units, "sequence"
+     over "model" needs ~78, and the same halving applies to the other two.  All
+     four node captions share the baseline y = 216, a clear 32 units below the
+     lowest thing above them (the last bar ends at y = 184), so they read as one
+     row of labels with room around it rather than as text crowding the figure.
+
+     The x layout is then one rule applied five times: 24 units of air between
+     every node's edge and the arrow beside it, and every arrow 92 units long
+     (they used to be 144, which is what made the row feel cramped).  Left to
+     right: the context's rule ends at 250; arrow 274 -> 366; the circle spans
+     390 -> 482 (r = 46); arrow 507 -> 599; the token column runs 623 -> 680 with
+     its bars from 692; the widest bar stops at 842; the loss arrow runs
+     866 -> 1016; and the observed token's box is 1040 -> 1132, centred at 1086 so
+     its caption's right edge lands inside the viewBox.
+
+     Arrowheads.  Every marker here is in stroke-width units, so its tip sits a
+     fixed distance *past* the line's endpoint: 14.04 units for the navy
+     embedding vector at stroke-width 2.6.  The vector is therefore drawn only
+     46 - 14.04 = 31.96 units long, so that its tip -- not its endpoint -- lands
+     on the circle.  That is the same construction `w-build-fig` and `sphere-fig`
+     use, and it is why those arrows look right and this one used to overshoot. -->
+<svg class="llmarch-fig" viewBox="0 0 1160 234" role="img" aria-label="Pretraining as a left-to-right chain. The underlined context 'the cat sat on the' goes through an arrow labelled sequence model into an embedding, drawn as one vector on a circle; an arrow labelled prediction head turns that embedding into a distribution over next tokens, drawn as four candidate tokens with bars of decreasing length: mat, couch, floor, roof. A red double-headed arrow labelled cross-entropy loss connects that distribution to the token actually observed in the data, mat.">
 <defs>
-<marker id="la-h-navy" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0,0.6 L10,5 L0,9.4 z" fill="#0f3460"/></marker>
-<marker id="la-h-green" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0,0.6 L10,5 L0,9.4 z" fill="#27ae60"/></marker>
-<marker id="la-h-blue" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0,0.6 L10,5 L0,9.4 z" fill="#2980b9"/></marker>
-<marker id="la-h-red" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0.6 L10,5 L0,9.4 z" fill="#c0392b"/></marker>
+<marker id="lp-head-grey" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6.5" markerHeight="6.5" orient="auto-start-reverse"><path d="M0,0.6 L10,5 L0,9.4 z"/></marker>
+<marker id="lp-head-navy" viewBox="0 0 6 6" refX="0.6" refY="3" markerWidth="6" markerHeight="6" orient="auto"><path d="M0,0.5 L6,3 L0,5.5 z" fill="#0f3460"/></marker>
+<marker id="lp-head-red" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6.5" markerHeight="6.5" orient="auto-start-reverse"><path d="M0,0.6 L10,5 L0,9.4 z" fill="#c0392b"/></marker>
 </defs>
-<!-- Top right: what comes out of the model. -->
-<text class="la-head" x="356" y="26">distribution over next tokens</text>
-<text class="la-gloss" x="356" y="46">a token is a word or a word piece</text>
-<g class="la-cand"><text x="356" y="74">mat</text><text x="356" y="100">couch</text><text x="356" y="126">floor</text><text x="356" y="152">roof</text></g>
-<g class="la-bar"><rect x="414" y="62" width="130" height="15" rx="2"/><rect x="414" y="88" width="101" height="15" rx="2"/><rect x="414" y="114" width="80" height="15" rx="2"/><rect x="414" y="140" width="8" height="15" rx="2"/></g>
-<g class="la-prob" text-anchor="end"><text x="690" y="74">0.31</text><text x="690" y="100">0.24</text><text x="690" y="126">0.19</text><text x="690" y="152">0.02</text></g>
-<!-- Top left: the one target token this sentence supplies. -->
-<text class="la-tgt-head" x="200" y="40" text-anchor="middle">target token</text>
-<rect class="la-tgt-box" x="158" y="53" width="84" height="36" rx="8"/>
-<text class="la-tgt" x="200" y="78" text-anchor="middle">mat</text>
-<text class="la-note" x="200" y="114" text-anchor="middle">one per context,</text>
-<text class="la-note" x="200" y="134" text-anchor="middle">given by the data</text>
-<text class="la-xent" x="298" y="62" text-anchor="middle">cross-entropy</text>
-<path class="la-tgt-arrow" d="M250 71 H344" marker-end="url(#la-h-red)"/>
-<!-- The prediction head, over the last token only. -->
-<path class="la-flow-blue" d="M490 222 V176" marker-end="url(#la-h-blue)"/>
-<text class="la-note" x="502" y="200">softmax</text>
-<rect class="la-headbox" x="386" y="226" width="208" height="54" rx="10"/>
-<text class="la-headlabel" x="490" y="260" text-anchor="middle">prediction head</text>
-<path class="la-flow-navy" d="M490 326 V286" marker-end="url(#la-h-navy)"/>
-<text class="la-note" x="470" y="300" text-anchor="end">last token&#8217;s representation</text>
-<!-- The repeated block: five token lanes running through two kinds of layer. -->
-<g class="la-lane"><path d="M90 320 V490"/><path d="M190 320 V490"/><path d="M290 320 V490"/><path d="M390 320 V490"/><path d="M490 320 V490"/></g>
-<rect class="la-block" x="24" y="314" width="532" height="180" rx="12"/>
-<path class="la-bracket" d="M568 320 h-10 v168 h10"/>
-<text class="la-times" x="582" y="412">&#215; L</text>
-<text class="la-ff-name" x="38" y="338">feedforward layer</text>
-<text class="la-sub" x="212" y="338">transforms each token on its own</text>
-<rect class="la-ff-band" x="38" y="346" width="504" height="44" rx="8"/>
-<g class="la-ff-arrow">
-<path d="M90 394 V364" marker-end="url(#la-h-green)"/>
-<path d="M190 394 V364" marker-end="url(#la-h-green)"/>
-<path d="M290 394 V364" marker-end="url(#la-h-green)"/>
-<path d="M390 394 V364" marker-end="url(#la-h-green)"/>
-<path d="M490 394 V364" marker-end="url(#la-h-green)"/>
+<!-- 1. The context: a phrase, the rule under it, and the word it is called. -->
+<text class="lp-ctx" x="135" y="120" text-anchor="middle">the cat sat on the</text>
+<line class="lp-rule" x1="20" y1="137" x2="250" y2="137"/>
+<text class="lp-cap" x="135" y="216" text-anchor="middle">context</text>
+<!-- 2. The sequence model, and the embedding it produces: one vector on the
+     circle, as in `embed-fig`, with its tip on the circle. -->
+<g class="fragment" data-colloquium-fragment="1">
+<line class="lp-arrow" x1="274" y1="112" x2="366" y2="112" marker-end="url(#lp-head-grey)"/>
+<text class="lp-step" x="320" y="44" text-anchor="middle">sequence</text>
+<text class="lp-step" x="320" y="68" text-anchor="middle">model</text>
+<circle class="lp-space" cx="436" cy="112" r="46"/>
+<line class="lp-vec" x1="436" y1="112" x2="458.6" y2="89.4" marker-end="url(#lp-head-navy)"/>
+<text class="lp-cap" x="436" y="216" text-anchor="middle">embedding</text>
 </g>
-<text class="la-sq-name" x="38" y="420">sequence layer</text>
-<text class="la-sub" x="180" y="420">each token reads the tokens before it</text>
-<rect class="la-sq-band" x="38" y="428" width="504" height="56" rx="8"/>
-<path class="la-sq-spine" d="M490 478 V436"/>
-<g class="la-sq-dot"><circle cx="90" cy="476" r="3.4"/><circle cx="190" cy="476" r="3.4"/><circle cx="290" cy="476" r="3.4"/><circle cx="390" cy="476" r="3.4"/></g>
-<g class="la-sq-arrow">
-<path d="M90 476 C 200 476, 300 440, 484 438" marker-end="url(#la-h-navy)"/>
-<path d="M190 476 C 280 476, 360 452, 484 450" marker-end="url(#la-h-navy)"/>
-<path d="M290 476 C 360 476, 410 462, 484 460" marker-end="url(#la-h-navy)"/>
-<path d="M390 476 C 430 476, 450 468, 484 470" marker-end="url(#la-h-navy)"/>
+<!-- 3. The prediction head, and the distribution it produces: four candidates,
+     bars, no numbers. -->
+<g class="fragment" data-colloquium-fragment="1">
+<line class="lp-arrow" x1="507" y1="112" x2="599" y2="112" marker-end="url(#lp-head-grey)"/>
+<text class="lp-step" x="553" y="44" text-anchor="middle">prediction</text>
+<text class="lp-step" x="553" y="68" text-anchor="middle">head</text>
+<g class="lp-tok" text-anchor="end"><text x="680" y="59">mat</text><text x="680" y="99">couch</text><text x="680" y="139">floor</text><text x="680" y="179">roof</text></g>
+<g class="lp-bar"><rect class="lp-bar-top" x="692" y="40" width="150" height="24" rx="3"/><rect x="692" y="80" width="108" height="24" rx="3"/><rect x="692" y="120" width="78" height="24" rx="3"/><rect x="692" y="160" width="34" height="24" rx="3"/></g>
+<text class="lp-cap" x="732" y="216" text-anchor="middle">next-token distribution</text>
 </g>
-<!-- The context at the bottom. -->
-<g class="la-in-arrow">
-<path d="M90 524 V500" marker-end="url(#la-h-navy)"/>
-<path d="M190 524 V500" marker-end="url(#la-h-navy)"/>
-<path d="M290 524 V500" marker-end="url(#la-h-navy)"/>
-<path d="M390 524 V500" marker-end="url(#la-h-navy)"/>
-<path d="M490 524 V500" marker-end="url(#la-h-navy)"/>
+<!-- 4. The loss: what the data says came next, against what the model said. -->
+<g class="fragment" data-colloquium-fragment="1">
+<line class="lp-xarrow" x1="866" y1="112" x2="1016" y2="112" marker-start="url(#lp-head-red)" marker-end="url(#lp-head-red)"/>
+<text class="lp-xlab" x="941" y="44" text-anchor="middle">cross-entropy</text>
+<text class="lp-xlab" x="941" y="68" text-anchor="middle">loss</text>
+<rect class="lp-obs-box" x="1040" y="88" width="92" height="48" rx="9"/>
+<text class="lp-obs" x="1086" y="121" text-anchor="middle">mat</text>
+<text class="lp-cap" x="1086" y="216" text-anchor="middle">observed token</text>
 </g>
-<g class="la-tokbox"><rect x="46" y="528" width="88" height="42" rx="8"/><rect x="146" y="528" width="88" height="42" rx="8"/><rect x="246" y="528" width="88" height="42" rx="8"/><rect x="346" y="528" width="88" height="42" rx="8"/><rect x="446" y="528" width="88" height="42" rx="8"/></g>
-<g class="la-tok" text-anchor="middle"><text x="90" y="556">the</text><text x="190" y="556">cat</text><text x="290" y="556">sat</text><text x="390" y="556">on</text><text x="490" y="556">the</text></g>
-<path class="la-ctx-brace" d="M46 576 v9 H534 v-9"/>
-<text class="la-ctx" x="290" y="604" text-anchor="middle">context</text>
 </svg>

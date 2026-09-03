@@ -1,5 +1,8 @@
 // Practice-capacity charts (slide "Capacity, in theory and in practice", the
 // second one): marker/dash styling and decade-only tick labels written 1k / 1M.
+// The two panels are drawn the same way on purpose -- same line-plus-marker
+// treatment, same colour ladder (see the COLOURS notes in the two figure files)
+// -- so the slide reads as one comparison and not as two borrowed figures.
 //
 // The two charts on that slide share the y-axis title "memory stored (M bits)",
 // which no other chart in the deck uses; that is how they are picked out here,
@@ -19,12 +22,12 @@
   document.querySelectorAll("canvas[data-chart-config]").forEach(function (c) {
     var cfg = JSON.parse(c.getAttribute("data-chart-config"));
     if (!isPC(cfg)) return;
-    // Allen-Zhu and Li plot one dot per trained model and draw no curve through
-    // them; Morris et al. plot one curve per model.  The left panel is the one
-    // whose series are dataset sizes.
-    var scatter = (cfg.data.datasets || []).some(function (ds) {
-      return (ds.label || "").indexOf("facts") !== -1;
-    });
+    // Both panels get a line through their markers.  Allen-Zhu and Li publish
+    // theirs as a bare scatter, and this used to reproduce that -- but next to
+    // Morris's curves it read as a different kind of picture, and with ~30 dots
+    // per series the eye has to join them anyway to see the plateau the panel is
+    // about.  tension 0 keeps the joins straight, so nothing is interpolated
+    // beyond "these dots are one series".
     cfg.data.datasets.forEach(function (ds) {
       var label = ds.label || "";
       ds.tension = 0;   // log-log data: straight segments, no invented curvature
@@ -34,9 +37,6 @@
         ds.borderWidth = 1.6;
         ds.pointRadius = 0;
         ds.order = 10;
-      } else if (scatter) {
-        ds.showLine = false;
-        ds.pointRadius = 2.4;
       } else {
         ds.borderWidth = 2.2;
         ds.pointRadius = 2.4;

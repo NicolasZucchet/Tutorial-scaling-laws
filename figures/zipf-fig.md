@@ -1,4 +1,12 @@
+<!-- Assumption 3.  The whole plot is one reveal, landing on the same click as
+     the "contexts follow a power law" paragraph in the left-hand column: that
+     paragraph owns the slide's marker-generated step, so the group below
+     repeats its index by hand (`data-fragment-index`, not a marker of its own,
+     which would count as a second step and split the two apart).  The <svg>
+     itself stays outside the group so the column keeps its width and nothing
+     reflows when the plot appears. -->
 <svg class="zipf-fig" viewBox="0 0 580 460" role="img" aria-label="Rank-frequency plot on log-log axes: frequency falls from about 2 in 10 for the most frequent context to about 2 in 10 million for the hundred-thousandth, a slope of minus 1.2">
+<g class="fragment" data-fragment-index="1">
   <line class="zf-axis" x1="112" y1="34" x2="112" y2="397"/>
   <line class="zf-axis" x1="112" y1="397" x2="556" y2="397"/>
   <line class="zf-tick" x1="105" y1="91" x2="112" y2="91"/>
@@ -31,6 +39,7 @@
   <text class="zf-label" x="32" y="216" text-anchor="middle" transform="rotate(-90 32 216)">frequency p(i)</text>
   <text class="zf-label" x="327" y="452" text-anchor="middle">context rank i</text>
   <text class="zf-note" x="128" y="60">few frequent contexts</text>
-  <text class="zf-note" x="330" y="372" text-anchor="middle">many rare contexts</text>
-  <text class="zf-law" x="372" y="178">slope = −α = −1.2</text>
+  <text class="zf-note" x="415" y="374" text-anchor="middle">many rare contexts</text>
+  <text class="zf-law" x="400" y="252"><tspan class="zf-var">i</tspan><tspan dx="2" dy="-9" font-size="0.72em">−1.2</tspan></text>
+</g>
 </svg>
