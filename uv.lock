@@ -91,7 +91,6 @@ name = "assocmem"
 version = "1.0.0"
 source = { editable = "." }
 dependencies = [
-    { name = "colloquium" },
     { name = "jax", version = "0.10.2", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.12'" },
     { name = "jax", version = "0.11.0", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.12'" },
     { name = "matplotlib" },
@@ -107,10 +106,18 @@ notebook = [
     { name = "jupyterlab" },
     { name = "nbclient" },
 ]
+slides = [
+    { name = "colloquium" },
+]
+
+[package.dev-dependencies]
+dev = [
+    { name = "colloquium" },
+]
 
 [package.metadata]
 requires-dist = [
-    { name = "colloquium", specifier = ">=0.2.3" },
+    { name = "colloquium", marker = "extra == 'slides'", specifier = ">=0.2.3" },
     { name = "ipykernel", marker = "extra == 'notebook'" },
     { name = "jax", specifier = ">=0.4.35" },
     { name = "jupyterlab", marker = "extra == 'notebook'", specifier = ">=4" },
@@ -119,7 +126,10 @@ requires-dist = [
     { name = "numpy", specifier = ">=1.26" },
     { name = "scipy", specifier = ">=1.11" },
 ]
-provides-extras = ["notebook"]
+provides-extras = ["notebook", "slides"]
+
+[package.metadata.requires-dev]
+dev = [{ name = "colloquium", specifier = ">=0.2.3" }]
 
 [[package]]
 name = "asttokens"

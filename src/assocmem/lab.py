@@ -17,6 +17,7 @@ from __future__ import annotations
 
 import itertools
 import json
+import os
 import time
 from dataclasses import dataclass, field, replace
 from pathlib import Path
@@ -421,7 +422,8 @@ class Lab:
                  hero_check_tokens: int = HERO_CHECK_TOKENS):
         self.name = name
         # anchored at the project root, so a notebook and a script share one lab
-        self.dir = Path(root or Path(__file__).resolve().parents[2] / "runs") / name
+        self.dir = Path(root or os.environ.get("ASSOCMEM_RUNS")
+                        or Path(__file__).resolve().parents[2] / "runs") / name
         self.dir.mkdir(parents=True, exist_ok=True)
         self.state_path = self.dir / "state.json"
         self.eval_tokens = eval_tokens

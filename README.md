@@ -6,6 +6,14 @@ shot** at the final run. The whole exercise costs about a minute of laptop compu
 
 ## For students
 
+In the browser, nothing to install —
+[open the notebook in Colab](https://colab.research.google.com/github/NicolasZucchet/Tutorial-scaling-laws/blob/main/notebooks/tutorial.ipynb)
+and run the first cell: it installs the package straight from GitHub and builds the data
+cache (~2 min). A CPU runtime is enough. Set `USE_DRIVE = True` in that cell to keep the cache
+and your lab state in Google Drive, so a recycled runtime does not reset your budget.
+
+Or locally:
+
 ```bash
 uv sync --extra notebook
 uv run assocmem-prepare        # once: builds ~250 MB of cached data (~1 min)
@@ -56,6 +64,12 @@ learning-rate grid never bracketed its minimum — the two ways a scaling-law fi
 * `scripts/round{1,2,3}.py` + `final_fit.py` + `hero.py` — the first, over-tuned attempt
   (**3.2993**), kept because the comparison is the lesson.
 * Every student gets the **same** problem instance, so all three are directly comparable.
+* On Colab the notebook's first cell bootstraps everything — `uv pip install --system`
+  from the git URL, so there is no checkout to keep in sync and no editable-install `.pth`
+  the running kernel would ignore. The reference numbers reproduce there (a CPU runtime
+  executes the whole notebook in well under a minute of compute, plus ~2 min to build the
+  cache). Since a `site-packages` install has no project root to anchor to, that cell sets
+  `ASSOCMEM_CACHE` and `ASSOCMEM_RUNS`, which is also how the Drive option works.
 
 Three attempts on the same problem, differing mainly in how much went to screening:
 

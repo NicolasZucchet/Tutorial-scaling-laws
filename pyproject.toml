@@ -8,11 +8,16 @@ dependencies = [
     "numpy>=1.26",
     "scipy>=1.11",
     "matplotlib>=3.8",
-    "colloquium>=0.2.3",
 ]
 
 [project.optional-dependencies]
 notebook = ["jupyterlab>=4", "ipykernel", "nbclient"]
+slides = ["colloquium>=0.2.3"]
+
+# installed by `uv run`/`uv sync` but not by `pip install .`, so a Colab install stays
+# to the four numeric dependencies and leaves the preinstalled CUDA jax alone
+[dependency-groups]
+dev = ["colloquium>=0.2.3"]
 
 [project.scripts]
 assocmem-prepare = "assocmem.prepare:main"

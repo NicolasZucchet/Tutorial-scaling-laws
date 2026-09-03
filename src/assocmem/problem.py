@@ -7,6 +7,7 @@ and reused; only ``instance_seed`` (which drives the embeddings) changes.
 
 from __future__ import annotations
 
+import os
 from pathlib import Path
 
 import numpy as np
@@ -14,7 +15,11 @@ import numpy as np
 from . import data as D
 from .train import EvalSet, Stream
 
-CACHE = Path(__file__).resolve().parents[2] / "results" / "cache"
+# ASSOCMEM_CACHE relocates the ~250 MB of generated data -- needed when the package is
+# installed non-editably (there is no project root then) or to keep it on a mounted
+# Drive so a Colab runtime restart does not have to rebuild it.
+CACHE = Path(os.environ.get("ASSOCMEM_CACHE",
+                            Path(__file__).resolve().parents[2] / "results" / "cache"))
 
 
 def _p(name: str) -> Path:
