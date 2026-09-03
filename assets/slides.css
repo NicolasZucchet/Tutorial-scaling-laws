@@ -21,28 +21,130 @@
   font-style: normal;
   font-display: swap;
 }
+/* ------------------------------------------------------------------ tokens
+
+   The deck's palette and its one unit of vertical space, in one place, so a
+   change of mind is one edit rather than twenty-two.
+
+   Sizes are deliberately *not* here.  A hand-drawn figure is an `<svg>` with a
+   `viewBox` and `width: 100%`, so `20px` inside it means 20 *canvas units*, and
+   the browser then scales the canvas to fit whatever column the figure sits in
+   -- a 1180-unit canvas is 0.98 of its authored size in the full slide body and
+   0.47 in half of a two-column slide.  A single token therefore cannot mean one
+   size on screen and one size relative to the plot at the same time, and it is
+   the second that matters: each figure's type is tuned to be proportionate
+   inside its own plot box.  Forcing the *rendered* size uniform instead (one
+   token times a per-figure scale factor) does close the 12-to-20px spread, and
+   it makes the narrower figures' labels crowd their plots, because the plot box
+   does not grow with the type.  So every figure keeps its own sizes.
+
+   The two exceptions below are read by assets/plot.js: Chart.js defaults to
+   12px Helvetica and cannot see this stylesheet at all, so that file copies
+   them into `Chart.defaults` to keep the six chart figures in the same
+   typographic family as the hand-drawn ones. */
 :root {
   --colloquium-font-body: "GothamNicolas", "Helvetica Neue", Arial, sans-serif;
+  /* The theme's own stylesheet calls this --colloquium-heading; sixteen rules
+     in this file ask for --colloquium-title, which nothing has ever defined,
+     so every one of them was invalid at computed-value time and quietly fell
+     back to `inherit`.  Naming it here is what makes them do what they say. */
+  --colloquium-title: var(--colloquium-heading);
+
+  /* The deck's three accents.  One quantity, one colour, everywhere: the navy
+     of the "trained" series in the capacity chart is the navy of the number
+     quoting it in the prose beside it. */
+  --deck-navy: #0f3460;
+  --deck-red: #c0392b;
+  --deck-green: #27ae60;
+  --deck-orange: #e67e22;
+  /* A lighter blue, only for the "model" half of the model-vs-data pair: it
+     sits next to --deck-red as a role, not as a series. */
+  --deck-blue: #2980b9;
+  --deck-blue-tint: #9ac7e2;
+  --deck-navy-tint: #b6c3d1;
+  /* Pale washes of the three accents, for a filled cell or a called-out box.
+     The red one was written twice, in two figures, under no shared name. */
+  --deck-navy-wash: #dce5ef;
+  --deck-red-wash: #f4dede;
+  --deck-green-wash: #dcefe3;
+
+  /* The gap between a figure and the prose around it, and the one the spacer
+     divs in slides.md use.  It is the one dimension that is shared: it is
+     measured in the slide's own em, not in any figure's canvas units. */
+  --deck-gap: 1.5em;
+
+  /* The two greys the chart legends and assets/plot.js need: a dashed
+     guide that is a reading aid rather than data, and the halo a marker
+     punches in the line behind it. */
+  --fig-guide: #9ca3af;
+  /* The halo a marker punches in the line behind it.  The deck had two values
+     for this, #fcfcfb in the SVGs and --colloquium-bg (#ffffff) in .pf-point;
+     the slide background is white, so white is the one that is right. */
+  --fig-surface: var(--colloquium-bg);
+
+  /* Read by assets/plot.js, which copies them into Chart.defaults so the six
+     Chart.js figures are typographically the same family as the hand-drawn
+     ones.  The hand-drawn figures do *not* take their sizes from here: a
+     figure is an svg scaled to fit its column, so one size in canvas units is
+     a different size on screen in each of them, and the per-figure values are
+     tuned to be proportionate inside their own plot box.  Trying to make the
+     *rendered* size uniform instead made the type crowd the narrower plots. */
+  --fig-text: 22px;
+  --fig-small: 20px;
+  --fig-exp: 0.72em;   /* raised exponents, the deck's one already-uniform size */
+  --fig-math: 1.05em;  /* italic maths variables inside a figure */
+  /* The italic-maths face, as a token and not only as the rule below.  A canvas
+     cannot read a rule, and assets/plot.js draws the charts' in-plot notes on
+     one, so this is the one place the deck needs the family by name. */
+  --fig-math-family: "Latin Modern Math", "Cambria Math", Georgia, serif;
+
+  --fig-data-width: 2.2;
+  --fig-hair-width: 1.5;
+  --fig-dash: 6 5;
+  --fig-point: 2.8;
 }
 
-.highlight-red { color: #c0392b; font-weight: 600; }
-.highlight-blue { color: #2980b9; font-weight: 600; }
-.highlight-green { color: #27ae60; font-weight: 600; }
+
+/* Every figure's root element.  The seven figure families below each used to
+   repeat this quartet and pick its own top margin; one rule means one answer,
+   and the gap is the same one the prose uses. */
+.matmul-fig,
+.zipf-fig,
+.embed-fig,
+.sphere-fig,
+.plot-fig,
+.wbuild-fig,
+.llmarch-fig {
+  display: block;
+  width: 100%;
+  height: auto;
+  margin: var(--deck-gap) auto;
+  font-family: var(--colloquium-font-body);
+}
+
+/* Italic maths inside a figure.  Was three byte-identical rules, .zf-var,
+   .sf-var and .pf-var, one per figure family. */
+.fig .fig-var,
+.fig .pf-var,
+.fig .sf-var,
+.fig .zf-var {
+  font-family: var(--fig-math-family);
+  font-style: italic;
+  font-size: var(--fig-math);
+}
+
+.highlight-red { color: var(--deck-red); font-weight: 600; }
+.highlight-blue { color: var(--deck-blue); font-weight: 600; }
+.highlight-green { color: var(--deck-green); font-weight: 600; }
 /* Same navy as the "trained" series in the capacity chart, so the number in
    the text reads as belonging to that line. */
-.highlight-navy { color: #0f3460; font-weight: 600; }
+.highlight-navy { color: var(--deck-navy); font-weight: 600; }
 
 /* Part I FLOP intuition. The first figure expands a single row-vector dot
    product before generalising it to an m by n matrix; the second uses the
    same three accents for the three equally-sized matrix multiplications in
    training. */
-.matmul-fig {
-  display: block;
-  width: 100%;
-  height: auto;
-  margin: 0.8em auto 0;
-  font-family: var(--colloquium-font-body);
-}
+
 .matmul-fig text { fill: var(--colloquium-text); }
 .matmul-fig .mm-label { fill: var(--colloquium-muted); font-size: 18px; }
 .matmul-fig .mm-bracket {
@@ -57,9 +159,9 @@
   stroke-width: 1.2;
 }
 .matmul-fig .mm-highlight-grid rect { stroke-width: 1.5; }
-.matmul-fig .mm-pair-a { fill: #dce5ef; stroke: #0f3460; }
-.matmul-fig .mm-pair-b { fill: #f4dede; stroke: #c0392b; }
-.matmul-fig .mm-pair-c { fill: #dcefe3; stroke: #27ae60; }
+.matmul-fig .mm-pair-a { fill: var(--deck-navy-wash); stroke: var(--deck-navy); }
+.matmul-fig .mm-pair-b { fill: var(--deck-red-wash); stroke: var(--deck-red); }
+.matmul-fig .mm-pair-c { fill: var(--deck-green-wash); stroke: var(--deck-green); }
 .matmul-fig .mm-num, .matmul-fig .mm-output { font-size: 20px; font-variant-numeric: tabular-nums; }
 .matmul-fig .mm-output { fill: var(--colloquium-title); font-weight: 700; }
 .matmul-fig .mm-op { fill: var(--colloquium-muted); font-size: 28px; }
@@ -99,9 +201,9 @@
   background: transparent;
 }
 .training-flops .tf-card + .tf-card { border-left: 1px solid var(--colloquium-border); }
-.training-flops .tf-forward { --tf-accent: #0f3460; }
-.training-flops .tf-backward { --tf-accent: #c0392b; }
-.training-flops .tf-learn { --tf-accent: #27ae60; }
+.training-flops .tf-forward { --tf-accent: var(--deck-navy); }
+.training-flops .tf-backward { --tf-accent: var(--deck-red); }
+.training-flops .tf-learn { --tf-accent: var(--deck-green); }
 .training-flops .tf-step {
   position: absolute;
   top: 0.4em;
@@ -199,8 +301,8 @@
 .fit-matrix > div:nth-child(n+4) { border-top: 1px solid var(--colloquium-border); }
 .fit-matrix .fm-head { color: var(--colloquium-muted); font-size: 0.88em; }
 .fit-matrix .fm-label, .fit-matrix .fm-value { font-weight: 700; }
-.fit-matrix .fm-red { color: #c0392b; }
-.fit-matrix .fm-navy { color: #0f3460; }
+.fit-matrix .fm-red { color: var(--deck-red); }
+.fit-matrix .fm-navy { color: var(--deck-navy); }
 .fit-matrix .fm-value { font-variant-numeric: tabular-nums; }
 
 /* Bold text picks up the theme's dark blue title. */
@@ -208,16 +310,29 @@
 .slide b {
   color: var(--colloquium-title);
 }
+/* Except on a filled background, where the theme has already set the whole
+   box's ink and bold has to keep it -- navy bold on the navy accent box is
+   invisible.  The theme says this itself, but at the same specificity as the
+   rule above, and this sheet is a <link> in the body, so it loads last and
+   wins; the exception has to be restated here to give it back. */
+.slide .colloquium-box--accent strong,
+.slide .colloquium-box--accent b,
+.slide .colloquium-box--accent em,
+.slide .colloquium-box--accent a,
+.slide--section-break strong,
+.slide--section-break b {
+  color: inherit;
+}
 
 /* "Simplifying language modeling": the model's explicit next-token
    distribution vs. the data's implicit one, each in its own accent.
    Extra specificity so bold inside these spans keeps the role colour
    instead of falling back to the navy `.slide strong` rule. */
 .slide .tok-model, .slide .tok-model strong, .slide strong.tok-model {
-  color: #2980b9;
+  color: var(--deck-blue);
 }
 .slide .tok-data, .slide .tok-data strong, .slide strong.tok-data {
-  color: #c0392b;
+  color: var(--deck-red);
 }
 
 /* Centered, code-like example block: candidate next tokens in a single
@@ -238,12 +353,13 @@
 }
 
 /* The context, underlined and labelled underneath. */
-/* Drop the context down by exactly one column-header line (0.8em text at
-   1.55 line-height + its 0.45em bottom margin) so it sits on the first
-   token row rather than in the middle of the stack. */
+/* Drop the context down by exactly one column-header line (the header is set
+   at the body size of the block, so 1em of text at 1.55 line-height plus its
+   0.45em bottom margin) so it sits on the first token row rather than in the
+   middle of the stack. */
 .tok-ctx {
   text-align: center;
-  margin-top: calc(0.8em * 1.55 + 0.8 * 0.45em);
+  margin-top: calc(1em * 1.55 + 0.45em);
 }
 .tok-ctx-group { display: inline-block; }
 .tok-ctx-text {
@@ -260,10 +376,11 @@
 
 /* Token / probability columns. */
 .tok-cols { display: flex; justify-content: center; gap: 2.4em; }
+/* `model` and `data` head their own probability column, and they are read as
+   part of it: same size as the numbers underneath, not a shrunken caption. */
 .tok-col-head {
   display: block;
   margin-bottom: 0.45em;
-  font-size: 0.8em;
   letter-spacing: 0.04em;
 }
 .tok-tokens { text-align: left; }
@@ -274,17 +391,12 @@
    The two-column split is colloquium's own (`row-columns: 1/1`), so all that is
    left here is capping the figure so it does not fill its whole half. */
 .zipf-fig {
-  display: block;
-  width: 100%;
   max-width: 430px;
-  height: auto;
-  margin: 0 auto;
-  font-family: var(--colloquium-font-body);
 }
 .zipf-fig .zf-axis { stroke: var(--colloquium-muted); stroke-width: 1.8; }
 .zipf-fig .zf-guide {
   fill: none;
-  stroke: #0f3460;
+  stroke: var(--deck-navy);
   stroke-width: 3;
   stroke-linecap: round;
 }
@@ -303,33 +415,20 @@
 }
 
 /* Assumption 2: the only architecture retained by the toy model. */
-.embed-fig {
-  display: block;
-  width: 100%;
-  height: auto;
-  margin: 0.1em auto 0;
-  font-family: var(--colloquium-font-body);
-}
+
 .embed-fig .ef-head { fill: var(--colloquium-title); font-size: 22px; font-weight: 700; }
 .embed-fig .ef-context { fill: var(--colloquium-code-bg); stroke: var(--colloquium-border); }
 .embed-fig .ef-code { fill: var(--colloquium-text); font-family: var(--colloquium-font-mono); font-size: 13px; }
 .embed-fig .ef-arrow { stroke: var(--colloquium-muted); stroke-width: 2; marker-end: url(#ef-arrow); }
 .embed-fig marker#ef-arrow path { fill: var(--colloquium-muted); }
-.embed-fig .ef-muted, .embed-fig .ef-random { fill: var(--colloquium-muted); font-size: 16px; }
+.embed-fig .ef-muted { fill: var(--colloquium-muted); font-size: 16px; }
 .embed-fig .ef-space { fill: none; stroke: var(--colloquium-muted); stroke-width: 1.6; }
-.embed-fig .ef-grid { stroke: var(--colloquium-border); stroke-width: 1.2; }
-.embed-fig .ef-point { stroke: white; stroke-width: 2; }
-.embed-fig .ef-blue { fill: #2980b9; }
-.embed-fig .ef-red { fill: #c0392b; }
-.embed-fig .ef-green { fill: #27ae60; }
-.embed-fig .ef-orange { fill: #e67e22; }
-.embed-fig .ef-navy { fill: #0f3460; }
+.embed-fig .ef-red { fill: var(--deck-red); }
+.embed-fig .ef-green { fill: var(--deck-green); }
+.embed-fig .ef-navy { fill: var(--deck-navy); }
 .embed-fig .ef-vector { fill: var(--colloquium-text); font-size: 18px; font-style: italic; }
-.embed-fig .ef-math { fill: var(--colloquium-title); font-size: 25px; font-family: "Latin Modern Math", Georgia, serif; font-style: italic; }
 .embed-fig .ef-token, .embed-fig .ef-prob { fill: var(--colloquium-text); font-size: 17px; }
-.embed-fig .ef-bar { fill: #2980b9; }
-.embed-fig .ef-blue-light { fill: #9ac7e2; }
-.embed-fig .ef-softmax { fill: var(--colloquium-title); font-size: 19px; font-family: "Latin Modern Math", Georgia, serif; }
+.embed-fig .ef-bar { fill: var(--deck-blue); }
 
 /* Extra half line of air under the title-slide headline
    (theme default is 0.3em at font-size 2.8em). */
@@ -357,13 +456,7 @@
    356-unit viewBox), and the margins spend the surplus as air above and
    below rather than on bigger circles -- the slide has a text line hard
    against the figure on both sides. */
-.sphere-fig {
-  display: block;
-  width: 100%;
-  height: auto;
-  margin: 3em auto 1.2em;
-  font-family: var(--colloquium-font-body);
-}
+
 .sphere-fig .sf-sphere {
   fill: none;
   stroke: var(--colloquium-muted);
@@ -373,29 +466,22 @@
   stroke-width: 2.4;
   stroke-linecap: round;
 }
-.sphere-fig .sf-legend { stroke-width: 1.9; }
 .sphere-fig .sf-axis {
   stroke: var(--colloquium-muted);
   stroke-width: 1.6;
 }
-.sphere-fig .sf-navy   { stroke: #0f3460; }
-.sphere-fig .sf-red    { stroke: #c0392b; }
-.sphere-fig .sf-green  { stroke: #27ae60; }
-.sphere-fig .sf-orange { stroke: #e67e22; }
+.sphere-fig .sf-navy   { stroke: var(--deck-navy); }
+.sphere-fig .sf-red    { stroke: var(--deck-red); }
+.sphere-fig .sf-green  { stroke: var(--deck-green); }
+.sphere-fig .sf-orange { stroke: var(--deck-orange); }
 .sphere-fig text {
   fill: var(--colloquium-text);
   font-size: 22px;
 }
 .sphere-fig .sf-muted { fill: var(--colloquium-muted); }
-.sphere-fig .sf-strong { font-weight: 700; }
-.sphere-fig .sf-good { fill: #0f3460; font-weight: 700; }
-.sphere-fig .sf-bad { fill: #c0392b; font-weight: 700; }
+.sphere-fig .sf-good { fill: var(--deck-navy); font-weight: 700; }
+.sphere-fig .sf-bad { fill: var(--deck-red); font-weight: 700; }
 .sphere-fig .sf-small { font-size: 20px; }
-/* Legend: the word itself carries the colour code, one hue per character. */
-.sphere-fig .sf-t1 { fill: #0f3460; }
-.sphere-fig .sf-t2 { fill: #c0392b; }
-.sphere-fig .sf-t3 { fill: #27ae60; }
-.sphere-fig .sf-t4 { fill: #e67e22; }
 /* The interference line ends one slide and opens the next.  Colloquium
    swaps slides with display none/flex, so there is no cross-slide morph
    to hook into; the closest honest effect is to let the line rise into
@@ -425,13 +511,7 @@
 /* "From capacity to scaling laws": two schematic plots.  Same palette,
    stroke weights and type sizes as .sphere-fig above, so the two figures
    read as one family. */
-.plot-fig {
-  display: block;
-  width: 100%;
-  height: auto;
-  margin: 0.2em auto 0;
-  font-family: var(--colloquium-font-body);
-}
+
 .plot-fig .pf-axis {
   fill: none;
   stroke: var(--colloquium-muted);
@@ -439,7 +519,7 @@
 }
 .plot-fig .pf-curve {
   fill: none;
-  stroke: #0f3460;
+  stroke: var(--deck-navy);
   stroke-width: 2.8;
   stroke-linecap: round;
   stroke-linejoin: round;
@@ -453,7 +533,7 @@
 /* Red is reserved for the capacity marker, the one quantity the slide is
    about; the level guide for l stays muted. */
 .plot-fig .pf-tick {
-  stroke: #c0392b;
+  stroke: var(--deck-red);
   stroke-width: 2;
 }
 /* The same red, run the full height of the left panel: the capacity is the
@@ -461,7 +541,7 @@
    carries on above the l plateau.  Dashed, like the level guide, so it reads
    as a guide rather than as part of the step. */
 .plot-fig .pf-sep {
-  stroke: #c0392b;
+  stroke: var(--deck-red);
   stroke-width: 1.6;
   stroke-dasharray: 6 5;
 }
@@ -470,13 +550,13 @@
   font-size: 22px;
 }
 .plot-fig .pf-muted { fill: var(--colloquium-muted); }
-.plot-fig .pf-red { fill: #c0392b; }
-.plot-fig .pf-navy { fill: #0f3460; font-weight: 700; }
+.plot-fig .pf-red { fill: var(--deck-red); }
+.plot-fig .pf-navy { fill: var(--deck-navy); font-weight: 700; }
 .plot-fig .pf-strong { font-weight: 700; }
 .plot-fig .pf-small { font-size: 20px; }
 /* Twin-axis version: one grey axis shared by both laws, so the hue lives on
    the lines and in the legend under the plot instead. */
-.plot-fig .pf-curve-d { stroke: #c0392b; }
+.plot-fig .pf-curve-d { stroke: var(--deck-red); }
 .plot-fig .pf-var {
   font-family: "Latin Modern Math", "Cambria Math", Georgia, serif;
   font-style: italic;
@@ -494,11 +574,11 @@
   stroke-linecap: round;
   stroke-linejoin: round;
 }
-.plot-fig .rt-a { stroke: #0f3460; }
-.plot-fig .rt-b { stroke: #c0392b; }
-.plot-fig .rt-dot { stroke: #fcfcfb; stroke-width: 1.8; }
-.plot-fig .rt-fill-a { fill: #0f3460; }
-.plot-fig .rt-fill-b { fill: #c0392b; }
+.plot-fig .rt-a { stroke: var(--deck-navy); }
+.plot-fig .rt-b { stroke: var(--deck-red); }
+.plot-fig .rt-dot { stroke: var(--fig-surface); stroke-width: 1.8; }
+.plot-fig .rt-fill-a { fill: var(--deck-navy); }
+.plot-fig .rt-fill-b { fill: var(--deck-red); }
 /* Panel headings: the reading of each panel, so they are text-coloured and
    bold against the muted axis annotation. */
 .plot-fig .rt-title { font-size: 21px; font-weight: 700; }
@@ -516,7 +596,7 @@
 }
 .alpha-control input[type="range"] {
   width: 240px;
-  accent-color: #0f3460;
+  accent-color: var(--deck-navy);
 }
 .alpha-var {
   font-family: "Latin Modern Math", "Cambria Math", Georgia, serif;
@@ -605,8 +685,8 @@
    and they are the whole comparison, unlike the six-key ramps elsewhere, where
    the swatch alone does the identifying. */
 .rt-row > .cap-legend { top: -10px; }
-.rt-row .rt-key-a { color: #0f3460; font-weight: 700; }
-.rt-row .rt-key-b { color: #c0392b; font-weight: 700; }
+.rt-row .rt-key-a { color: var(--deck-navy); font-weight: 700; }
+.rt-row .rt-key-b { color: var(--deck-red); font-weight: 700; }
 
 /* practice-capacity slide */
 /* Two Chart.js panels side by side, each with a legend above the plot and its own
@@ -615,9 +695,12 @@
    the tallest box that still leaves the captions clear of the footer.  It also
    has to stay under the print cap the theme puts on row images,
    (720px - 2*padding - 96px) * --colloquium-print-row-frac, which is why the
-   slide's `rows:` track list gives the figure band the larger share: a smaller
-   share silently shrinks the exported/captured plots (the on-screen canvas is
-   unaffected, so this only shows up in a capture). */
+   slide's `rows:` track list gives the figure band the larger share.  A smaller
+   share used to silently shrink the exported plots while leaving the on-screen
+   canvas alone, so it only showed up in a capture; that was Chart.js sizing a
+   responsive canvas off the deck's post-transform width, and assets/plot.js now
+   pins every chart to its container's own layout box instead.  The cap still
+   applies, but missing it no longer costs resolution invisibly. */
 .pc-slide .colloquium-chart-container {
   height: 366px;
   margin: 0.1em 0 0;
@@ -660,15 +743,15 @@
   stroke-width: 2.4;
   stroke-linecap: round;
 }
-.embed-fig .ef-vec.ef-navy  { stroke: #0f3460; fill: none; }
-.embed-fig .ef-vec.ef-red   { stroke: #c0392b; fill: none; }
-.embed-fig .ef-vec.ef-green { stroke: #27ae60; fill: none; }
-.embed-fig .ef-fill-navy  { fill: #0f3460; }
-.embed-fig .ef-fill-red   { fill: #c0392b; }
-.embed-fig .ef-fill-green { fill: #27ae60; }
+.embed-fig .ef-vec.ef-navy  { stroke: var(--deck-navy); fill: none; }
+.embed-fig .ef-vec.ef-red   { stroke: var(--deck-red); fill: none; }
+.embed-fig .ef-vec.ef-green { stroke: var(--deck-green); fill: none; }
+.embed-fig .ef-fill-navy  { fill: var(--deck-navy); }
+.embed-fig .ef-fill-red   { fill: var(--deck-red); }
+.embed-fig .ef-fill-green { fill: var(--deck-green); }
 /* The bars are the distribution predicted for the first (navy) context, so they
    carry its hue; the non-argmax entries get a tint of the same. */
-.embed-fig .ef-navy-light { fill: #b6c3d1; }
+.embed-fig .ef-navy-light { fill: var(--deck-navy-tint); }
 
 /* theory-capacity slide */
 /* The chart column is much shorter than the commentary beside it, so left
@@ -713,13 +796,7 @@
    above (0 and 0.37em measure identically), so the figure carries the offset
    itself, as 9 units of top padding in its viewBox.  Re-measure both slides if
    either one's text above the figure changes. */
-.wbuild-fig {
-  display: block;
-  width: 100%;
-  height: auto;
-  margin: 0 auto 1.8em;
-  font-family: var(--colloquium-font-body);
-}
+
 .wbuild-fig .wb-head { fill: var(--colloquium-title); font-size: 22px; font-weight: 700; }
 .wbuild-fig .wb-context { fill: var(--colloquium-code-bg); stroke: var(--colloquium-border); }
 .wbuild-fig .wb-code { fill: var(--colloquium-text); font-family: var(--colloquium-font-mono); font-size: 15px; }
@@ -728,10 +805,10 @@
 .wbuild-fig marker#wb-arrow path { fill: var(--colloquium-muted); }
 .wbuild-fig .wb-circle { fill: none; stroke: var(--colloquium-muted); stroke-width: 1.6; }
 .wbuild-fig .wb-vec { stroke-width: 2.4; stroke-linecap: round; fill: none; }
-.wbuild-fig .wb-navy { stroke: #0f3460; }
-.wbuild-fig .wb-red  { stroke: #c0392b; }
-.wbuild-fig .wb-fill-navy { fill: #0f3460; }
-.wbuild-fig .wb-fill-red  { fill: #c0392b; }
+.wbuild-fig .wb-navy { stroke: var(--deck-navy); }
+.wbuild-fig .wb-red  { stroke: var(--deck-red); }
+.wbuild-fig .wb-fill-navy { fill: var(--deck-navy); }
+.wbuild-fig .wb-fill-red  { fill: var(--deck-red); }
 .wbuild-fig .wb-tok { font-size: 24px; font-weight: 700; }
 
 /* loss-step figure: the area-to-point build */
@@ -747,104 +824,10 @@
    not white, so the dot keeps its edge if the deck ever darkens; it matters
    because the N^(1-alpha) line is drawn through this point one step later. */
 .plot-fig .pf-point {
-  fill: #0f3460;
+  fill: var(--deck-navy);
   stroke: var(--colloquium-bg);
   stroke-width: 2.5;
 }
-
-/* The training pipeline, three stages side by side (slide 6).  Same visual
-   vocabulary as the FLOPs cards: 3px accent top rule, hairline divider
-   between columns, numbered accent badge -- but shorter, and the four rows
-   (goal / objective / data / era) are given fixed heights so that they line
-   up across the three columns. */
-.pipeline {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 0.9em;
-  align-items: stretch;
-  margin: 0.7em 0 0;
-}
-.pipeline .pipe-col {
-  display: flex;
-  flex-direction: column;
-  padding: 0.55em 0.75em 0;
-  border-top: 3px solid var(--pipe-accent);
-  text-align: left;
-}
-.pipeline .pipe-col + .pipe-col { border-left: 1px solid var(--colloquium-border); }
-.pipeline .pipe-pre { --pipe-accent: #0f3460; }
-.pipeline .pipe-sft { --pipe-accent: #c0392b; }
-.pipeline .pipe-rl  { --pipe-accent: #27ae60; }
-.pipeline .pipe-head {
-  display: flex;
-  align-items: center;
-  gap: 0.5em;
-  min-height: 1.9em;
-}
-.pipeline .pipe-step {
-  flex: none;
-  display: grid;
-  place-items: center;
-  width: 1.5em;
-  height: 1.5em;
-  border-radius: 50%;
-  color: white;
-  background: var(--pipe-accent);
-  font-size: 0.62em;
-  font-weight: 700;
-}
-.pipeline .pipe-title {
-  color: var(--colloquium-title);
-  font-size: 0.8em;
-  font-weight: 700;
-  line-height: 1.15;
-}
-.pipeline .pipe-label {
-  margin-top: 0.55em;
-  color: var(--colloquium-muted);
-  font-size: 0.46em;
-  font-weight: 700;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-}
-.pipeline .pipe-value {
-  min-height: 2.5em;
-  margin-top: 0.15em;
-  color: var(--colloquium-text);
-  font-size: 0.6em;
-  line-height: 1.35;
-}
-.pipeline .pipe-value strong { color: var(--colloquium-title); }
-.pipeline .pipe-data {
-  min-height: 3.4em;
-  margin-top: 0.15em;
-  color: var(--colloquium-muted);
-  font-size: 0.56em;
-  line-height: 1.4;
-}
-.pipeline .pipe-mono {
-  display: block;
-  margin-top: 0.25em;
-  color: var(--colloquium-text);
-  font-family: var(--colloquium-font-mono);
-  font-size: 0.92em;
-  line-height: 1.5;
-}
-.pipeline .pipe-era {
-  margin-top: auto;
-  padding: 0.35em 0 0.1em;
-  border-top: 1px solid var(--colloquium-border);
-  color: var(--pipe-accent);
-  font-size: 0.58em;
-  font-weight: 700;
-  letter-spacing: 0.01em;
-}
-
-/* Pipeline, follow-ups: two lines of value text have to fit inside the row
-   height that keeps the three columns aligned, and the closing sentence needs
-   air under the era rule. */
-.pipeline { margin: 1em 0 1.4em; }
-.pipeline .pipe-value { min-height: 2.85em; }
 
 /* The two "Scaling laws" slides: Kaplan's Figure 2, regenerated by
    scripts/kaplan_curves.py into figures/kaplan-{tokens,compute}-fig.md.  The plot
@@ -875,7 +858,7 @@
    it is a measurement. */
 .plot-fig .pf-front {
   fill: none;
-  stroke: #c0392b;
+  stroke: var(--deck-red);
   stroke-width: 3.2;
   stroke-linejoin: round;
   stroke-linecap: round;
@@ -908,7 +891,7 @@
    background-coloured outline under the glyphs.  `paint-order` is what makes that an
    outline rather than a smear over them. */
 .plot-fig .cp-halo {
-  stroke: #fcfcfb;
+  stroke: var(--fig-surface);
   stroke-width: 5;
   stroke-linejoin: round;
   paint-order: stroke fill;
@@ -933,13 +916,7 @@
    renders at roughly its own viewBox width, which makes the sizes below close to
    real pixels.  Colours are the roles the deck already uses: navy for the
    model's internals, blue for what it predicts, red for anything from the data. */
-.llmarch-fig {
-  display: block;
-  width: 100%;
-  height: auto;
-  margin: 1.5em auto 1.2em;
-  font-family: var(--colloquium-font-body);
-}
+
 .llmarch-fig text { fill: var(--colloquium-text); }
 
 /* The four nodes share one caption baseline, 32 units clear of everything above
@@ -960,27 +937,27 @@
    language modeling" slide -- one vector rather than that figure's three,
    because here there is only one context. */
 .llmarch-fig .lp-space { fill: none; stroke: var(--colloquium-muted); stroke-width: 1.6; }
-.llmarch-fig .lp-vec { fill: none; stroke: #0f3460; stroke-width: 2.6; }
+.llmarch-fig .lp-vec { fill: none; stroke: var(--deck-navy); stroke-width: 2.6; }
 
 /* The predicted distribution: candidates and bars, deliberately unlabelled --
    see the figure's header comment. */
 .llmarch-fig .lp-tok { font-family: var(--colloquium-font-mono); font-size: 19px; }
-.llmarch-fig .lp-bar rect { fill: #9ac7e2; }
-.llmarch-fig .lp-bar rect.lp-bar-top { fill: #2980b9; }
+.llmarch-fig .lp-bar rect { fill: var(--deck-blue-tint); }
+.llmarch-fig .lp-bar rect.lp-bar-top { fill: var(--deck-blue); }
 
 /* The observed token and the loss between it and the prediction: red, the
    deck's accent for anything the data supplies.  The arrow is plain: dashed
    read as "tentative" next to the figure's other, solid arrows, when this one
    is the most concrete relation on the slide. */
-.llmarch-fig .lp-obs-box { fill: #f4dede; stroke: #c0392b; stroke-width: 1.6; }
+.llmarch-fig .lp-obs-box { fill: var(--deck-red-wash); stroke: var(--deck-red); stroke-width: 1.6; }
 .llmarch-fig .lp-obs {
-  fill: #c0392b;
+  fill: var(--deck-red);
   font-family: var(--colloquium-font-mono);
   font-size: 24px;
   font-weight: 700;
 }
-.llmarch-fig .lp-xarrow { fill: none; stroke: #c0392b; stroke-width: 1.8; }
-.llmarch-fig .lp-xlab { fill: #c0392b; font-size: 17px; font-weight: 700; }
+.llmarch-fig .lp-xarrow { fill: none; stroke: var(--deck-red); stroke-width: 1.8; }
+.llmarch-fig .lp-xlab { fill: var(--deck-red); font-size: 17px; font-weight: 700; }
 
 /* The Chinchilla figures reuse .if-row (legend column, then plot) but their plot box
    sits differently inside its viewBox, so the lift that centres the legend on the

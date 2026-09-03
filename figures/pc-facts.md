@@ -106,6 +106,11 @@
      L* for the one step that has to carry the whole distinction.  The ladder is
      L* = 72.7, 62.6, 52.7, 42.8, 32.7, 18.4; steps 10.2, 9.9, 9.9, 10.1, 14.3.
 
+     The five ramp-derived literals below are byte-for-byte what ramp_at() prints
+     at those t against the ramp in scripts/_palette.py, so recomputing them lands
+     on the same hexes rather than a pair that differs in one channel and reads as
+     two colours in a grep.  Two of them used to be off by one unit that way.
+
      The six stops are also the ladder figures/pc-bitstrings.md draws its four
      series from, taking stops 1, 3, 5 and 6, so the two panels on the slide read
      as one colour scheme; see the COLOURS note there.
@@ -121,8 +126,7 @@
      AXIS.  x is in parameters, not in millions of them, so its ticks read
      1M / 10M / 100M -- the way every other model size in the deck is written --
      and the title is the deck's plain "model size N".  The y values stay in
-     M bits (that title is also how assets/pc-chart.js picks this pair of charts
-     out), so the dashed guide is still y = 2x/1e6 and still reads R = 2.
+     M bits, so the dashed guide is still y = 2x/1e6 and still reads R = 2.
 
      WHERE THE DATA SITS RELATIVE TO THE DASHED LINE.  Five of the six series
      reach or clear 2 bits/param at their peak; 50K comes within 4% (its best
@@ -134,10 +138,10 @@
 <span><svg width="11" height="10" viewBox="0 0 11 10" aria-hidden="true"><circle cx="5.5" cy="5" r="3" fill="#86b6ef"/></svg>50K</span>
 <span><svg width="11" height="10" viewBox="0 0 11 10" aria-hidden="true"><circle cx="5.5" cy="5" r="3" fill="#599ae8"/></svg>100K</span>
 <span><svg width="11" height="10" viewBox="0 0 11 10" aria-hidden="true"><circle cx="5.5" cy="5" r="3" fill="#3b7fd2"/></svg>200K</span>
-<span><svg width="11" height="10" viewBox="0 0 11 10" aria-hidden="true"><circle cx="5.5" cy="5" r="3" fill="#2265b6"/></svg>500K</span>
-<span><svg width="11" height="10" viewBox="0 0 11 10" aria-hidden="true"><circle cx="5.5" cy="5" r="3" fill="#174c91"/></svg>1M</span>
+<span><svg width="11" height="10" viewBox="0 0 11 10" aria-hidden="true"><circle cx="5.5" cy="5" r="3" fill="#2265b7"/></svg>500K</span>
+<span><svg width="11" height="10" viewBox="0 0 11 10" aria-hidden="true"><circle cx="5.5" cy="5" r="3" fill="#174d91"/></svg>1M</span>
 <span><svg width="11" height="10" viewBox="0 0 11 10" aria-hidden="true"><circle cx="5.5" cy="5" r="3" fill="#0a2d56"/></svg>2M facts</span>
-<span><svg width="24" height="10" viewBox="0 0 24 10" aria-hidden="true"><line x1="1" y1="5" x2="23" y2="5" stroke="#9ca3af" stroke-width="1.6" stroke-dasharray="6 5"/></svg>2 bits/param</span>
+<span><svg width="24" height="10" viewBox="0 0 24 10" aria-hidden="true"><line x1="1" y1="5" x2="23" y2="5" stroke="var(--fig-guide)" stroke-width="var(--fig-hair-width)" stroke-dasharray="6 5"/></svg>2 bits/param</span>
 </div>
 
 ```chart
@@ -249,7 +253,7 @@ data:
         - {x: 59220000, y: 11.28}
         - {x: 63230000, y: 11.27}
     - label: "500K facts"
-      color: "#2265b6"
+      color: "#2265b7"
       data:
         - {x: 5577000, y: 15.16}
         - {x: 6582000, y: 15.93}
@@ -287,7 +291,7 @@ data:
         - {x: 161600000, y: 27.72}
         - {x: 175000000, y: 27.72}
     - label: "1M facts"
-      color: "#174c91"
+      color: "#174d91"
       data:
         - {x: 11910000, y: 32.26}
         - {x: 13480000, y: 35.38}
@@ -330,11 +334,31 @@ data:
       data:
         - {x: 52120000, y: 104.8}
     - label: "ref: 2 bits/param"
-      color: "#9ca3af"
+      color: "var(--fig-guide)"
       data:
         - {x: 600000, y: 1.2}
         - {x: 500000000, y: 1000}
 options:
+  plot:
+    # Styling is declared here and read by assets/plot.js, the deck's one chart
+    # layer; see the SCHEMA comment there for the vocabulary.  This panel and the
+    # one beside it declare the same thing on purpose -- same line-plus-marker
+    # treatment, same tick notation -- so the slide reads as one comparison and
+    # not as two borrowed figures.
+    #
+    # Both panels get a line through their markers.  Allen-Zhu and Li publish
+    # theirs as a bare scatter, and this used to reproduce that -- but next to
+    # Morris's curves it read as a different kind of picture, and with ~30 dots
+    # per series the eye has to join them anyway to see the plateau the panel is
+    # about.  `markers: filled` keeps the joins straight (assets/plot.js gives
+    # every series tension 0), so nothing is interpolated beyond "these dots are
+    # one series".
+    markers: filled
+    guide: ["ref:"]
+    # Both axes run over five decades, where "1,000,000" and "100,000,000" collide
+    # and their commas are the only thing telling them apart.
+    xTicks: si
+    yTicks: si
   plugins:
     legend: {display: false}
   scales:
@@ -344,12 +368,14 @@ options:
       min: 600000
       max: 500000000
       grid: {drawOnChartArea: false}
-      ticks: {padding: 6}
+      ticks: {padding: 8}
     y:
       type: logarithmic
-      title: {display: true, text: "memory stored (M bits)", font: {size: 11}}
+      title: {display: true, text: "memory stored (M bits)"}
       min: 1
       max: 1100
       grid: {drawOnChartArea: false}
-      ticks: {padding: 6}
+      ticks: {padding: 8}
 ```
+
+<script src="assets/plot.js"></script>

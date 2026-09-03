@@ -72,7 +72,12 @@ COLORS = ("#86b6ef", "#5598e7", "#2a78d6", "#184f95", "#0d366b")
 # label or delimit: the figure file is this script's output whole.  The over-training
 # curves stay in the JSON and in figures/emergence.png -- this model shows the ordering
 # over training too, but not as a *sudden* switch, so it is not the deck's point.
-STYLE_SCRIPT = '<script src="assets/emergence-chart.js"></script>'
+#
+# How the chart is styled: colloquium forwards only label / data / color per series, but
+# it forwards any custom key under `options:` untouched, so the block below declares an
+# `options.plot` block and assets/plot.js -- the deck's one chart layer, shared with the
+# other five fences -- reads it.  See the SCHEMA comment there.
+STYLE_SCRIPT = '<script src="assets/plot.js"></script>'
 
 
 def key(h: int, steps: int, seed: int) -> str:
@@ -273,7 +278,17 @@ def chart_block(series, xlabel, xkind, xlo, xhi) -> str:
     for (lab, pts), col in zip(series, COLORS):
         lines += [f'    - label: "{lab}"', f'      color: "{col}"', "      data:",
                   _points(pts)]
-    lines += ["options:", "  plugins:", "    legend: {display: false}", "  scales:"]
+    # Model size in the deck's own notation -- 10k / 100k / 1M, the way every other
+    # model size in it is written -- rather than as powers of ten: this is the one
+    # chart whose x axis is read against the prose ("a 100k model"), not against a
+    # slope.  Accuracy is a fraction of a band, so quarters are the reading the
+    # sigmoids want; Chart.js's own choice was sixths.
+    lines += ["options:",
+              "  plot:",
+              "    markers: filled",
+              "    xTicks: si",
+              "    yTicks: step:0.25",
+              "  plugins:", "    legend: {display: false}", "  scales:"]
     lines += _axis("x", xlabel, xkind, xlo, xhi)
     lines += _axis("y", "top-1 accuracy", "linear", 0, 1)
     lines.append("```")
@@ -290,7 +305,7 @@ def legend_html() -> str:
     """
     spans = "\n".join(
         f'<span><svg width="30" height="10" viewBox="0 0 30 10" aria-hidden="true">'
-        f'<line x1="1" y1="5" x2="29" y2="5" stroke="{c}" stroke-width="2.2"/>'
+        f'<line x1="1" y1="5" x2="29" y2="5" stroke="{c}" stroke-width="var(--fig-data-width)"/>'
         f'<circle cx="15" cy="5" r="2.8" fill="{c}"/></svg>{lab}</span>'
         for lab, c in zip(E.LABELS, COLORS))
     head = '<span class="legend-note">ranks</span>'
@@ -300,11 +315,13 @@ def legend_html() -> str:
 def slide_body(store: dict, steps: int = STEPS) -> str:
     """The legend, the chart and its styling tag, as they appear on the slide.
 
-    The `<script src>` pass runs at parse time and only sees the canvases parsed so far,
-    so the tag has to come *after* the chart block.
+    The tag's position no longer matters -- assets/plot.js does its work from a
+    Chart.js plugin hook rather than at parse time -- but it stays after the chart
+    block, where it reads as belonging to it.
     """
     _, n, top1, _, _ = sweep_series(store, steps)
-    # the x range starts at a power of ten so that the drawn 10^k ticks land inside it
+    # the x range starts at a power of ten so that the 10k / 100k / 1M ticks land
+    # inside it (assets/plot.js puts them on the decades within the axis range)
     chart = chart_block([(lab, list(zip(n, top1[:, k])))
                          for k, lab in enumerate(E.LABELS)], "model size N",
                         "logarithmic", 10 ** np.floor(np.log10(n[0])), n[-1] * 1.4)

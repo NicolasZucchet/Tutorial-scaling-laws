@@ -7,9 +7,9 @@ Paste either block into `slides.md`.
 ## capacity vs the parameter count d·h  (dashed = one memory per parameter)
 
 <div class="cap-legend">
-<span><svg width="30" height="10" viewBox="0 0 30 10" aria-hidden="true"><line x1="1" y1="5" x2="29" y2="5" stroke="#9ca3af" stroke-width="1.5" stroke-dasharray="6 5"/></svg>one memory per parameter</span>
-<span><svg width="30" height="10" viewBox="0 0 30 10" aria-hidden="true"><line x1="1" y1="5" x2="29" y2="5" stroke="#0f3460" stroke-width="2.2"/><circle cx="15" cy="5" r="2.8" fill="#0f3460"/></svg>trained</span>
-<span><svg width="30" height="10" viewBox="0 0 30 10" aria-hidden="true"><line x1="1" y1="5" x2="29" y2="5" stroke="#c0392b" stroke-width="2.2"/><circle cx="15" cy="5" r="2.8" fill="#c0392b"/></svg>Hebbian</span>
+<span><svg width="30" height="10" viewBox="0 0 30 10" aria-hidden="true"><line x1="1" y1="5" x2="29" y2="5" stroke="var(--fig-guide)" stroke-width="var(--fig-hair-width)" stroke-dasharray="6 5"/></svg>one memory per parameter</span>
+<span><svg width="30" height="10" viewBox="0 0 30 10" aria-hidden="true"><line x1="1" y1="5" x2="29" y2="5" stroke="var(--deck-navy)" stroke-width="var(--fig-data-width)"/><circle cx="15" cy="5" r="2.8" fill="var(--deck-navy)"/></svg>trained</span>
+<span><svg width="30" height="10" viewBox="0 0 30 10" aria-hidden="true"><line x1="1" y1="5" x2="29" y2="5" stroke="var(--deck-red)" stroke-width="var(--fig-data-width)"/><circle cx="15" cy="5" r="2.8" fill="var(--deck-red)"/></svg>Hebbian</span>
 </div>
 
 ```chart
@@ -17,7 +17,7 @@ type: line
 data:
   datasets:
     - label: "trained"
-      color: "#0f3460"
+      color: "var(--deck-navy)"
       data:
         - {x: 8192, y: 1071.3}
         - {x: 16384, y: 2336.0}
@@ -27,7 +27,7 @@ data:
         - {x: 262144, y: 41839.7}
         - {x: 524288, y: 84473.0}
     - label: "Hebbian"
-      color: "#c0392b"
+      color: "var(--deck-red)"
       data:
         - {x: 8192, y: 109.3}
         - {x: 16384, y: 134.0}
@@ -37,7 +37,7 @@ data:
         - {x: 262144, y: 5117.7}
         - {x: 524288, y: 10664.0}
     - label: "one memory per parameter"
-      color: "#9ca3af"
+      color: "var(--fig-guide)"
       data:
         - {x: 8192, y: 8192}
         - {x: 16384, y: 16384}
@@ -47,6 +47,11 @@ data:
         - {x: 262144, y: 262144}
         - {x: 524288, y: 524288}
 options:
+  plot:
+    markers: filled
+    guide: ["one memory per parameter"]
+    xTicks: pow2
+    yTicks: pow10
   plugins:
     legend: {display: false}
   scales:
@@ -66,7 +71,7 @@ options:
       ticks: {padding: 8}
 ```
 
-<script src="assets/capacity-chart.js"></script>
+<script src="assets/plot.js"></script>
 
 ## capacity / h vs h
 
@@ -76,7 +81,7 @@ title: "Capacity per embedding dimension (d = 256) — flat means capacity ∝ h
 data:
   datasets:
     - label: "Trained (Adam, cross-entropy)"
-      color: "#0f3460"
+      color: "var(--deck-navy)"
       data:
         - {x: 32, y: 33.48}
         - {x: 64, y: 36.5}
@@ -86,7 +91,7 @@ data:
         - {x: 1024, y: 40.86}
         - {x: 2048, y: 41.25}
     - label: "Hebbian"
-      color: "#c0392b"
+      color: "var(--deck-red)"
       data:
         - {x: 32, y: 3.42}
         - {x: 64, y: 2.09}

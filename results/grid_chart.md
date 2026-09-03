@@ -20,9 +20,9 @@ Relative rms error on $L-L_\infty$; $L_\infty$ is known.
 <!-- results-alpha -- the deck's copy is figures/results-alpha.md -->
 
 <div class="cap-legend">
-<span><svg width="30" height="10" viewBox="0 0 30 10" aria-hidden="true"><circle cx="15" cy="5" r="3.2" fill="#0f3460"/></svg>model limited</span>
-<span><svg width="30" height="10" viewBox="0 0 30 10" aria-hidden="true"><circle cx="15" cy="5" r="3.2" fill="#c0392b"/></svg>data limited</span>
-<span><svg width="30" height="10" viewBox="0 0 30 10" aria-hidden="true"><line x1="1" y1="5" x2="29" y2="5" stroke="#9ca3af" stroke-width="1.5" stroke-dasharray="6 5"/></svg>theory</span>
+<span><svg width="30" height="10" viewBox="0 0 30 10" aria-hidden="true"><circle cx="15" cy="5" r="3.2" fill="var(--deck-navy)"/></svg>model limited</span>
+<span><svg width="30" height="10" viewBox="0 0 30 10" aria-hidden="true"><circle cx="15" cy="5" r="3.2" fill="var(--deck-red)"/></svg>data limited</span>
+<span><svg width="30" height="10" viewBox="0 0 30 10" aria-hidden="true"><line x1="1" y1="5" x2="29" y2="5" stroke="var(--fig-guide)" stroke-width="1.5" stroke-dasharray="6 5"/></svg>theory</span>
 </div>
 
 ```chart
@@ -30,7 +30,7 @@ type: line
 data:
   datasets:
     - label: "measured, model axis"
-      color: "#0f3460"
+      color: "var(--deck-navy)"
       data:
         - {x: 1.1, y: 0.1124}
         - {x: 1.2, y: 0.2116}
@@ -38,7 +38,7 @@ data:
         - {x: 1.5, y: 0.5077}
         - {x: 1.8, y: 0.8113}
     - label: "theory, model axis"
-      color: "#0f3460"
+      color: "var(--deck-navy)"
       data:
         - {x: 1.05, y: 0.0500}
         - {x: 1.085, y: 0.0848}
@@ -65,7 +65,7 @@ data:
         - {x: 1.815, y: 0.8152}
         - {x: 1.85, y: 0.8500}
     - label: "measured, data axis"
-      color: "#c0392b"
+      color: "var(--deck-red)"
       data:
         - {x: 1.1, y: 0.0873}
         - {x: 1.2, y: 0.1637}
@@ -73,7 +73,7 @@ data:
         - {x: 1.5, y: 0.3483}
         - {x: 1.8, y: 0.4907}
     - label: "theory, data axis"
-      color: "#c0392b"
+      color: "var(--deck-red)"
       data:
         - {x: 1.05, y: 0.0476}
         - {x: 1.085, y: 0.0782}
@@ -100,6 +100,17 @@ data:
         - {x: 1.815, y: 0.4491}
         - {x: 1.85, y: 0.4595}
 options:
+  plot:
+    markers: filled
+    markerFor:
+      "measured lower bound": hollow
+    scatter: ["measured"]
+    guide: ["theory"]
+    notes:
+      - {series: "theory, model axis", at: [1.44, 0.44], nudge: [-8, -18],
+         align: right, text: "_α_ − 1"}
+      - {series: "theory, data axis", at: [1.62, 0.3827], nudge: [8, 20],
+         align: left, text: "1 − 1/_α_"}
   plugins:
     legend: {display: false}
   scales:
@@ -119,6 +130,6 @@ options:
       ticks: {padding: 8}
 ```
 
-<script src="assets/results-chart.js"></script>
+<script src="assets/plot.js"></script>
 
 

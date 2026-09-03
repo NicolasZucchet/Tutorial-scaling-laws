@@ -9,18 +9,18 @@
      (scripts/chinchilla_svg.py) sampled for even lightness steps; see the
      COLOURS note in figures/pc-facts.md for how its t values were chosen.
      Taking every other stop gives ~20 L* per step, which is what four series
-     over one lightness range wants.  The dashed yardstick is #9ca3af in both.
+     over one lightness range wants.  The dashed yardstick is var(--fig-guide) in both.
 
      What the colour *means* is transposed between the two panels -- here it is
      the model size and the x axis is the data, there it is the amount of data
      and the x axis is the model -- so the axis titles and the legends have to
      do that work; the shared ramp only says "more" in the same direction. -->
 <div class="cap-legend">
-<span><svg width="22" height="10" viewBox="0 0 22 10" aria-hidden="true"><line x1="1" y1="5" x2="21" y2="5" stroke="#86b6ef" stroke-width="2.2"/><circle cx="11" cy="5" r="2.8" fill="#86b6ef"/></svg>0.17M</span>
-<span><svg width="22" height="10" viewBox="0 0 22 10" aria-hidden="true"><line x1="1" y1="5" x2="21" y2="5" stroke="#3b7fd2" stroke-width="2.2"/><circle cx="11" cy="5" r="2.8" fill="#3b7fd2"/></svg>0.5M</span>
-<span><svg width="22" height="10" viewBox="0 0 22 10" aria-hidden="true"><line x1="1" y1="5" x2="21" y2="5" stroke="#174c91" stroke-width="2.2"/><circle cx="11" cy="5" r="2.8" fill="#174c91"/></svg>2.5M</span>
-<span><svg width="22" height="10" viewBox="0 0 22 10" aria-hidden="true"><line x1="1" y1="5" x2="21" y2="5" stroke="#0a2d56" stroke-width="2.2"/><circle cx="11" cy="5" r="2.8" fill="#0a2d56"/></svg>7M params</span>
-<span><svg width="22" height="10" viewBox="0 0 22 10" aria-hidden="true"><line x1="1" y1="5" x2="21" y2="5" stroke="#9ca3af" stroke-width="1.6" stroke-dasharray="6 5"/></svg>bits in the data</span>
+<span><svg width="22" height="10" viewBox="0 0 22 10" aria-hidden="true"><line x1="1" y1="5" x2="21" y2="5" stroke="#86b6ef" stroke-width="var(--fig-data-width)"/><circle cx="11" cy="5" r="2.8" fill="#86b6ef"/></svg>0.17M</span>
+<span><svg width="22" height="10" viewBox="0 0 22 10" aria-hidden="true"><line x1="1" y1="5" x2="21" y2="5" stroke="#3b7fd2" stroke-width="var(--fig-data-width)"/><circle cx="11" cy="5" r="2.8" fill="#3b7fd2"/></svg>0.5M</span>
+<span><svg width="22" height="10" viewBox="0 0 22 10" aria-hidden="true"><line x1="1" y1="5" x2="21" y2="5" stroke="#174d91" stroke-width="var(--fig-data-width)"/><circle cx="11" cy="5" r="2.8" fill="#174d91"/></svg>2.5M</span>
+<span><svg width="22" height="10" viewBox="0 0 22 10" aria-hidden="true"><line x1="1" y1="5" x2="21" y2="5" stroke="#0a2d56" stroke-width="var(--fig-data-width)"/><circle cx="11" cy="5" r="2.8" fill="#0a2d56"/></svg>7M params</span>
+<span><svg width="22" height="10" viewBox="0 0 22 10" aria-hidden="true"><line x1="1" y1="5" x2="21" y2="5" stroke="var(--fig-guide)" stroke-width="var(--fig-hair-width)" stroke-dasharray="6 5"/></svg>bits in the data</span>
 </div>
 
 ```chart
@@ -54,7 +54,7 @@ data:
         - {x: 524288, y: 0.939}
         - {x: 2097152, y: 0.742}
     - label: "2.5M params"
-      color: "#174c91"
+      color: "#174d91"
       data:
         - {x: 256, y: 0.18}
         - {x: 1024, y: 0.72}
@@ -80,11 +80,19 @@ data:
         - {x: 524288, y: 11.6}
         - {x: 2097152, y: 10.7}
     - label: "ref: bits in the data"
-      color: "#9ca3af"
+      color: "var(--fig-guide)"
       data:
         - {x: 256, y: 0.18}
         - {x: 2097152, y: 1476}
 options:
+  plot:
+    # The same declaration as the panel beside it (figures/pc-facts.md), for the
+    # reason given there: the pair has to read as one comparison.  Read by
+    # assets/plot.js; see the SCHEMA comment there.
+    markers: filled
+    guide: ["ref:"]
+    xTicks: si
+    yTicks: si
   plugins:
     legend: {display: false}
   scales:
@@ -94,14 +102,14 @@ options:
       min: 190
       max: 3200000
       grid: {drawOnChartArea: false}
-      ticks: {padding: 6}
+      ticks: {padding: 8}
     y:
       type: logarithmic
-      title: {display: true, text: "memory stored (M bits)", font: {size: 11}}
+      title: {display: true, text: "memory stored (M bits)"}
       min: 0.08
       max: 320
       grid: {drawOnChartArea: false}
-      ticks: {padding: 6}
+      ticks: {padding: 8}
 ```
 
-<script src="assets/pc-chart.js"></script>
+<script src="assets/plot.js"></script>

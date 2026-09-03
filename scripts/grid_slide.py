@@ -37,7 +37,14 @@ SLIDES = ROOT / "slides.md"
 A_HS = (32, 64, 128, 256, 512)
 A_STEPS = (100, 400, 1600, 6400, 25_600)
 
-NAVY, RED = "#0f3460", "#c0392b"
+# The deck's tokens rather than hexes: the navy of the "model limited" points is
+# the navy of the number quoting them in the prose, and only the token block in
+# assets/slides.css can say that once.  A var() resolves by itself inside the
+# legend's inline SVG; inside the ```chart YAML it reaches Chart.js as a JSON
+# string painted on a canvas, which resolves nothing, so assets/plot.js resolves
+# it against the same :root.
+NAVY, RED, GUIDE = "var(--deck-navy)", "var(--deck-red)", "var(--fig-guide)"
+SURFACE = "var(--fig-surface)"
 # The chart is a file of its own, expanded into the deck by scripts/build_slides.py;
 # the fit block is prose plus a table, so it stays inline between markers.
 FIGURE = ROOT / "figures/results-alpha.md"
@@ -126,7 +133,7 @@ def alpha_chart_md(rows: list[dict]) -> str:
     # The hollow marker only earns a legend entry when there is one to explain.
     model_key = (
         f'<circle cx="11" cy="5" r="3.2" fill="{NAVY}"/>'
-        f'<circle cx="22" cy="5" r="3.2" fill="white" stroke="{NAVY}" stroke-width="1.8"/>'
+        f'<circle cx="22" cy="5" r="3.2" fill="{SURFACE}" stroke="{NAVY}" stroke-width="1.8"/>'
         f'</svg>model <span class="legend-note">(open = lower bound)</span>'
         if limited_a else
         f'<circle cx="15" cy="5" r="3.2" fill="{NAVY}"/></svg>model limited'
@@ -139,11 +146,23 @@ def alpha_chart_md(rows: list[dict]) -> str:
         f'      data:\n{pts(limited_a)}\n'
     )
 
+    # How the block below is styled.  colloquium forwards only label / data / color
+    # per series, but any custom key under `options:` reaches the browser untouched,
+    # so the styling is declared as an `options.plot` block and assets/plot.js --
+    # the deck's one chart layer, shared with the other five fences -- reads it.
+    # See the SCHEMA comment there for the vocabulary.  What this chart asks for:
+    # the measurements are `scatter`, because a line through five points would
+    # claim a model of alpha that the sweep does not have; the two theory curves
+    # are `guide`s (dashed, thin, unmarked, behind) and are named in the plot
+    # rather than in the legend, the way the scaling-law figure labels its lines;
+    # and a hollow marker means "bound, not measurement" -- the one place in the
+    # deck that says so, for a point whose pair still sits too close to its
+    # capacity for the model to be the binding constraint.
     return f"""
 <div class="cap-legend">
 <span><svg width="30" height="10" viewBox="0 0 30 10" aria-hidden="true">{model_key}</span>
 <span><svg width="30" height="10" viewBox="0 0 30 10" aria-hidden="true"><circle cx="15" cy="5" r="3.2" fill="{RED}"/></svg>data limited</span>
-<span><svg width="30" height="10" viewBox="0 0 30 10" aria-hidden="true"><line x1="1" y1="5" x2="29" y2="5" stroke="#9ca3af" stroke-width="1.5" stroke-dasharray="6 5"/></svg>theory</span>
+<span><svg width="30" height="10" viewBox="0 0 30 10" aria-hidden="true"><line x1="1" y1="5" x2="29" y2="5" stroke="{GUIDE}" stroke-width="var(--fig-hair-width)" stroke-dasharray="var(--fig-dash)"/></svg>theory</span>
 </div>
 
 ```chart
@@ -167,6 +186,17 @@ data:
       data:
 {pts(g, 1.0 - 1.0 / g)}
 options:
+  plot:
+    markers: filled
+    markerFor:
+      "measured lower bound": hollow
+    scatter: ["measured"]
+    guide: ["theory"]
+    notes:
+      - {{series: "theory, model axis", at: [1.44, 0.44], nudge: [-8, -18],
+         align: right, text: "_\u03b1_ \u2212 1"}}
+      - {{series: "theory, data axis", at: [1.62, 0.3827], nudge: [8, 20],
+         align: left, text: "1 \u2212 1/_\u03b1_"}}
   plugins:
     legend: {{display: false}}
   scales:
@@ -186,7 +216,7 @@ options:
       ticks: {{padding: 8}}
 ```
 
-<script src="assets/results-chart.js"></script>
+<script src="assets/plot.js"></script>
 """
 
 

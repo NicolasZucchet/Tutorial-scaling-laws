@@ -1,10 +1,10 @@
 <div class="cap-legend">
 <span class="legend-note">ranks</span>
-<span><svg width="30" height="10" viewBox="0 0 30 10" aria-hidden="true"><line x1="1" y1="5" x2="29" y2="5" stroke="#86b6ef" stroke-width="2.2"/><circle cx="15" cy="5" r="2.8" fill="#86b6ef"/></svg>1-1k</span>
-<span><svg width="30" height="10" viewBox="0 0 30 10" aria-hidden="true"><line x1="1" y1="5" x2="29" y2="5" stroke="#5598e7" stroke-width="2.2"/><circle cx="15" cy="5" r="2.8" fill="#5598e7"/></svg>2-3k</span>
-<span><svg width="30" height="10" viewBox="0 0 30 10" aria-hidden="true"><line x1="1" y1="5" x2="29" y2="5" stroke="#2a78d6" stroke-width="2.2"/><circle cx="15" cy="5" r="2.8" fill="#2a78d6"/></svg>5-6k</span>
-<span><svg width="30" height="10" viewBox="0 0 30 10" aria-hidden="true"><line x1="1" y1="5" x2="29" y2="5" stroke="#184f95" stroke-width="2.2"/><circle cx="15" cy="5" r="2.8" fill="#184f95"/></svg>10-11k</span>
-<span><svg width="30" height="10" viewBox="0 0 30 10" aria-hidden="true"><line x1="1" y1="5" x2="29" y2="5" stroke="#0d366b" stroke-width="2.2"/><circle cx="15" cy="5" r="2.8" fill="#0d366b"/></svg>20-30k</span>
+<span><svg width="30" height="10" viewBox="0 0 30 10" aria-hidden="true"><line x1="1" y1="5" x2="29" y2="5" stroke="#86b6ef" stroke-width="var(--fig-data-width)"/><circle cx="15" cy="5" r="2.8" fill="#86b6ef"/></svg>1-1k</span>
+<span><svg width="30" height="10" viewBox="0 0 30 10" aria-hidden="true"><line x1="1" y1="5" x2="29" y2="5" stroke="#5598e7" stroke-width="var(--fig-data-width)"/><circle cx="15" cy="5" r="2.8" fill="#5598e7"/></svg>2-3k</span>
+<span><svg width="30" height="10" viewBox="0 0 30 10" aria-hidden="true"><line x1="1" y1="5" x2="29" y2="5" stroke="#2a78d6" stroke-width="var(--fig-data-width)"/><circle cx="15" cy="5" r="2.8" fill="#2a78d6"/></svg>5-6k</span>
+<span><svg width="30" height="10" viewBox="0 0 30 10" aria-hidden="true"><line x1="1" y1="5" x2="29" y2="5" stroke="#184f95" stroke-width="var(--fig-data-width)"/><circle cx="15" cy="5" r="2.8" fill="#184f95"/></svg>10-11k</span>
+<span><svg width="30" height="10" viewBox="0 0 30 10" aria-hidden="true"><line x1="1" y1="5" x2="29" y2="5" stroke="#0d366b" stroke-width="var(--fig-data-width)"/><circle cx="15" cy="5" r="2.8" fill="#0d366b"/></svg>20-30k</span>
 </div>
 
 ```chart
@@ -72,6 +72,10 @@ data:
         - {x: 2.097e+06, y: 0.358}
         - {x: 4.194e+06, y: 0.615}
 options:
+  plot:
+    markers: filled
+    xTicks: si
+    yTicks: step:0.25
   plugins:
     legend: {display: false}
   scales:
@@ -91,4 +95,4 @@ options:
       ticks: {padding: 8}
 ```
 
-<script src="assets/emergence-chart.js"></script>
+<script src="assets/plot.js"></script>

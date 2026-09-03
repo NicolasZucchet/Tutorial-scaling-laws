@@ -119,7 +119,7 @@ already done. Outputs:
 |---|---|
 | `results/capacity.json` | every probe: `n`, accuracy, steps, whether the step backstop bound it |
 | `results/capacity_chart.md` | two colloquium ` ```chart ` blocks + a table, for reading outside the deck |
-| `figures/capacity-chart.md` | with `--write-slide`: the deck's figure — the slide version of the first chart, its legend and `assets/capacity-chart.js`. The slide holds only `<!-- figure: capacity-chart -->`, so this script owns the plot outright |
+| `figures/capacity-chart.md` | with `--write-slide`: the deck's figure — the slide version of the first chart, its legend and its `assets/plot.js` tag. The slide holds only `<!-- figure: capacity-chart -->`, so this script owns the plot outright |
 
 Method notes, because a "100 % accuracy" number is only as good as its protocol:
 
@@ -471,9 +471,14 @@ the realisation). Chunk 0 is byte-for-byte the file the first pass used.
 
 Two things make this *finite support*, not a finite dataset: contexts are sampled online
 from the truncated Zipf, and every occurrence gets a fresh next-token draw from its fixed
-conditional. There is no held-out set and no train/test gap — evaluation weights all
-10 000 contexts by their exact renormalised frequencies. So the curve below is what
-running out of *things to learn* looks like, never what overfitting looks like.
+conditional. Within the pool there is no held-out set and no train/test gap — evaluation
+weights all 10 000 contexts by their exact renormalised frequencies, and every one of them
+has been seen thousands of times. So the curve below is what running out of *things to
+learn* looks like, never what overfitting looks like.
+
+That is a statement about the pool, not about the world. Score the same runs against the
+*untruncated* Zipf and there is a train/test gap, a large one; that is the second curve on
+the slide and it has its own section below.
 
 | `h` | `N` | excess loss | local slope | at `D` = 6.55e6 | its slope |
 |---|---|---|---|---|---|
@@ -497,6 +502,79 @@ That acceleration is the point of the slide.
 rather than a property of the problem.** The paragraph below is the evidence; the short
 version is that the relaxation is residual under-convergence whose size grows with `N`,
 so the bottom of this curve is an upper bound that gets looser as it goes right.
+
+### Testing those runs on the pool they never saw
+
+`finite_context_sweep.py` scores each run on its own 10 000-context pool. That is the
+honest in-distribution number, and it is the solid curve on the slide — but it is not the
+loss anyone would care about, because the pool is not the distribution. The models were
+trained on a Zipf truncated at rank 10 000; the full Zipf puts **13.70 %** of its mass
+beyond that rank, on contexts these models have never once seen.
+
+```bash
+export PYTHONPATH=src
+uv run python scripts/finite_test_loss.py            # 9 cells, ~25 min
+uv run python scripts/finite_test_loss.py --hs 8 16  # a subset
+uv run python scripts/finite_test_loss.py --report
+```
+
+Each cell is retrained on the byte-identical stream at the learning rate that won the
+grid in `finite_context_sweep.py` — one rate, not the whole grid, since the grid's only
+job was to pick it — and then scored twice: once against the truncated evaluator, once
+against `build_strat_eval()`'s full-Zipf one, which is exactly the evaluator the
+infinite-pool column of the scan uses. The first score is a **reproduction check**: a
+cell whose training loss does not come back to within 2e-4 of the recorded one is
+reported and dropped rather than plotted, because a silent mismatch would mean the two
+curves no longer come from the same models. All nine reproduce, to better than 1e-6.
+
+| `h` | `N` | on its own 10k pool | on the full Zipf | ratio |
+|---|---|---|---|---|
+| 8 | 4 096 | 1.693760 | 2.139823 | 1.26x |
+| 16 | 8 192 | 1.324290 | 1.828469 | 1.38x |
+| 32 | 16 384 | 1.032189 | 1.585414 | 1.54x |
+| 64 | 32 768 | 0.783342 | 1.389643 | 1.77x |
+| 128 | 65 536 | 0.566139 | 1.230682 | 2.17x |
+| 256 | 131 072 | 0.380709 | 1.119451 | 2.94x |
+| 512 | 262 144 | 0.228566 | 1.050476 | 4.60x |
+| 1024 | 524 288 | 0.127971 | 0.904004 | 7.06x |
+| 2048 | 1 048 576 | 0.080208 | 0.771079 | 9.61x |
+
+**The gap opens by a factor of ten across the sweep** — 1.26x at the smallest model,
+9.61x at the largest. The in-pool curve falls by 21x over the range; the held-out curve
+falls by 2.8x and is visibly flattening. So the steepening slope that is the point of
+this slide is, read on the full distribution, mostly an artefact of asking the model only
+about the ten thousand contexts it was trained on.
+
+Worse than flattening: the held-out curve stays **above** the infinite-pool run at every
+`N` (0.771 vs 0.678 at `N` = 1.05e6), so restricting the training distribution does not
+merely stop helping, it loses to not restricting it — at the same `N` and the same `D`.
+
+The per-stratum breakdown says why, and it is not the obvious reason. Ignorance about the
+unseen tail would cost `log d - E[H]` = 3.78 nats per context, the price of a uniform
+guess. Measured, the contexts beyond rank 10 000 cost **about 6.2 nats**, and the number
+is flat all the way out to rank 1e7:
+
+| context rank | excess loss (nats) |
+|---|---|
+| 1 | 0.004 |
+| 100 | 0.129 |
+| 1 000 | 0.821 |
+| 3 162 | 1.798 |
+| 7 498 | 3.188 |
+| **10 000** | **6.176** |
+| 31 622 | 6.237 |
+| 1e6 | 6.115 |
+| 1e7 | 6.100 |
+
+A model that has only ever seen 10 000 contexts is not ignorant about the rest, it is
+**confidently wrong** about them: every embedding it is shown gets mapped into one of the
+targets it has memorised, so an unseen context draws a sharp prediction that happens to be
+wrong, which costs far more than a flat one. 0.137 x 6.2 + 0.863 x 0.229 = 1.05, which is
+the measured held-out loss at `h` = 512 to two decimals.
+
+This is the mechanism behind the caveat on the "From capacity to scaling laws" slide, that
+a faster loss decay is not automatically a better model: the decay is fast here precisely
+because the thing being measured has been made small.
 
 ### Why 409 600 steps, and why the top rung is still an upper bound
 
@@ -567,7 +645,7 @@ count; `meta.series` records which one the last run produced) with every cell's
 learning-rate grid and per-stratum losses. The slide's chart block is **hand-written** in
 `figures/finite-chart.md`: there is no `--write-slide` and no BEGIN/END markers, so the
 numbers there are copied from this JSON by hand, from the `excess_star` field. Both of its
-series are at `D = 2.62e7`. `assets/finite-chart.js` styles its markers.
+series are at `D = 2.62e7`. `assets/plot.js` styles it, from the `options.plot` block in the fence.
 
 ## Layout
 
@@ -588,19 +666,144 @@ series are at `D = 2.62e7`. `assets/finite-chart.js` styles its markers.
 | `scripts/grid_slide.py` | turns the scans into the deck's Results slides: `--write-slide` writes `figures/results-alpha.md` (the exponents-vs-α chart) and the inline `results-fit` block in `slides.md` |
 | `scripts/isoflop_sweep.py` | six widths per compute budget, centred on `N*`: the sweep the IsoFLOP figure is fitted to |
 | `scripts/isoflop_slide.py` | the IsoFLOP construction: parabolas, minima, `N*(C)`, as a generated SVG with two reveals; `--write-slide` writes `figures/isoflop-figure.md` and the inline `isoflop-exponents` sentence in `slides.md` |
-| `assets/results-chart.js` | the alpha result slide's line and marker styling |
 | `scripts/emergence.py` | the emergence sweep, its six-panel figure, and the deck's accuracy-vs-`N` chart: `--write-slide` writes `figures/emergence-chart.md` (legend and styling script included), the figure on "Digression: emergent behavior under the hood" |
-| `assets/emergence-chart.js` | the emergence chart's marker styling and log tick labels, loaded from the `<script src>` tag at the end of `figures/emergence-chart.md` |
 | `scripts/finite_context_sweep.py` | the finite-context-pool sweep: online truncated Zipf, exact frequency-weighted eval |
-| `assets/finite-chart.js` | the finite-data chart's filled markers (colloquium draws line points hollow by default) |
-| `assets/pc-chart.js` | the two practice-capacity charts (digitised from Allen-Zhu & Li and Morris et al.): filled markers, dashed yardsticks, decade-only ticks written `1k` / `1M`. One file for the pair — the pass is shared and the tick plugin must be registered once — loaded from the `<script src>` tag at the end of `figures/pc-bitstrings.md`, which sits after both chart blocks |
+| `scripts/finite_test_loss.py` | scores those same runs against the **full** Zipf — the held-out half of that slide. Retrains each cell at the rate the sweep picked and refuses to keep a cell whose training loss does not reproduce |
 | `slides.md` | the deck (colloquium). Build it with **`uv run python scripts/build_slides.py`**, not `colloquium build` — see below |
-| `figures/*.html` | the deck's six hand-drawn SVG figures, one file each: `embed-fig`, `zipf-fig`, `w-build-fig`, `sphere-fig`, `loss-step-fig`, `scaling-twin-fig`. `slides.md` refers to each by a one-line `<!-- figure: <key> -->` placeholder and holds no SVG itself |
+| `figures/*.md` | the deck's hand-drawn SVG figures, one file each: `embed-fig`, `zipf-fig`, `w-build-fig`, `sphere-fig`, `loss-step-fig`, `scaling-twin-fig`, `matmul-dot-fig`, `llm-arch-fig`, `training-flops-fig`. `slides.md` refers to each by a one-line `<!-- figure: <key> -->` placeholder and holds no SVG itself |
 | `figures/pc-facts.md`, `figures/pc-bitstrings.md`, `figures/finite-chart.md` | the three *hand-written* chart figures — digitised or copied numbers, no generator script — each with its `cap-legend`. `slides.md` keeps only the placeholder, the surrounding prose and, on the finite-data slide, the `cap-cue` marker that belongs to the step sequence |
 | `figures/capacity-chart.md`, `figures/isoflop-figure.md`, `figures/results-alpha.md`, `figures/emergence-chart.md` | the same placeholder mechanism for the four *plotted* figures, each written by its generator (`capacity_sweep.py`, `isoflop_slide.py`, `grid_slide.py`, `emergence.py` with `--write-slide`) together with its legend and its `assets/*.js` styling tag. Generated files: edit the script, not these |
-| `scripts/build_slides.py` | expands those placeholders and runs colloquium: `build_slides.py` → `slides.html`, `--check` verifies every placeholder resolves and no figure is orphaned, and `--serve [-p 8090]` watches the slides, figures, bibliography, and assets while serving the expanded deck at `/slides.html`. Colloquium has no include directive, so `colloquium build slides.md` on its own renders the figures empty |
-| `assets/slides.css` | the deck's stylesheet, pulled in by the `<link>` on the title slide; font URLs are relative to `assets/`, so it needs to sit next to `slides.html` |
-| `assets/capacity-chart.js`, `assets/scaling-slider.js` | the deck's two scripts: capacity-chart markers and tick labels, and the α slider on the twin-axis scaling-law slide |
+| `scripts/build_slides.py` | expands the placeholders and runs colloquium: `build_slides.py` → `slides.html`, and `--serve [-p 8090]` watches the slides, figures, bibliography, and assets while serving the expanded deck at `/slides.html`. Colloquium has no include directive, so `colloquium build slides.md` on its own renders the figures empty. `--check` verifies every placeholder resolves, no figure is orphaned, every slide's `<div>`s balance and every animation step is reachable; it also injects the analytics tag — see "Deck conventions" below |
+| `assets/slides.css` | the deck's stylesheet, pulled in by the `<link>` on the title slide; font URLs are relative to `assets/`, so it needs to sit next to `slides.html`. Opens with the design-token block — see "Deck conventions" |
+| `assets/plot.js` | the deck's one chart layer, for all six Chart.js figures: it copies the stylesheet's tokens into `Chart.defaults` so the charts are typographically the same family as the hand-drawn figures, resolves a token-named series colour, and reads the `options.plot` block each fence declares (markers, dashes, tick formats). It replaced five per-chart files that between them implemented the same power-of-ten tick drawer three times and marker styling five times, at six different radii |
+| `assets/scaling-slider.js` | the α slider on the twin-axis scaling-law slide |
+
+## Deck conventions
+
+Four things the deck does the same way everywhere, and where each one lives. All of them
+exist because the alternative had already drifted once.
+
+### The figures' colours
+
+`assets/slides.css` opens with a `:root` block naming the deck's accents
+(`--deck-navy`, `--deck-red`, `--deck-green`, plus an orange, a blue and their pale
+washes) and the handful of figure inks the chart layer needs (`--fig-guide`,
+`--fig-surface`, `--fig-data-width`, `--fig-hair-width`, `--fig-dash`, `--fig-point`,
+`--fig-text`, `--fig-small`). The chart fences and `assets/plot.js` take their colours
+and weights from there, so the six Chart.js figures and the prose agree on one palette —
+the navy of a series is the navy of the number quoting it beside the plot.
+
+**The hand-drawn SVG figures keep their own sizes, on purpose.** A figure is an `<svg>`
+with a `viewBox` and `width: 100%`, so `20px` inside it means 20 *canvas units*, and the
+browser scales the canvas to whatever column the figure sits in — 0.98 of authored size
+in the full slide body, 0.47 in half of a two-column slide. A single token cannot mean one
+size on screen *and* one size relative to the plot at the same time, and it is the second
+that matters: each figure's type is tuned to be proportionate inside its own plot box.
+Making the rendered size uniform instead (one token times a per-figure scale factor) does
+close the 12-to-20px spread across figures, and it makes the narrower figures' labels
+crowd their plots, because the plot box does not grow with the type. It was tried and
+reverted; don't try it again without solving the plot box too.
+
+### How a chart declares its styling
+
+Colloquium's ```chart fence forwards only `label`, `data` and `color` per series — a
+`borderDash` or a `pointRadius` written in the YAML is dropped — but it forwards any
+custom key under `options:` untouched. So each fence declares an `options.plot` block and
+`assets/plot.js` reads it. That block is the whole vocabulary; the reference copy is the
+`SCHEMA` comment at the top of that file.
+
+```yaml
+options:
+  plot:
+    markers: filled          # filled | hollow | none, for every series
+    markerFor:               # per-series override
+      "measured lower bound": hollow
+    dash: ["first 10k, tested on all"]   # dashed, but still data
+    guide: ["one memory per parameter"]  # a yardstick: dashed, thin, unmarked, behind
+    scatter: ["measured"]    # markers only -- a line here would claim a model
+    xTicks: si               # si | pow10 | pow2 | step:<n> | at:<v>,<v>,... | absent
+    yTicks: step:0.25
+    notes:                   # in-plot series labels; _underscores_ = italic maths
+      - {series: "theory, model axis", at: [1.44, 0.44], nudge: [-8, -18],
+         align: right, text: "_α_ − 1"}
+```
+
+A name matches a series if it appears anywhere in that series' label, case-insensitively,
+and the longest match wins — which is what lets one `guide: ["ref:"]` cover both
+practice-capacity panels, and what keeps the two blue curves of the finite-data slide on
+separate animation beats (`data-cap-series="first 10k contexts"` is more specific than
+`first 10k`, which would match both).
+
+`dash` and `guide` are deliberately different. `guide` is the deck's yardstick idiom —
+dashed *and* hairline *and* unmarked *and* drawn behind — so it means "not data". `dash`
+changes only the stroke pattern: the series keeps its weight, its markers and its place
+in front, so it means "the same models, read another way".
+
+Two behaviours the old per-chart files encoded that the schema preserves: `tension = 0`
+on every series without exception, because log-log data must not be given curvature it
+did not earn; and a hollow marker means "bound, not measurement", which is true of
+exactly one chart in the deck.
+
+**One bug worth knowing about, since it was invisible on screen.** Chart.js sizes a
+responsive canvas from its container's *rendered* rect, and this deck is a fixed 1280×720
+box that a CSS transform scales to fit the window. So every chart canvas came out at the
+post-transform width — 347 px in the 800×600 window Chromium prints from. Print and PDF
+do not use the canvas, they use the `<img>` the bootstrap snapshots it into, laid out at
+the container's own 556 px. Every exported chart was therefore a 347 px raster stretched
+across 556 px: type, lines and markers uniformly 1.6× too big and soft, on pages whose
+SVG figures were exact. `plot.js` pins each chart to its container's layout box instead
+(`responsive: false`) — those boxes are a fixed pixel size, so responsiveness bought
+nothing and was the sole source of the viewport dependence.
+
+### Vertical space
+
+Spacing between blocks is a `<div style="margin-top: 1.5em"></div>` written where it is
+needed, and `--deck-gap` (the same 1.5em) is the top and bottom margin every figure root
+takes. A handful of places deliberately tighten a stack with a negative value.
+
+One trap to know about if you ever automate these. Colloquium wraps each block of a
+`<!-- step -->` group in its own fragment, and it skips empty spacer divs when it does —
+but the test it skips them by is that the div's **class** starts with
+`colloquium-spacer-`. A div carrying only a `style=` attribute fails that test and is
+eligible to become a fragment of its own: a click that reveals nothing but a gap, in the
+middle of the slide's animation. The deck does not hit this today, because none of the
+affected step groups also contains element-level fragments, which is what splits a group
+into per-block fragments. It is one reordering away, and it would show up during the talk
+rather than in any check here — so if a step ever seems to do nothing, this is why.
+
+### Analytics
+
+The deck reports to Google Analytics property **`G-9DE3SJYSNF`**, and an ordinary build
+carries the tag:
+
+```bash
+uv run python scripts/build_slides.py                       # -> the hosted deck
+COLLOQUIUM_GA_ID=G-OTHER uv run python scripts/build_slides.py   # another property
+COLLOQUIUM_GA_ID= uv run python scripts/build_slides.py          # no tag at all
+```
+
+The ID is a literal in `scripts/build_slides.py`, not a secret in the environment: a GA4
+measurement ID ships in the clear in the `<head>` of every page that uses it, so hiding it
+would buy nothing, while a build step that has to be remembered buys a deck that is
+quietly untracked. Unset means the default; *set but empty* is how you say "no tag", which
+is why the two are distinguished. An unparseable ID fails the build before colloquium
+runs, rather than after.
+
+Why the injection lives in `build_slides.py` at all: colloquium 0.2.3 has no hook for a
+`<head>` script — the page is a fixed template with five substitution points and the
+frontmatter keys it reads are a closed list, so a `custom_head:` beside `custom_css:` is
+silently discarded. A `<script>` in a slide body does work (it is how `slides.css` and
+`references.js` get in), but colloquium base64s each slide's source into a
+`data-colloquium-md` attribute, so the tag would end up in the file twice.
+
+`--serve` deliberately does **not** inject the tag: that path hands the expanded deck to
+`colloquium serve`, which builds it itself. That is the behaviour you want — the dev server
+is the one origin that really is `http`, so it is the one place a tag would quietly fill
+the property with your own reloads. Analytics belongs to the artefact that gets hosted.
+
+Note `gtag` only reports from an `http(s)` origin, so a deck opened over `file://` is
+unaffected either way — this matters only for the hosted copy.
+
 
 ## Notes on the implementation
 
