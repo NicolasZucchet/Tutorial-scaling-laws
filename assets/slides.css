@@ -341,6 +341,9 @@
 .slide p + ul {
   margin-top: -0.5em;   /* 0.8em gap → ~0.4em */
 }
+.slide p + ol {
+  margin-top: -0.5em;   /* 0.8em gap → ~0.4em */
+}
 
 /* Increase space after slide titles */
 .slide h2 {

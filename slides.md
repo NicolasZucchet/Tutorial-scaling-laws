@@ -23,7 +23,7 @@ footer:
 
 Nicolas Zucchet -- [nzucchet@stanford.edu](mailto:nzucchet@stanford.edu)
 
-September 8th 2026
+MLSS Tübingen Tutorial -- September 8th 2026
 
 <!-- The deck's stylesheet, for every slide: colloquium has no hook for an
      external sheet, and a <link> in the body is honoured all the same.  The
@@ -49,9 +49,16 @@ Scaling laws are the science behind **1.** and are what justified the huge inves
 <!-- step -->
 <div style="margin-top: 1.5em"></div>
 
-They interesting from an **engineering perspective**, as they are useful tools to design models, and also from a **scientific standpoint**, as they suggest some universal principles underlying learning, yet to be fully discovered!
+They interesting from an **engineering perspective**, (useful tools to design models), and from a **scientific standpoint** (suggest some universal principles underlying learning to be discovered!).
 
-Here focus on LLMs, but the **principles are more general** and extend beyond
+<!-- step -->
+<div style="margin-top: 1.5em"></div>
+
+```box
+title: Goal of the tutorial
+tone: accent
+content: Build **intuition** on why scaling law are **useful** and **why they hold**.
+```
 
 ---
 
@@ -1101,9 +1108,15 @@ We have **just touched upon** (toy) models and theories of scaling, some **cool 
 
 ## Training a frontier toy model
 
-**Problem.** We have access to new important data and want to train the best possible (toy) model on it.
+**Problem.** We have access to new important data and want to train the **best possible (toy) model** on it.
 
-**Constraints.** You don't know what the model is and can control the number of parameters $N$, the number of tokens $D$, as well as the learning rate, and what are the tuning experiments you do. The total amount of compute for both hyperparameter optimization and the final run. 
+<!-- step -->
+<div style="margin-top: 1.5em"></div>
+
+**Constraints.** You don't know what the model is and can control the **number of parameters** $N$, the **number of tokens** $D$, as well as the **learning rate**, and what are the tuning experiments you do. The total amount of compute for both hyperparameter optimization and the final run is fixed. 
+
+<!-- step -->
+<div style="margin-top: 1.5em"></div>
 
 **Your job.** Come up with the **best model**!
 
