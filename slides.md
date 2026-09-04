@@ -689,7 +689,6 @@ The prediction for context $i$ is perturbed by the **other embeddings close to**
 <!-- figure: w-build-fig -->
 
 <!-- step -->
-
 <div style="margin-top: 1.5em"></div>
 
 **Querying.** $(W e_i)_y = \sum_{j \,:\, y^*_j = y} e_j^\top e_i$: compare the query $e_i$ with all the other embeddings and see **which color dominates**.
@@ -968,7 +967,7 @@ The loss decreases as $C^{-0.091}$ (predicted $C^{-0.091}$), the model size grow
 
 ---
 
-<!-- rows: 2/2/11 -->
+<!-- rows: 2/3/10 -->
 <!-- class: chin-slide -->
 ## Are the toy model predictions good enough?
 
@@ -982,11 +981,7 @@ $$L= E + A N^{-a}+B D^{-b}.$$
 
 |||
 
-<div class="chin-independence">
-
 $N$ and data $D$ treated as **independent**.
-
-</div>
 
 ===
 
@@ -1004,7 +999,7 @@ at $8$--$16\times$ the fitting budget.
 
 <div class="inline-footnote">
 
-Relative rms error on $L-E; $E$ is known here (0).
+Relative rms error on $L-E$; $E$ is known here (0).
 
 </div>
 
