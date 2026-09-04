@@ -1,0 +1,82 @@
+# Rebuild the deck from source on every push and publish it to Pages.
+#
+# The committed slides.html is a convenience, not the published artefact: it has
+# already drifted from slides.md once (a typo fix and a row-class change lived in
+# the source for a commit without reaching the build). What gets served is always
+# built here, from the sources in the same commit.
+name: slides
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Serialise deployments, and let a newer push cancel a build still in flight --
+# the deck is a single artefact, so the last push should win.
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: astral-sh/setup-uv@v10.0.1
+        with:
+          enable-cache: true
+          cache-dependency-glob: uv.lock
+
+      # colloquium and nothing else, at the version uv.lock pins. --frozen so a
+      # drifted lock fails instead of silently resolving something newer, and
+      # --no-install-project keeps jax, numpy, scipy and matplotlib off the
+      # runner: no experiment runs here, and no figure or data cache is
+      # regenerated. Every number the deck shows is committed under figures/.
+      - name: Install the deck's build dependency
+        run: uv sync --only-group dev --no-install-project --frozen
+
+      # This is also the deck's test suite: build_slides.py refuses to build on
+      # unbalanced <div>s, and refuses to call a build good when an animation
+      # step is unreachable.
+      - name: Build the deck
+        run: uv run --no-sync python scripts/build_slides.py
+
+      # COLLOQUIUM_GA_ID is deliberately unset: unset means the property named in
+      # build_slides.py, and duplicating the ID here would give it two homes to
+      # drift between. Assert the tag landed rather than trusting that.
+      - name: Check the analytics tag reached the build
+        run: |
+          grep -q 'googletagmanager.com/gtag/js?id=G-' slides.html \
+            || { echo "::error::built deck carries no Google Analytics tag"; exit 1; }
+          echo "analytics: $(grep -o 'gtag/js?id=G-[A-Za-z0-9]*' slides.html | head -1)"
+
+      # slides.css reaches the fonts as ../fonts/, so fonts/ has to sit beside
+      # assets/, not inside it. index.html is the same file: the bare Pages URL
+      # opens the deck rather than a directory listing.
+      - name: Assemble the site
+        run: |
+          mkdir site
+          cp slides.html site/slides.html
+          cp slides.html site/index.html
+          cp -R assets fonts site/
+          find site -type f | sort
+
+      - uses: actions/upload-pages-artifact@v5
+        with:
+          path: site
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    steps:
+      - id: deploy
+        uses: actions/deploy-pages@v5
