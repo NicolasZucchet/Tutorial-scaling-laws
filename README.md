@@ -4,6 +4,10 @@ Train the best `p̂(·|x) = softmax(W eₓ)` you can, with `W ∈ R^(512×n)`, Z
 random fixed conditional outputs — under **10¹³ flops** and **3 screening rounds**, with **one
 shot** at the final run. The whole exercise costs about a minute of laptop compute.
 
+The deck is live at **<https://nicolaszucchet.github.io/Tutorial-scaling-laws/>**, rebuilt from
+`slides.md` by `.github/workflows/slides.yml` on every push to `main` — so what is served is
+always built from the sources in the same commit, never from the committed `slides.html`.
+
 ## For students
 
 In the browser, nothing to install —
@@ -691,6 +695,7 @@ series are at `D = 2.62e7`. `assets/plot.js` styles it, from the `options.plot` 
 | `assets/slides.css` | the deck's stylesheet, pulled in by the `<link>` on the title slide; font URLs are relative to `assets/`, so it needs to sit next to `slides.html`. Opens with the design-token block — see "Deck conventions" |
 | `assets/plot.js` | the deck's one chart layer, for all six Chart.js figures: it copies the stylesheet's tokens into `Chart.defaults` so the charts are typographically the same family as the hand-drawn figures, resolves a token-named series colour, and reads the `options.plot` block each fence declares (markers, dashes, tick formats). It replaced five per-chart files that between them implemented the same power-of-ten tick drawer three times and marker styling five times, at six different radii |
 | `assets/scaling-slider.js` | the α slider on the twin-axis scaling-law slide |
+| `.github/workflows/slides.yml` | rebuilds the deck and deploys it to Pages on every push to `main`. Installs colloquium alone from `uv.lock` (`--no-install-project`), so no experiment runs and no figure or data cache is regenerated on the runner; asserts the analytics tag reached the built HTML before it deploys |
 
 ## Deck conventions
 
