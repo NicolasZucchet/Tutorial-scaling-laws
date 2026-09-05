@@ -64,15 +64,45 @@ class Stream:
 
 @dataclass
 class EvalSet:
-    """Evaluation tokens with their *exact* conditionals, for a zero-variance-in-y loss."""
+    """Evaluation tokens with their *exact* conditionals, for a zero-variance-in-y loss.
+
+    ``weight`` carries the importance weights of a stratified set (exact head, sampled
+    tail reweighted by each stratum's exact mass); left as ``None`` it means a plain
+    Monte-Carlo set drawn from p(x), which is weighted uniformly.
+    """
 
     hi: np.ndarray  # (M,) uint32
     lo: np.ndarray  # (M,) uint32
     probs: np.ndarray  # (M, 512) float32
     entropy: np.ndarray = field(default=None)  # (M,) nats, irreducible loss
+    weight: np.ndarray = field(default=None)  # (M,) float64, sums to 1
 
     def __len__(self) -> int:
         return len(self.hi)
+
+    @property
+    def w(self) -> np.ndarray:
+        """Normalised weights, uniform if this is a Monte-Carlo set."""
+        if self.weight is None:
+            return np.full(len(self), 1.0 / len(self))
+        return self.weight / self.weight.sum()
+
+    @property
+    def l_inf(self) -> float:
+        """The irreducible loss E_{x~p}[H(y|x)] under this set's own weights."""
+        return float(self.w @ self.entropy)
+
+    def padded(self, chunk: int, m: int | None = None):
+        """Arrays padded with zero-weight rows to a whole number of eval chunks.
+
+        The kernel wants a fixed chunk size, and truncating to a multiple of it would
+        silently throw away part of a stratified set's weight -- so pad instead.
+        """
+        m = len(self) if m is None else min(m, len(self))
+        pad = (-m) % chunk
+        take = np.concatenate([np.arange(m), np.zeros(pad, dtype=np.int64)])
+        wt = np.concatenate([self.w[:m], np.zeros(pad)])
+        return self.hi[take], self.lo[take], self.probs[take], wt / wt.sum()
 
     def sample_y(self, seed: int = 0) -> np.ndarray:
         """One y ~ p(.|x) per eval token (for the plain sampled-CE estimator)."""
@@ -134,27 +164,29 @@ def _train_segment(w, m, v, t0, xs, lrs, key, n: int, total_steps: int,
 
 
 @functools.partial(jax.jit, static_argnames=("n", "chunk"))
-def _eval(w, hi, lo, probs, key, n: int, chunk: int = 2048):
-    """Exact expected cross-entropy  E_{y~p(.|x)}[-log p_hat(y|x)]  averaged over the set."""
-    m = hi.shape[0]
-    nchunk = m // chunk
+def _eval(w, hi, lo, probs, wt, key, n: int, chunk: int = 2048):
+    """Exact expected cross-entropy  E_{y~p(.|x)}[-log p_hat(y|x)]  over the set.
+
+    ``wt`` are normalised importance weights, so this is a weighted sum, not a mean.
+    """
+    nchunk = hi.shape[0] // chunk
 
     def body(i, acc):
         sl = jax.lax.dynamic_slice
         h = sl(hi, (i * chunk,), (chunk,))
         l = sl(lo, (i * chunk,), (chunk,))
         pr = sl(probs, (i * chunk, 0), (chunk, D_OUT))
+        ww = sl(wt, (i * chunk,), (chunk,))
         e = embed(key, h, l, n)
         logits = jnp.einsum("kdn,bn->kbd", w, e)
         lp = jax.nn.log_softmax(logits, axis=-1)
-        return acc + (-(pr[None] * lp).sum(-1)).sum(-1)
+        return acc + (ww * -(pr[None] * lp).sum(-1)).sum(-1)
 
-    tot = jax.lax.fori_loop(0, nchunk, body, jnp.zeros((w.shape[0],), jnp.float32))
-    return tot / (nchunk * chunk)
+    return jax.lax.fori_loop(0, nchunk, body, jnp.zeros((w.shape[0],), jnp.float32))
 
 
 @functools.partial(jax.jit, static_argnames=("n", "chunk"))
-def _eval_dual(w, hi, lo, probs, ys, key, n: int, chunk: int = 2048):
+def _eval_dual(w, hi, lo, probs, ys, wt, key, n: int, chunk: int = 2048):
     """Both loss estimators from one forward pass.
 
     exact:   E_{y~p(.|x)}[-log p_hat(y|x)]   (uses the known conditional; no y noise)
@@ -169,25 +201,27 @@ def _eval_dual(w, hi, lo, probs, ys, key, n: int, chunk: int = 2048):
         l = sl(lo, (i * chunk,), (chunk,))
         pr = sl(probs, (i * chunk, 0), (chunk, D_OUT))
         yy = sl(ys, (i * chunk,), (chunk,))
+        ww = sl(wt, (i * chunk,), (chunk,))
         e = embed(key, h, l, n)
         lp = jax.nn.log_softmax(jnp.einsum("kdn,bn->kbd", w, e), axis=-1)
-        return (acc[0] + (-(pr[None] * lp).sum(-1)).sum(-1),
-                acc[1] + (-lp[:, ar, yy]).sum(-1))
+        return (acc[0] + (ww * -(pr[None] * lp).sum(-1)).sum(-1),
+                acc[1] + (ww * -lp[:, ar, yy]).sum(-1))
 
     z = jnp.zeros((w.shape[0],), jnp.float32)
     tot = jax.lax.fori_loop(0, nchunk, body, (z, z))
-    return tot[0] / (nchunk * chunk), tot[1] / (nchunk * chunk)
+    return tot[0], tot[1]
 
 
 def evaluate(params, eval_set: "EvalSet", *, n: int, instance_seed: int = 0,
              y_seed: int = 0, chunk: int = 2048):
     """Final evaluation of trained params on an eval set.  Returns (exact, sampled)."""
-    m = (len(eval_set) // chunk) * chunk
-    a, b = _eval_dual(params, jnp.asarray(eval_set.hi[:m]), jnp.asarray(eval_set.lo[:m]),
-                      jnp.asarray(eval_set.probs[:m]),
-                      jnp.asarray(eval_set.sample_y(y_seed)[:m]),
+    hi, lo, probs, wt = eval_set.padded(chunk)
+    ys = eval_set.sample_y(y_seed)
+    ys = np.concatenate([ys, np.zeros(len(wt) - len(ys), dtype=ys.dtype)])
+    a, b = _eval_dual(params, jnp.asarray(hi), jnp.asarray(lo), jnp.asarray(probs),
+                      jnp.asarray(ys), jnp.asarray(wt, dtype=jnp.float32),
                       embedding_key(instance_seed), n, chunk)
-    return np.asarray(a), np.asarray(b), m
+    return np.asarray(a), np.asarray(b), len(wt)
 
 
 # --------------------------------------------------------------------------- #
@@ -254,8 +288,8 @@ def train_sweep(
     v = jnp.zeros_like(w)
     lrs_j = jnp.asarray(lrs, dtype=jnp.float32)
 
-    m_eval = len(eval_set) if eval_tokens is None else eval_tokens
-    m_eval = (m_eval // eval_chunk) * eval_chunk
+    ehi_np, elo_np, eprobs_np, ewt_np = eval_set.padded(eval_chunk, eval_tokens)
+    m_eval = len(ewt_np)
 
     n_eval_pts = len(np.unique(np.linspace(0, steps, eval_points + 1).astype(int))) - 1
     cost = plan_cost(n, steps, k, m_eval, n_eval_pts)
@@ -264,9 +298,10 @@ def train_sweep(
         raise RuntimeError(
             f"refusing to run: would cost {cost:.4g} flops, only "
             f"{ledger.BUDGET - spent:.4g} left of the {ledger.BUDGET:.3g} budget")
-    ehi = jnp.asarray(eval_set.hi[:m_eval])
-    elo = jnp.asarray(eval_set.lo[:m_eval])
-    eprobs = jnp.asarray(eval_set.probs[:m_eval])
+    ehi = jnp.asarray(ehi_np)
+    elo = jnp.asarray(elo_np)
+    eprobs = jnp.asarray(eprobs_np)
+    ewt = jnp.asarray(ewt_np, dtype=jnp.float32)
 
     bounds = np.unique(np.linspace(0, steps, eval_points + 1).astype(int))
     curve, curve_steps = [], []
@@ -274,7 +309,7 @@ def train_sweep(
     for a, b in zip(bounds[:-1], bounds[1:]):
         xs = stream.batches(int(b - a), offset=stream_offset + int(a) * BATCH)
         w, m, v, t = _train_segment(w, m, v, t, xs, lrs_j, ekey, n, steps)
-        loss = np.asarray(_eval(w, ehi, elo, eprobs, ekey, n, eval_chunk))
+        loss = np.asarray(_eval(w, ehi, elo, eprobs, ewt, ekey, n, eval_chunk))
         curve.append(loss)
         curve_steps.append(int(b))
 

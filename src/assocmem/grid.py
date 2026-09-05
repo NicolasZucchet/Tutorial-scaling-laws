@@ -41,6 +41,7 @@ from scipy.special import zeta as _hurwitz_zeta
 from . import data as D
 from .data import D_OUT, embed
 from .problem import CACHE
+from .train import EvalSet
 
 # ------------------------------------------------------------------ theory side
 
@@ -58,6 +59,18 @@ def bin_mass(a: float, b: float, gamma: float = D.GAMMA,
     z = (D.zipf_norm(gamma) if max_context is None else
          float(_hurwitz_zeta(gamma, 1.0) - _hurwitz_zeta(gamma, max_context + 1.0)))
     return float(_hurwitz_zeta(gamma, a) - _hurwitz_zeta(gamma, b)) / z
+
+
+def point_mass(i: np.ndarray, gamma: float = D.GAMMA,
+               max_context: int | None = None) -> np.ndarray:
+    """p(i) for a whole array of contexts at once -- ``bin_mass(i, i+1)`` vectorised.
+
+    The exact strata cover every context below the head one by one, so doing this with
+    a Python-level ``bin_mass`` call per context is what used to make a large head slow.
+    """
+    z = (D.zipf_norm(gamma) if max_context is None else
+         float(_hurwitz_zeta(gamma, 1.0) - _hurwitz_zeta(gamma, max_context + 1.0)))
+    return np.asarray(i, dtype=np.float64) ** (-gamma) / z
 
 
 # ------------------------------------------------------------------ eval set
@@ -89,7 +102,9 @@ def _strat_file(head: int, per_bin: int, per_decade: int, seed: int,
                 gamma: float, max_context: int | None = None) -> Path:
     g = "" if gamma == D.GAMMA else f"_g{gamma:.3f}"
     v = "" if max_context is None else f"_v{max_context}"
-    return CACHE / f"strat_eval2_h{head}_b{per_bin}_d{per_decade}_s{seed}{g}{v}.npz"
+    # "3": p(y|x) is now the universal entropy-indexed profile, so files
+    # written by the old per-token-logit conditional are not interchangeable.
+    return CACHE / f"strat_eval3_h{head}_b{per_bin}_d{per_decade}_s{seed}{g}{v}.npz"
 
 
 def build_strat_eval(head: int = 4096, per_bin: int = 512, per_decade: int = 8,
@@ -120,7 +135,7 @@ def build_strat_eval(head: int = 4096, per_bin: int = 512, per_decade: int = 8,
         width = int(b - a)
         if b <= head_edge or width <= per_bin:  # exact stratum
             tok = np.arange(a, b, dtype=np.int64)
-            w = np.array([bin_mass(i, i + 1, gamma, max_context) for i in tok])
+            w = point_mass(tok, gamma, max_context)
         else:  # sampled stratum, reweighted by its exact mass
             tok = np.unique(rng.integers(a, b, size=per_bin))
             w = np.full(len(tok), bin_mass(a, b, gamma, max_context) / len(tok))
@@ -142,6 +157,23 @@ def build_strat_eval(head: int = 4096, per_bin: int = 512, per_decade: int = 8,
     f.parent.mkdir(parents=True, exist_ok=True)
     np.savez(f, **{k: getattr(se, k) for k in se.__dataclass_fields__})
     return se
+
+
+def strat_evalset(head: int = 1024, per_bin: int = 64, per_decade: int = 4,
+                  seed: int = 11, gamma: float = D.GAMMA,
+                  max_context: int | None = None) -> EvalSet:
+    """The stratified set as a plain :class:`~assocmem.train.EvalSet`, for the Lab.
+
+    Same estimator as :func:`build_strat_eval` -- exact head, log-stratified tail
+    reweighted by each stratum's exact mass -- but stripped of the per-bin bookkeeping
+    the analysis needs, so it drops straight into ``train_sweep``.  Defaults are sized
+    for screening: a few thousand contexts, i.e. the eval cost of the old Monte-Carlo
+    set, for a small fraction of its noise.
+    """
+    se = build_strat_eval(head=head, per_bin=per_bin, per_decade=per_decade, seed=seed,
+                          gamma=gamma, max_context=max_context)
+    return EvalSet(hi=se.hi, lo=se.lo, probs=se.probs,
+                   entropy=se.entropy.astype(np.float32), weight=se.weight)
 
 
 # ------------------------------------------------------------------ weighted eval
@@ -232,7 +264,8 @@ def _parabola_min(log_lr, excess, k: int = 3):
 
 def run_cell(h: int, steps: int, se: StratEval, stream, eval_set, *, seed: int = 0,
              lrs=None, refine: int = 3, eval_tokens: int = 4096,
-             seg_steps: int = 102_400, tag: str = "grid") -> dict:
+             eval_chunk: int = 2048, seg_steps: int = 102_400,
+             tag: str = "grid") -> dict:
     """Train an (h, steps) cell over a learning-rate grid and return the best.
 
     The grid is *refined until the optimum is interior*: an argmin sitting on an edge
@@ -240,6 +273,12 @@ def run_cell(h: int, steps: int, se: StratEval, stream, eval_set, *, seed: int =
     systematically with h and steps it would corrupt the fitted exponents rather than
     just shift them.  This is the failure mode `Laws` warns about in the student lab,
     and here it is closed automatically.
+
+    `eval_chunk` is worth touching only when the whole eval set is smaller than the
+    default 2048: :func:`assocmem.train._eval` averages over whole chunks and drops the
+    remainder, so a 2000-context set at the default chunk would average over nothing and
+    monitor a NaN.  It does not touch the reported loss, which comes from
+    :func:`excess_loss` and pads.
     """
     from .train import train_sweep
 
@@ -257,6 +296,7 @@ def run_cell(h: int, steps: int, se: StratEval, stream, eval_set, *, seed: int =
         if todo:
             r = train_sweep(h, steps, todo, stream, eval_set, instance_seed=seed,
                             eval_points=eval_points, eval_tokens=eval_tokens,
+                            eval_chunk=eval_chunk,
                             tag=f"{tag}-h{h}-s{steps}", return_params=True)
             ex, per_bin, _ = excess_loss(r.params, se, n=h, instance_seed=seed)
             flops += r.train_flops + r.eval_flops

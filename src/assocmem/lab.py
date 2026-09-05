@@ -26,15 +26,25 @@ import numpy as np
 
 from . import fit as _fit
 from . import ledger
-from .problem import get_evalset, get_stream
+from .grid import strat_evalset
+from .problem import get_stream
 from .train import BATCH, evaluate, eval_flops, plan_cost, train_flops, train_sweep
 
 FLOPS_PER_TOKEN_PARAM = 6.0
 DEFAULT_BUDGET = 1e13
 DEFAULT_ROUNDS = 3
-EVAL_TOKENS = 4096  # screening eval set; every run is scored on the same tokens
-HERO_EVAL_TOKENS = 65536
-HERO_CHECK_TOKENS = 32768
+# Eval sets are *stratified*, not drawn from p(x): the head is taken exactly with its
+# true weights p(i) and the tail is log-binned, sampled and reweighted by each bin's
+# exact mass (see assocmem.grid).  At an identical billed cost of 4096 contexts that is
+# ~5x less noisy than sampling eval tokens -- 0.006 nats of spread instead of 0.029 --
+# which matters because the IsoFLOP minimum students fit is itself only ~0.03 deep.
+SCREEN_STRAT = dict(head=1024, per_bin=64, per_decade=4, seed=11)
+HERO_STRAT = dict(head=4096, per_bin=512, per_decade=8, seed=11)
+CHECK_STRAT = dict(head=4096, per_bin=512, per_decade=8, seed=23)  # resampled tail
+
+EVAL_TOKENS = 4096  # padded size of SCREEN_STRAT; every run is scored on it
+HERO_EVAL_TOKENS = 34816  # padded size of HERO_STRAT
+HERO_CHECK_TOKENS = 34816
 HERO_CURVE_POINTS = 8
 GFLOPS_GUESS = 350.0  # accounted flops/s, refined from the lab's own history
 COMPILE_S = 0.45  # per distinct (n, steps) group
@@ -472,13 +482,13 @@ class Lab:
     @property
     def evals(self):
         if self._evals is None:
-            self._evals = get_evalset(self.eval_tokens, seed=0)
+            self._evals = strat_evalset(**SCREEN_STRAT)
         return self._evals
 
     @property
     def l_inf(self) -> float:
-        """Irreducible loss: the eval set's mean conditional entropy."""
-        return float(self.evals.entropy.mean())
+        """Irreducible loss: the eval set's weighted mean conditional entropy."""
+        return self.evals.l_inf
 
     def reset(self, confirm: bool = False) -> None:
         """Wipe this lab: refunds the whole budget and all rounds.  Use between attempts."""
@@ -659,8 +669,8 @@ class Lab:
                         eval_set=self.evals, eval_tokens=self.eval_tokens,
                         eval_points=self.hero_curve_points, instance_seed=0, tag="hero",
                         return_params=True)
-        ea = get_evalset(self.hero_eval_tokens, seed=0)
-        eb = get_evalset(self.hero_check_tokens, seed=1)
+        ea = strat_evalset(**HERO_STRAT)
+        eb = strat_evalset(**CHECK_STRAT)
         exact_a, samp_a, ma = evaluate(r.params, ea, n=n, instance_seed=0, y_seed=11)
         exact_b, samp_b, mb = evaluate(r.params, eb, n=n, instance_seed=0, y_seed=12)
         ledger.log("hero-final-eval", eval=eval_flops(n, ma) + eval_flops(n, mb), n=n)
@@ -669,7 +679,7 @@ class Lab:
                    lr_min=lr / 10, c_train=c_train, c_eval=ev, predicted=pred,
                    predicted_free=pred_free, loss=float(exact_a[0]),
                    loss_sampled=float(samp_a[0]), loss_heldout_set=float(exact_b[0]),
-                   irreducible=float(ea.entropy[:ma].mean()),
+                   irreducible=ea.l_inf,
                    curve_steps=[int(x) for x in r.curve_steps],
                    curve_loss=[float(x) for x in r.curve.ravel()])
         self.hero_record = rec

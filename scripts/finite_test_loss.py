@@ -3,16 +3,19 @@
 Slide "What if data was finite?" plots two model-scaling series at the same budget
 (D = 2.62e7 draws / 409,600 steps):
 
-    "first 10k contexts"    trained *and* evaluated on the Zipf truncated to 10k
+    "first 2k contexts"     trained *and* evaluated on the Zipf truncated to K = 2,000
     "infinite context pool" trained and evaluated on the whole Zipf
 
 The truncated series is the one that bends away from a power law, and the reason is
 that it runs out of things to learn.  This script measures the other half of that
 story: take exactly the same truncated-pool runs and score them against the *full*
 distribution, the one the untruncated series is trained on.  That is a genuine
-train/test split -- the model has never seen a context beyond rank 10,000, and the
-full distribution puts 14 % of its mass there -- so the curve plateaus at that
+train/test split -- the model has never seen a context beyond rank K, and the full
+distribution puts 19 % of its mass there at K = 2,000 -- so the curve plateaus at that
 missing mass while the training curve keeps falling.
+
+`--support` picks the pool, and must name one `finite_context_sweep.py` has already
+run; outputs are keyed by it the same way.
 
 Each cell is retrained at the learning rate that won the grid in
 `scripts/finite_context_sweep.py` (one rate, not the whole grid -- the grid's only job
@@ -22,6 +25,7 @@ reproduce is reported and dropped rather than plotted, because a silent mismatch
 mean the two curves no longer come from the same models.
 
     PYTHONPATH=src uv run python scripts/finite_test_loss.py
+    PYTHONPATH=src uv run python scripts/finite_test_loss.py --support 10000
     PYTHONPATH=src uv run python scripts/finite_test_loss.py --hs 8 16    # a subset
     PYTHONPATH=src uv run python scripts/finite_test_loss.py --report
 """
@@ -47,15 +51,29 @@ from assocmem.train import EvalSet, train_sweep  # noqa: E402
 
 import finite_context_sweep as FCS  # noqa: E402  (same eval set, same stream)
 
-TRAIN = ROOT / "results/finite_support_sweep.json"
-OUT = ROOT / "results/finite_support_test.json"
-LEDGER = ROOT / "results/finite_test_ledger.jsonl"
-
 STEPS = 409_600
 SEED = 0
 TOL = 2e-4  # reproduction tolerance on the training loss, in nats
 
-ledger.configure(path=LEDGER, budget=float("inf"))
+TRAIN = OUT = LEDGER = None  # set by set_support, below
+
+
+def set_support(k: int) -> None:
+    """Point this script and `finite_context_sweep` at pool `k`.
+
+    Both are keyed by K so that pools do not overwrite each other; K = 10 000 keeps the
+    unsuffixed names its results were first recorded under (`FCS._suffix`).
+    """
+    global TRAIN, OUT, LEDGER
+    FCS.set_support(k)           # also re-points *its* ledger, so ours goes second
+    sfx = FCS._suffix(k)
+    TRAIN = FCS.out_path(k)
+    OUT = ROOT / f"results/finite_support_test{sfx}.json"
+    LEDGER = ROOT / f"results/finite_test_ledger{sfx}.jsonl"
+    ledger.configure(path=LEDGER, budget=float("inf"))
+
+
+set_support(FCS.K)
 
 
 def train_cells() -> dict:
@@ -83,8 +101,9 @@ def run(hs: list[int]) -> dict:
         raise SystemExit(f"no {STEPS}-step run recorded for h={unknown}; "
                          f"run scripts/finite_context_sweep.py first")
 
-    se_train, ev = FCS.finite_eval()           # truncated to 10k, as trained
+    se_train, ev = FCS.finite_eval()           # truncated to K, as trained
     se_test = G.build_strat_eval()             # the whole Zipf: the test set
+    eval_tokens, eval_chunk = FCS.eval_shape(len(se_train))
     stream = FCS.finite_stream(64 * STEPS)
 
     store = load()
@@ -94,12 +113,12 @@ def run(hs: list[int]) -> dict:
         "seed": SEED,
         "support": FCS.K,
         "alpha": FCS.ALPHA,
-        "train_eval": "truncated-10k, exact renormalised frequencies",
+        "train_eval": f"truncated-{FCS.K}, exact renormalised frequencies",
         "test_eval": "full Zipf, stratified (assocmem.grid.build_strat_eval defaults)",
         "l_inf_train": se_train.l_inf,
         "l_inf_test": se_test.l_inf,
         "tail_mass_beyond_support": G.tail_mass(FCS.K, FCS.ALPHA),
-        "source": "results/finite_support_sweep.json",
+        "source": str(TRAIN.relative_to(ROOT)),
     }
 
     todo = [h for h in hs if str(h) not in store["cells"]]
@@ -112,7 +131,8 @@ def run(hs: list[int]) -> dict:
         lr = cell["lr_best"]
         t0 = time.time()
         r = train_sweep(h, STEPS, [lr], stream, ev, instance_seed=SEED,
-                        eval_points=max(1, STEPS // 102_400), eval_tokens=4096,
+                        eval_points=max(1, STEPS // 102_400),
+                        eval_tokens=eval_tokens, eval_chunk=eval_chunk,
                         tag=f"finite-test-h{h}", return_params=True)
         ex_train, _, _ = G.excess_loss(r.params, se_train, n=h, instance_seed=SEED)
         ex_test, per_bin, _ = G.excess_loss(r.params, se_test, n=h, instance_seed=SEED)
@@ -159,8 +179,11 @@ def report(store: dict) -> None:
 def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--hs", type=int, nargs="+", default=list(FCS.HS))
+    ap.add_argument("--support", type=int, default=FCS.K,
+                    help="context pool to score (default %(default)s)")
     ap.add_argument("--report", action="store_true")
     args = ap.parse_args()
+    set_support(args.support)
     store = load() if args.report else run(args.hs)
     report(store)
 

@@ -1,99 +1,119 @@
-"""Guards on the training stream: the canonical prefix must never move.
+"""Guards on the training stream and on p(y|x).
 
-`data.sample_tokens` sizes its rejection chunk from the requested length, so a longer
-draw is *not* an extension of a shorter one.  Every recorded loss in this repo is
-therefore tied to the exact bytes of `stream_master_s0.npz`, and these tests fail
-loudly if anything regenerates it.
+The stream is a pure function of the position in it, and the conditional a pure
+function of the token, so there is nothing cached to protect and no frozen file to
+fingerprint.  What still has to hold is that the guarantees those functions are
+supposed to provide really do:
 
-    PYTHONPATH=src uv run python tests/test_stream.py     # ~10 s (no extension needed)
+* prefixes nest at *every* length, so runs at different step counts see the same data;
+* the token marginal is the Zipf law it claims to be;
+* each token's conditional is a genuine distribution whose entropy is its target --
+  which is what pins L_inf, since L_inf = E_x[H(y|x)];
+* the O(1) label sampler actually draws from that conditional.
+
+    PYTHONPATH=src uv run python tests/test_stream.py     # ~30 s
 """
 
 from __future__ import annotations
 
-import sys
 import pathlib
+import sys
 
 import numpy as np
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[1] / "src"))
 
-from assocmem import problem as P  # noqa: E402
 from assocmem import data as D  # noqa: E402
+from assocmem import problem as P  # noqa: E402
 
 
-def test_base_fingerprint():
-    """The canonical prefix is the instance every recorded result was measured on."""
-    s = P.get_stream(4096)
-    for name, want in P.BASE_FINGERPRINT.items():
-        got = tuple(int(v) for v in getattr(s, name)[:3])
-        assert got == want, (f"stream_master_s0.npz has been regenerated: {name}[:3] is "
-                            f"{got}, expected {want}.  Every loss in REPORT.md and "
-                            f"results/ledger.jsonl was measured on the old bytes.")
-    print(f"  base fingerprint intact                      {P.BASE_FINGERPRINT}")
+def test_prefixes_nested():
+    """Runs at different step counts must see the same data, in the same order.
 
-
-def test_sampler_is_not_nested():
-    """Documents *why* the base file is frozen rather than regenerated on demand."""
-    a = D.sample_tokens(1000, seed=1000)
-    b = D.sample_tokens(100_000, seed=1000)
-    assert not np.array_equal(a, b[:1000]), (
-        "sample_tokens has become prefix-nested in m -- the two-file scheme in "
-        "problem.py could now be simplified, but check every cached stream first.")
-    print("  sampler is not prefix-nested in m            (hence the frozen base file)")
-
-
-def test_prefixes_nested_within_base():
-    """Runs at different step counts must see the same data, in the same order."""
-    long = P.get_stream(200_000)
-    for m in (4096, 64_000, 199_936):
+    This used to need a frozen base file plus an append-only extension, because the
+    rejection sampler was not nested in the requested length.  Position hashing makes
+    it hold by construction, so it now holds *past* the old 4M boundary too.
+    """
+    long = P.get_stream(5_000_000)
+    for m in (4096, 64_000, 3_999_999, 4_000_001, 4_500_000):
         short = P.get_stream(m)
-        assert np.array_equal(short.hi, long.hi[:m])
-        assert np.array_equal(short.lo, long.lo[:m])
-        assert np.array_equal(short.y, long.y[:m])
-    print("  prefixes nested below MASTER_TOKENS          4096 / 64k / 200k")
+        assert np.array_equal(short.hi, long.hi[:m]), m
+        assert np.array_equal(short.lo, long.lo[:m]), m
+        assert np.array_equal(short.y, long.y[:m]), m
+    print("  prefixes nested, including across 4M         4096 / 64k / 4M-1 / 4M+1 / 4.5M")
 
 
-def test_extension_is_appended_not_merged():
-    """Beyond MASTER_TOKENS the base bytes must still come first, unchanged."""
-    if not P._ext_file(0).exists():
-        print("  extension not built -- skipping append check "
-              "(run scripts/build_extension.py)")
-        return
-    base = P.get_stream(P.MASTER_TOKENS)
-    long = P.get_stream(P.MASTER_TOKENS + 64_000)
-    assert np.array_equal(long.hi[:P.MASTER_TOKENS], base.hi)
-    assert np.array_equal(long.y[:P.MASTER_TOKENS], base.y)
-    assert len(long.y) == P.MASTER_TOKENS + 64_000
-    print("  extension appends, base prefix unchanged     "
-          f"{P.MASTER_TOKENS:,} + 64,000")
+def test_stream_is_a_pure_function_of_position():
+    """Regenerating from scratch must give the same bytes -- no hidden RNG state."""
+    P._streams.clear()
+    a = P.get_stream(100_000)
+    P._streams.clear()
+    b = P.get_stream(300_000)
+    assert np.array_equal(a.lo, b.lo[:100_000])
+    assert np.array_equal(a.y, b.y[:100_000])
+    print("  regeneration is byte-identical               100k from a 300k rebuild")
 
 
-def test_overlong_request_refused():
-    try:
-        P.get_stream(P.TOTAL_TOKENS + 1)
-    except ValueError as e:
-        assert "must not be touched" in str(e)
-        print(f"  refuses > TOTAL_TOKENS                       {P.TOTAL_TOKENS:,}")
-        return
-    raise AssertionError("get_stream accepted more tokens than it holds")
+def test_token_marginal_is_zipf():
+    tok = D.stream_tokens(2_000_000)
+    z = D.zipf_norm()
+    for i in (1, 2, 5, 20):
+        want = i ** -D.GAMMA / z
+        got = (tok == i).mean()
+        assert abs(got / want - 1) < 0.05, (i, got, want)
+    assert tok.min() >= 1 and tok.max() <= D.vocab_size()
+    print(f"  token marginal matches i^-{D.GAMMA} / Z          i = 1 / 2 / 5 / 20 to 5 %")
 
 
-def test_build_extension_refuses_to_clobber():
-    if not P._ext_file(0).exists():
-        print("  extension not built -- skipping clobber check")
-        return
-    try:
-        P.build_extension(0, overwrite=True)
-    except FileExistsError:
-        print("  build_extension(overwrite=True) refuses      (delete by hand)")
-        return
-    raise AssertionError("build_extension overwrote an existing extension")
+def test_class_permutation_is_bijective():
+    """Every token must get a permutation of the 512 classes, not a multiset."""
+    for tk in (1, 2, 512, 12345, 10**9, 111_099_971_001):
+        out = D.class_perm(np.arange(D.D_OUT), np.full(D.D_OUT, tk, dtype=np.int64))
+        assert len(np.unique(out)) == D.D_OUT, tk
+    print("  class_perm bijective on [0, 512)             6 tokens incl. the largest")
+
+
+def test_conditional_is_a_distribution_at_its_target_entropy():
+    tok = np.unique(D.stream_tokens(200_000))[:8192]
+    p = D.conditional(tok)
+    assert np.abs(p.sum(1) - 1.0).max() < 1e-5
+    assert (p >= 0).all()
+    ent = -(p * np.log(np.maximum(p, 1e-45))).sum(1)
+    assert np.abs(ent - D.target_entropy(tok)).max() < 1e-4
+    # exp(H)/d ~ Beta(1, 31) => E[exp H] = 16, which is what sets the difficulty
+    assert abs(np.exp(D.target_entropy(D.stream_tokens(200_000))).mean() / 16.0 - 1) < 0.15
+    print("  p(y|x) sums to 1 at its target entropy       8192 distinct tokens")
+
+
+def test_labels_are_drawn_from_the_conditional():
+    """The O(1) sampler must reproduce p(.|x), not merely something supported on it."""
+    tok = D.stream_tokens(4_000_000)
+    y = D.sample_labels(tok, seed=2000)
+    for tk in (1, 2, 3):
+        m = tok == tk
+        emp = np.bincount(y[m], minlength=D.D_OUT) / m.sum()
+        p = D.conditional(np.array([tk]))[0]
+        err = np.abs(emp - p).max()
+        assert err < 5.0 / np.sqrt(m.sum()), (tk, m.sum(), err)
+    print("  labels match p(.|x) within sampling noise    tokens 1 / 2 / 3")
+
+
+def test_l_inf_is_the_mean_target_entropy():
+    """L_inf depends on the entropy law alone, which is the point of the profile design."""
+    from assocmem.grid import strat_evalset
+
+    es = strat_evalset(head=1024, per_bin=64, per_decade=4)
+    tok = D.stream_tokens(2_000_000)
+    assert abs(es.l_inf - D.target_entropy(tok).mean()) < 0.02
+    print(f"  L_inf agrees stratified vs stream-sampled    {es.l_inf:.4f} nats")
 
 
 if __name__ == "__main__":
     print("stream guards")
-    for f in (test_base_fingerprint, test_sampler_is_not_nested,
-              test_prefixes_nested_within_base, test_extension_is_appended_not_merged,
-              test_overlong_request_refused, test_build_extension_refuses_to_clobber):
+    for f in (test_prefixes_nested, test_stream_is_a_pure_function_of_position,
+              test_token_marginal_is_zipf, test_class_permutation_is_bijective,
+              test_conditional_is_a_distribution_at_its_target_entropy,
+              test_labels_are_drawn_from_the_conditional,
+              test_l_inf_is_the_mean_target_entropy):
         f()
     print("ok")

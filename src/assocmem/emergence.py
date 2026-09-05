@@ -77,7 +77,7 @@ class BandEval:
 
 
 def _band_file(per_band: int, seed: int) -> Path:
-    return CACHE / f"band_eval_p{per_band}_s{seed}.npz"
+    return CACHE / f"band_eval2_p{per_band}_s{seed}.npz"  # 2: new conditional
 
 
 def build_band_eval(per_band: int = 4096, seed: int = 23) -> BandEval:

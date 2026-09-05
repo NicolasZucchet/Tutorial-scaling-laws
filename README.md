@@ -12,15 +12,14 @@ always built from the sources in the same commit, never from the committed `slid
 
 In the browser, nothing to install —
 [open the notebook in Colab](https://colab.research.google.com/github/NicolasZucchet/Tutorial-scaling-laws/blob/main/notebooks/tutorial.ipynb)
-and run the first cell: it installs the package straight from GitHub and builds the data
-cache (~2 min). A CPU runtime is enough. Set `USE_DRIVE = True` in that cell to keep the cache
-and your lab state in Google Drive, so a recycled runtime does not reset your budget.
+and run the first cell: it installs the package straight from GitHub (~20 s). There is no
+data cache to build. A CPU runtime is enough. Set `USE_DRIVE = True` in that cell to keep
+your lab state in Google Drive, so a recycled runtime does not reset your budget.
 
 Or locally:
 
 ```bash
 uv sync --extra notebook
-uv run assocmem-prepare        # once: builds ~250 MB of cached data (~1 min)
 uv run jupyter lab notebooks/tutorial.ipynb
 ```
 
@@ -71,9 +70,10 @@ learning-rate grid never bracketed its minimum — the two ways a scaling-law fi
 * On Colab the notebook's first cell bootstraps everything — `uv pip install --system`
   from the git URL, so there is no checkout to keep in sync and no editable-install `.pth`
   the running kernel would ignore. The reference numbers reproduce there (a CPU runtime
-  executes the whole notebook in well under a minute of compute, plus ~2 min to build the
-  cache). Since a `site-packages` install has no project root to anchor to, that cell sets
-  `ASSOCMEM_CACHE` and `ASSOCMEM_RUNS`, which is also how the Drive option works.
+  executes the whole notebook in well under a minute of compute, with no cache to build).
+  Since a `site-packages` install has no project root to anchor to, that cell sets
+  `ASSOCMEM_CACHE` and `ASSOCMEM_RUNS` (the stratified eval sets and your lab state, ~35 MB
+  in total), which is also how the Drive option works.
 
 Three attempts on the same problem, differing mainly in how much went to screening:
 
@@ -674,7 +674,7 @@ series are at `D = 2.62e7`. `assets/plot.js` styles it, from the `options.plot` 
 | `src/assocmem/data.py` | exact Zipf sampler, entropy-matched conditionals, sphere embeddings — all hashed from the token id, so the 1.1×10¹¹-token vocabulary is never materialised |
 | `src/assocmem/train.py` | hand-written-gradient Adam trainer, `lax.scan` over steps, vmapped over configs; flop accounting |
 | `src/assocmem/fit.py` | IsoFLOP parabolas, power laws, joint `L(n, D)` fit |
-| `src/assocmem/problem.py`, `prepare.py` | cached stream + eval sets |
+| `src/assocmem/problem.py`, `prepare.py` | the problem instance: position-hashed stream + eval sets, generated on demand |
 | `src/assocmem/ledger.py` | the flop ledger (`python -m assocmem.ledger` to audit) |
 | `src/assocmem/capacity.py` | the capacity experiment: Hebbian vs trained, bisection on `n` |
 | `src/assocmem/grid.py`, `grid_fit.py` | the (N, D) scan: stratified evaluator, one grid cell, the fits |
