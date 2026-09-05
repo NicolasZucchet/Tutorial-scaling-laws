@@ -68,8 +68,14 @@ def keys(text: str) -> list[str]:
 
 
 def expand(text: str) -> str:
-    """Replace every `<!-- figure: key -->` line with the figure's markup."""
-    return PLACEHOLDER.sub(lambda m: figure(m.group(1)), text)
+    """Replace every `<!-- figure: key -->` line with the figure's markup.
+
+    Recursive, so a figure can include a shared partial the same way a slide
+    includes a figure -- figures/loss-step-panel.md is drawn by two figures and
+    lives in one file because of this.  `keys()` stays shallow: it reports what
+    slides.md asks for, which is the number worth seeing in the build line.
+    """
+    return PLACEHOLDER.sub(lambda m: expand(figure(m.group(1))), text)
 
 
 STEP_GUARD_DOC = """Every animation step has to be *reachable*.

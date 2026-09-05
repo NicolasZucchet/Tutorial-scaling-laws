@@ -86,22 +86,27 @@ def fit_numbers(store: dict) -> dict:
 def fit_md(v: dict) -> str:
     """The prose and the two-row table, with the deck's reveal markers baked in.
 
-    The slide shows the Chinchilla row on the first click and the coupled-law
-    column plus the Skaling row on the second, so the fragment attributes have to
-    survive a regeneration -- hence they are written here rather than patched into
-    slides.md by hand.  A `fit-matrix` row is three grid cells, so the reveal is
-    marked on each cell: wrapping them would take the row out of the grid.  Only
-    the two labels carry `data-colloquium-fragment="1"` (colloquium renumbers every
+    The slide opens on the heading alone: the first click brings the prose, the
+    table's header row and the Chinchilla row, and the second brings the Skaling
+    row plus the coupled-law column.  The fragment attributes have to survive a
+    regeneration -- hence they are written here rather than patched into slides.md
+    by hand.  A `fit-matrix` row is three grid cells, so the reveal is marked on
+    each cell: wrapping them would take the row out of the grid.  Only the two
+    labels carry `data-colloquium-fragment="1"` (colloquium renumbers every
     occurrence of that exact attribute in document order, so it is a marker, not an
-    index); their values carry the resulting index outright, and so does the
-    `chin-story` column in slides.md.
+    index); every other reveal here carries the resulting index outright, and so
+    does the `chin-story` column in slides.md.
     """
     return f"""
+<div class="fragment" data-fragment-index="1">
+
 Fit on **{v['n_fit']} low-compute runs**, then test on {v['n_test']} held-out runs
 at $8$--$16\\times$ the fitting budget.
 
+</div>
+
 <div class="fit-matrix">
-<div></div><div class="fm-head">fit region</div><div class="fm-head">extrapolation</div>
+<div></div><div class="fm-head fragment" data-fragment-index="1">fit region</div><div class="fm-head fragment" data-fragment-index="1">extrapolation</div>
 <div class="fm-label fm-red fragment" data-colloquium-fragment="1">Chinchilla</div><div class="fm-value fm-red fragment" data-fragment-index="1">{100 * v['add'].rmse_log:.1f}%</div><div class="fm-value fm-red fragment" data-fragment-index="1">{100 * v['add_test']:.1f}%</div>
 <div class="fm-label fm-navy fragment" data-colloquium-fragment="1">Skaling</div><div class="fm-value fm-navy fragment" data-fragment-index="2">{100 * v['coupled'].rmse_log:.1f}%</div><div class="fm-value fm-navy fragment" data-fragment-index="2">{100 * v['coupled_test']:.1f}%</div>
 </div>
