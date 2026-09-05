@@ -42,6 +42,7 @@ import subprocess
 import sys
 import tempfile
 import time
+import urllib.parse
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
 SLIDES = ROOT / "slides.md"
@@ -269,6 +270,32 @@ Note gtag only reports from an http(s) origin, so a deck opened over file:// is
 unaffected either way -- this is for the hosted copy.
 """
 
+FAVICON_DOC = """The deck's favicon, as an emoji.
+
+Same story as the analytics tag: colloquium's `<head>` is a fixed template with
+no hook for a `<link>`, so this goes in here as one insertion before `</head>`.
+An emoji in a data-URI SVG keeps it to that single line -- no binary asset to
+commit, and nothing for the Pages upload to have to carry beside slides.html.
+"""
+
+FAVICON_EMOJI = "\U0001F4C9"  # chart with downwards trend
+
+
+def favicon_tag(emoji: str) -> str:
+    """An emoji favicon, percent-encoded so the SVG survives an href."""
+    svg = ("<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'>"
+           f"<text y='.9em' font-size='90'>{emoji}</text></svg>")
+    return f'<link rel="icon" href="data:image/svg+xml,{urllib.parse.quote(svg)}">\n'
+
+
+def with_favicon(html: str) -> str:
+    """Insert the favicon before `</head>`.  See FAVICON_DOC."""
+    if "</head>" not in html:
+        raise SystemExit("built deck has no </head> to insert the favicon before; "
+                         "colloquium's page template must have changed")
+    return html.replace("</head>", favicon_tag(FAVICON_EMOJI) + "</head>", 1)
+
+
 GA_ENV = "COLLOQUIUM_GA_ID"
 # This deck's own Google Analytics property.  See ANALYTICS_DOC for why it is a
 # literal here and not a secret.
@@ -329,7 +356,7 @@ def run(argv: list[str]) -> None:
         if built.exists():
             # colloquium names its output after its input; put it back where the
             # deck is expected to live.
-            built.write_text(with_analytics(built.read_text()))
+            built.write_text(with_favicon(with_analytics(built.read_text())))
             built.replace(ROOT / "slides.html")
     finally:
         BUILD_MD.unlink(missing_ok=True)
