@@ -795,19 +795,20 @@ In practice, capacity is also **proportional to the number of parameters**. For 
 
 ---
 
-<!-- rows: 4 -->
-<!-- class: eq-rows -->
 ## From capacity to scaling laws
-
-Now that we have some idea of how the capacity scales as a function of the model size, **how do we get scaling laws?**
-
-<!-- step -->
 
 **For the model size:** assume infinite data, and that the first contexts below capacity get 0 loss and some value $l$ afterwards.
 
-===
-
-<div style="margin-top: -1.5em"></div>
+<!-- The heading and this one paragraph are all the prose this slide can carry:
+     the figure below is a third of the slide's height, and colloquium drops a
+     figure that does not fit rather than clipping or scaling it.  "Now that we
+     have some idea of how the capacity scales, how do we get scaling laws?"
+     opened this slide for its first two commits and cost exactly that -- it is
+     also the first line of the derivation slide that follows, which is where it
+     now lives alone.
+     This slide is deliberately plain, not the `rows: 4` / `eq-rows` layout of
+     that derivation slide: four equal rows with a figure in the second is
+     another way to make the figure disappear. -->
 
 <!-- figure: loss-step-left-fig -->
 
@@ -876,6 +877,11 @@ The tail sum is set by **where it starts**, and capacity grows like $N$.
 ## From capacity to scaling laws
 
 **For the model size:** the loss is a step function of the context index, and the step moves right as $N$ grows.
+
+<!-- The pull-up is the footnote's: figure plus caveat plus footer is a line
+     more than the slide has, and without it the caveat prints across the
+     footer. -->
+<div style="margin-top: -1.5em"></div>
 
 <!-- figure: loss-step-fig -->
 

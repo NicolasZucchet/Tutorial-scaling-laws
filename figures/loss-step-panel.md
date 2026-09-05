@@ -1,16 +1,19 @@
 <!-- The step-loss panel: L(i) against the context index, with the step at
-     capacity(N).  Shared, not copied.  Two figures draw it:
-
-       loss-step-fig       the full build -- this panel, then the shaded block,
-                           then the carry-over to L(N) on a second panel
-       loss-step-left-fig  this panel alone, for the slide that only states the
-                           assumption
-
-     They include it with `<!-- figure: loss-step-panel -->`, which the build
-     expands recursively (scripts/build_slides.py), so the geometry below has one
-     home: the two slides show the same plot at the same scale because it is
-     literally the same markup, not because someone kept two copies level.
-
+     capacity(N).  Shared, not copied: `loss-step-fig` draws it and then builds
+     the shaded block and the carry-over to L(N) on top of it, and
+     `loss-step-left-fig` draws it alone, for the slide that only states the
+     assumption.  Both include it with a `figure:` comment, which the build
+     expands recursively (scripts/build_slides.py), so this geometry has one
+     home and the two slides show the same plot at the same scale because it is
+     literally the same markup.
+     NOT ONE BLANK LINE IN THIS COMMENT, and none anywhere else in this file.
+     The including figures splice it inside their `<svg>` element, and an `<svg>`
+     is a markdown raw-HTML block that ends at the first blank line -- after
+     which these indented lines become an indented code block, and a <pre> lands
+     in the middle of the figure with the panel gone.  That is invisible in the
+     source and in the step and div guards; it shows up only on the slide.  The
+     comments in `loss-step-fig` are spliced the same way and follow the same
+     rule.
      The <marker> travels with it, which means both including figures carry a
      `pf-head-axis` def and the id appears twice in the built deck.  That is the
      one place the deck's one-id-per-figure rule is relaxed: the two defs are
