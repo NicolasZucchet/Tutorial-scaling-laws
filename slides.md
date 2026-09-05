@@ -44,12 +44,12 @@ The early successes of large language models relied on **two main observations**
 <!-- step -->
 <div style="margin-top: 1.5em"></div>
 
-Scaling laws are the science behind **1.** and are what justified the huge investments in compute.
+Scaling laws are the science behind **1.**, are what justified the huge investments in compute and are key to the **pretraining of current models**. 
 
 <!-- step -->
 <div style="margin-top: 1.5em"></div>
 
-They interesting from an **engineering perspective**, (useful tools to design models), and from a **scientific standpoint** (suggest some universal principles underlying learning to be discovered!).
+They interesting from an **engineering perspective** (useful tools to design models), and from a **scientific standpoint** (suggest some universal principles underlying learning to be discovered!).
 
 <!-- step -->
 <div style="margin-top: 1.5em"></div>
@@ -98,6 +98,8 @@ In modern large language models, there are many training stages; we focus on **p
 
 **Context** in, **next-token distribution** out.
 
+<!-- step -->
+
 <!-- figure: llm-arch-fig -->
 
 <!-- step -->
@@ -135,7 +137,7 @@ Nothing about deep learning says this **has** to happen. That it does is what le
 
 The **variables** we care about are:
 - **Loss $L$.** Next-token prediction cross-entropy, which is the **objective of learning** (in the pretraining phase).
-- **Model size $N$.** Number of the **parameters** the neural network has.
+- **Model size $N$.** Number of the **parameters** the neural network has (w/o embedding matrices).
 - **Number of tokens $D$.** Total **number of tokens trained on**. Each token usually serves as target of the next token objective once, but can appear in the context much more often.
 - **Compute $C$.** Total number of **elementary operations** (e.g., addition or multiplication in a certain numerical precision like FP16) performed to train the entire model. Proxy for how much it **cost** to train a model.
 
@@ -187,14 +189,17 @@ How does the loss $L$ evolve as a function of $D$, $N$, and $C$?
 <!-- row-columns: 3/2 -->
 <!-- figure: kaplan-tokens-fig -->
 
+<div style="margin-top: -2em"></div>
 <div class="inline-footnote">
 Training curves from [@kaplan2020scaling].
 </div>
 
 |||
 
+<!-- step -->
 A **larger model** reaches any given loss after **fewer tokens**.
 
+<!-- step -->
 <div style="margin-top: 1.5em"></div>
 
 Performance improves as we scale models up, but this does not look as smooth as what we were promised...
@@ -214,6 +219,8 @@ How does the loss $L$ evolve as a function of $D$, $N$, and $C$?
 <!-- row-columns: 3/2 -->
 
 <!-- figure: kaplan-compute-fig -->
+
+<div style="margin-top: -2em"></div>
 
 <div class="inline-footnote">
 Training curves from [@kaplan2020scaling].
@@ -236,9 +243,9 @@ A compute-optimal model is **undertrained**: optimal training stops with loss st
 ## Scaling laws to train the best large language model
 
 In traditional deep learning
-1. **tune hyperparameters** of the model (learning rate, structure of the network, architecture choices...)
+1. **tune hyperparameters** of the model (learning rate, optimizer, architecture, data...)
 2. see how it affects **validation loss**
-3. **train the final model** using the best hyperparameters
+3. **pick the final model** using the best hyperparameters
 
 <!-- step -->
 <div style="margin-top: 1.5em"></div>
@@ -291,7 +298,7 @@ All $43$ model sizes of [@hoffmann2022training] present in the reconstruction of
 
 ## IsoFLOP curves
 
-Same runs, sliced the other way: at **fixed compute budgets**, sweep the **model size**.
+At **fixed compute budgets**, sweep the **model size**.
 
 <!-- figure: chinchilla-isoflop -->
 
@@ -316,20 +323,30 @@ One law for **all** the runs:
 
 $$L=E + \frac{A}{N^{a}}+\frac{B}{D^{b}}$$
 
+<div class="fragment" data-fragment-index="3">
 <div class="chin-consts">
 
 $E=1.81$, $A=476$, $a=0.35$, $B=1799$, $b=0.36$
-
+</div>
 </div>
 
-**Note.** Only this construction models the **irreducible loss** $E$, the entropy of the text itself.
+<!-- step -->
+<div style="margin-top: 1.5em"></div>
+
+**Note.** Only this construction models the **irreducible loss** $E$, the entropy of the data.
 
 <div class="fragment" data-fragment-index="3">
+<div style="margin-top: 1.5em"></div>
 
 Optimizing the loss under the constraint $C=6ND$ gives $N^*\propto C^{0.51}$ and $D^*\propto C^{0.49}$.
 
 </div>
 
+<div class="fragment" data-fragment-index="4">
+<div style="margin-top: 1.5em"></div>
+
+**Sanity check:** the three methods gave very **similar exponents**.
+</div>
 
 |||
 
@@ -445,7 +462,7 @@ Such conditions hold in **other domains**, like vision [@zhai2022scaling] or tim
 
 We have only **scratched the surface** of scaling laws...
 
-As large language models are becoming more and more complex and used in different practical scenarios, many questions arise:
+As large language models are becoming more and **more complex** and used in different practical scenarios, **many questions arise**:
 - data is **diverse**, e.g. many languages, how should we balance them? [@longpre2026atlas]
 - what happens when we **run out** of internet data? [@muennighoff2023scaling]
 - serving models also costs compute: how to split compute between **training and inference**? [@sardana2024beyond; @jones2021scaling]
@@ -461,7 +478,7 @@ As large language models are becoming more and more complex and used in differen
 
 ## Where we stand
 
-In Part I, we have seen how scaling laws are **useful in practice** and that they **appear everywhere**.
+In Part I, we have discussed what scaling laws **are** and how they are **useful in practice**.
 
 <!-- step -->
 
@@ -477,8 +494,7 @@ There are many **open questions** though:
 
 **Goals** of this part:
 - introduce a **toy model** of natural language and LLMs
-- get some theoretical **intuition** on how it behaves and how it yields scaling laws
-- use it to **fit scaling laws** ourselves
+- get some theoretical **intuition** on how LLMs behave and how pretraining yields scaling laws
 
 
 ---
@@ -500,13 +516,13 @@ Next-token prediction requires learning a **mapping from contexts to next-token 
 
 <!-- step -->
 
-<div style="margin-top: 1.5em"></div>
+<div style="margin-top: 1em"></div>
 
 The <strong class="tok-model">model</strong> explicitly represents **next-token probability distributions**, while the <strong class="tok-data">data</strong> only provides samples from an **implicit target distribution**.
 
 <!-- step -->
 
-<div style="margin-top: 1.5em"></div>
+<div style="margin-top: 1em"></div>
 
 **Assumption.** No structure shortcuts the learning; nothing generalizes from one context to another, so the model has **no choice but to memorize** the mapping, context by context.
 
@@ -520,6 +536,8 @@ The <strong class="tok-model">model</strong> explicitly represents **next-token 
 
 **Assumption 2.** Sequence models as **random embedding generation and prediction**
 
+<div style="margin-top: -1em"></div>
+
 <!-- figure: embed-fig -->
 
 <!-- The sentence belongs to the figure's embedding beat, so it carries that
@@ -528,6 +546,8 @@ The <strong class="tok-model">model</strong> explicitly represents **next-token 
      the unit circle. -->
 
 <div class="fragment" data-fragment-index="1">
+
+<div style="margin-top: -1em"></div>
 
 We assume that the embeddings are iid distributed **uniformly on the unit sphere**.
 
@@ -629,15 +649,14 @@ $$p(\cdot | i) = \mathrm{softmax}(We_i).$$
 
 <div style="margin-top: 1.5em"></div>
 
-Can we guess?
-- How many **contexts can the model store** (100% accuracy)?
+Can we guess (without running experiments!)?
 - How does the **optimal loss** scale as a function of the **model size**?
 - How does the **optimal loss** scale as a function of the **dataset size**?
 
 <div style="margin-top: 1.5em"></div>
 
 In the following:
-1. **Derivation of the capacity** of the model and scaling as a function of **model size $N$**.
+1. **Derivation of the capacity** of the model (number of contexts that can be perfectly predicted) and use it to derive scaling as a function of **model size $N$**.
 2. **Heuristic derivation** for the scaling as a function of **dataset size $D$**.
 
 ---
@@ -651,7 +670,7 @@ In the following:
 <div style="margin-top: 1.5em"></div>
 
 We can get some intuition of the storage capacity with the following **Hebbian model**
-$$W = \sum_i z_i e_i^\top \quad \text{with } z_{ij} = 1 \text{ if } j = y^*_i \text{ and } 0 \text{ otherwise}.$$
+$$W = \sum_i z_i e_i^\top \quad \text{with } z_{ij} = 1 \text{ if } j = y_i \text{ and } 0 \text{ otherwise}.$$
 
 <!-- step -->
 
@@ -672,7 +691,7 @@ Contexts with embeddings close to $e_i$ will be **pushed towards outputting** $z
 <div style="margin-top: 1.5em"></div>
 
 We can get some intuition of the storage capacity with the following **Hebbian model**
-$$W = \sum_i z_i e_i^\top \quad \text{with } z_{ij} = 1 \text{ if } j = y^*_i \text{ and } 0 \text{ otherwise}.$$
+$$W = \sum_i z_i e_i^\top \quad \text{with } z_{ij} = 1 \text{ if } j = y_i \text{ and } 0 \text{ otherwise}.$$
 
 Predicting the next-token for context $i$:
 $$ We_i = \underset{\textbf{signal}}{\underline{z_i e_i^\top e_i \vphantom{\sum_{j\neq i}}}} + \underset{\textbf{noise}}{\underline{\sum_{j\neq i} z_j e_j^\top e_i}}$$
@@ -691,7 +710,7 @@ The prediction for context $i$ is perturbed by the **other embeddings close to**
 <!-- step -->
 <div style="margin-top: 1.5em"></div>
 
-**Querying.** $(W e_i)_y = \sum_{j \,:\, y^*_j = y} e_j^\top e_i$: compare the query $e_i$ with all the other embeddings and see **which color dominates**.
+**Querying.** $(W e_i)_y = \sum_{j \,:\, y_j = y} e_j^\top e_i$: compare the query $e_i$ with all the other embeddings and see **which color dominates**.
 
 ---
 
@@ -700,13 +719,20 @@ The prediction for context $i$ is perturbed by the **other embeddings close to**
 
 **Interference.** The prediction for context $i$ is perturbed by the **other embeddings close to** $e_i$.
 
+
+<div style="margin-top: -1em"></div>
+
 <!-- figure: sphere-fig -->
 
 <!-- step -->
 
-<div style="margin-top: 1.5em"></div>
+<div style="margin-top: -0.5em"></div>
 
-**As a result**, capacity increases with $d$ and $h$.
+**As a result**, capacity increases with $d$ and $h$. 
+
+<!-- step -->
+
+**Exercice.** Demonstrate that it is proportional to $hd$ up to logarithmic factors.
 
 ---
 
@@ -780,6 +806,22 @@ Now that we have some idea of how the capacity scales as a function of the model
 
 ===
 
+<div style="margin-top: -1.5em"></div>
+
+<!-- figure: loss-step-fig -->
+
+---
+
+<!-- rows: 4 -->
+<!-- class: eq-rows -->
+## From capacity to scaling laws
+
+Now that we have some idea of how the capacity scales as a function of the model size, **how do we get scaling laws?**
+
+**For the model size:** assume infinite data, and that the first contexts below capacity get 0 loss and some value $l$ afterwards.
+
+===
+
 <!-- row-columns: 3/2 -->
 
 <!-- step -->
@@ -790,7 +832,7 @@ $$L(N) = \sum_i p(i) \, L(i)$$
 
 |||
 
-<div class="text-sm fragment" data-fragment-index="2">
+<div class="text-sm fragment" data-fragment-index="1">
 
 Average the per-context loss over **how often each context appears**.
 
@@ -806,7 +848,7 @@ $$\phantom{L(N)} \propto \sum_{i \leq \mathrm{capacity}(N)} i^{-\alpha} \times 0
 
 |||
 
-<div class="text-sm fragment" data-fragment-index="3">
+<div class="text-sm fragment" data-fragment-index="2">
 
 Contexts **below capacity are free**; each one above costs $l$.
 
@@ -822,7 +864,7 @@ $$\phantom{L(N)} \propto \mathrm{capacity}(N)^{1 - \alpha} \propto N^{1-\alpha}.
 
 |||
 
-<div class="text-sm fragment" data-fragment-index="4">
+<div class="text-sm fragment" data-fragment-index="3">
 
 The tail sum is set by **where it starts**, and capacity grows like $N$.
 
@@ -856,7 +898,7 @@ Note that in this case there is no residual entropy and the loss will converge t
 
 <!-- step -->
 
-Context $i$ appears in the first $D$ tokens, in expectation, as soon as
+Context $i$ has high chance to appear in the first $D$ tokens as soon as
 
 ===
 
@@ -907,14 +949,17 @@ We now have intuition for how the loss scales as a function of model size $N$ an
 Power laws in the **data** become power laws in the **loss**, in both model size $N$ and tokens $D$.
 
 <!-- step -->
+<div style="margin-top: 1.5em"></div>
 
-Whatever the value of $\alpha$, the **bottleneck is the data** $D$: we need more tokens than parameters.
-
-<!-- step -->
-
-As $\alpha$ increases and the tail becomes rarer, the data becomes **even more of a bottleneck**; it takes longer to see the relevant data points.
+Whatever the value of $\alpha$, the **bottleneck is the data** $D$.
 
 <!-- step -->
+<div style="margin-top: 1.5em"></div>
+
+As $\alpha$ increases and the tail becomes rarer, the data becomes **even more of a bottleneck**.
+
+<!-- step -->
+<div style="margin-top: 1.5em"></div>
 
 **Note.** Faster loss decay is not necessarily a good thing here, as the long tail takes **longer to learn**.
 
@@ -926,6 +971,7 @@ If we further **assume Chinchilla** scaling, we get:
 $$L(N, D) = \frac{A}{N^{\alpha - 1}} + \frac{B}{D^{\frac{1}{\alpha}-1}}.$$
 
 <!-- step -->
+<div style="margin-top: 1.5em"></div>
 
 Optimizing under the constraint $C=6ND$ gives
 $$\begin{align*}
@@ -935,8 +981,9 @@ L(C) &\propto C^{\frac{1 - \alpha }{1+\alpha}}
 \end{align*}$$
 
 <!-- step -->
+<div style="margin-top: 1.5em"></div>
 
-Does this match what's happening **in simulations**?
+Does this back of the enveloppe calculation predicts what is happening **in simulation**?
 
 ---
 
@@ -946,7 +993,7 @@ At fixed **compute budgets**, we sweep the **model size** and fit a parabola in 
 
 <!-- figure: isoflop-figure -->
 
-<div class="text-sm">
+<div class="inline-footnote">
 
 Six IsoFLOP profiles. Learning rates are tuned for each run.
 
@@ -1028,14 +1075,16 @@ How good are the **scaling exponents** compared to the theory as we change the
 data distribution, in particular $\alpha$?
 
 <!-- step -->
+<div style="margin-top: 1.5em"></div>
 
 To estimate those coefficients, we train **models of a given size until the loss
 plateaus** (model coefficient), and train the **largest reasonable model varying the
 dataset size** (data coefficient).
 
 <!-- step -->
+<div style="margin-top: 1.5em"></div>
 
-Our super super simple theory is **not too bad**!
+Our super simple theory is **not too bad**!
 
 
 |||
@@ -1052,22 +1101,22 @@ Our super super simple theory is **not too bad**!
 <!-- columns: 1/1 -->
 ## What if data was finite?
 
-Same experiment as before, but only keeping **first 10,000 contexts** (instead of infinitely many).
+Same experiment as before, but only keeping **first 2,000 contexts** (instead of infinitely many).
 
 <!-- step -->
 
 The loss **starts** decreasing as a **power law** and finishes as an **exponential** one.
 
-<!-- The cue names the solid series in full.  `first 10k` on its own also
-     matches `first 10k, tested on all`, and assets/plot.js resolves a cue by
+<!-- The cue names the solid series in full.  `first 2k` on its own also
+     matches `first 2k, tested on all`, and assets/plot.js resolves a cue by
      longest match, so the specific name is what keeps the two blue curves on
      separate beats. -->
 
-<div class="cap-cue" data-cap-series="first 10k contexts"></div>
+<div class="cap-cue" data-cap-series="first 2k contexts"></div>
 
 <!-- step -->
 
-This is the regime **deep learning used to be in**: with a bounded amount to learn, returns die faster than any power law.
+This is the regime **deep learning used to be in**: with a bounded amount to learn, held-out loss saturates.
 
 <!-- step -->
 
@@ -1085,25 +1134,22 @@ But score those **same models** on the full distribution and the gain largely **
 <!-- columns: 1/1 -->
 ## Digression: emergent behavior under the hood
 
-The same nine models, asked a **threshold question** instead of an average one: for a band of context ranks, does the model predict the **most likely next token**?
+At the **macro level**, performance improves smoothly, but at the task level it can **suddenly** jump with scale: **emergent abilities** [@wei2022emergent] [@olsson2022induction].
 
 <!-- step -->
+<div style="margin-top: 1.5em"></div>
 
-Each band **switches on** at its own model size, one after the other -- and each switch is a **sigmoid over about a decade** of $N$, not a step.
+Our toy model can **capture** some of this behavior!
 
 <!-- step -->
+<div style="margin-top: 1.5em"></div>
 
-Nothing jumps in the average, though: over the same models the loss slides smoothly from $1.55$ to $0.55$ nats. **Emergence can hide inside a power law.**
+**To learn more.** This toy model **does not** capture emergence through **learning**, see [@zucchet2025emergence] for an example of such a toy model.
 
 |||
 
 <!-- figure: emergence-chart -->
 
-<div class="inline-footnote">
-
-Top-1 accuracy against the mode of $p(\cdot|i)$, counted uniformly inside each band; chance is $1/512$. The head bands saturate near $0.95$ because these conditionals are broad.
-
-</div>
 
 ---
 
@@ -1111,19 +1157,34 @@ Top-1 accuracy against the mode of $p(\cdot|i)$, counted uniformly inside each b
 
 We modeled language modeling with an **associative memory** exposed to **power law data** distribution.
 
+<!-- step -->
 With **simple theory**, we were able to **accurately predict** scaling laws exponents.
 
+<!-- step -->
 ```box
 title: Takeaway
 tone: accent
 content: Scaling power laws **naturally arise** when the data itself is produced in power laws.
 ```
 
+<!-- step -->
 <div style="margin-top: 1.5em"></div>
 
-**Warning.** We cannot say anything on whether **this mechanism is the bottleneck** that yields specific scaling behavior, we can just say **how changing the data affects scaling** (which would be much harder in practice!).
+**Warning.** We cannot say anything on whether **this mechanism is the bottleneck** that yields specific scaling behavior in actual LLMs, we can just say **how changing the data affects scaling** (which would be much harder in practice!).
 
-We have **just touched upon** (toy) models and theories of scaling, some **cool papers** here.
+---
+
+<!-- animate:bullets -->
+## To learn more
+
+This is only **one possible theory of scaling laws** and we do not yet understand which mechanisms yields the scaling laws 
+
+<!-- step -->
+Some cool work in the field:
+- Power laws from loss landscape [bach]
+- Superposition yields power laws even if the data is not power law distributed [liu]
+- Many individual emergent behaviors can yield smooth power law improvements [Michaud]
+- Deriving exponents from language statistics [cagnetta]
 
 
 ---
