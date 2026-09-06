@@ -276,6 +276,10 @@ Different strategies exist:
 
 All should end up with the **same result**, but they manipulate the data in different ways; it is great to build **intuition** and will be **useful** for Part III, so we review them next following [@hoffmann2022training].
 
+<!-- step -->
+<div style="margin-top: 1.5em"></div>
+
+**Important note.** Learning rates are **tailored** to each model size, and are close to optimal.
 
 
 ---
