@@ -472,7 +472,9 @@ As large language models are becoming more and **more complex** and used in diff
 - serving models also costs compute: how to split compute between **training and inference**? [@sardana2024beyond; @jones2021scaling]
 - architectures are getting more complex, e.g. **mixture of experts** [@clark2022unified] or **different sequence layers** [@poli2024mechanistic]: do the laws carry over?
 - training now has **many stages**: how does that change the tradeoffs? [@khatri2026art]
-- how much of this can be done **fully in the open**, data and recipe included? [@hall2025marin; @martins2024eurollm]
+
+<!-- step -->
+To see scaling laws in action: [@hall2025marin] has fully **public LLM development**.
 
 ---
 
