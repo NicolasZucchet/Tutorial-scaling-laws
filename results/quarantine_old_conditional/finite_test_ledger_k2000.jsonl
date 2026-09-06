@@ -1,0 +1,3 @@
+{"t": 1788527789.0328262, "tag": "finite-test-h8", "train": 644245094400.0, "eval": 65536000.0, "n": 8, "steps": 409600, "n_cfg": 1, "instance_seed": 0, "eval_tokens": 2000, "loss": [7.468784332275391], "lrs": [0.0014356623272957089], "init_scales": [0.0]}
+{"t": 1788527821.7842638, "tag": "finite-test-h16", "train": 1288490188800.0, "eval": 131072000.0, "n": 16, "steps": 409600, "n_cfg": 1, "instance_seed": 0, "eval_tokens": 2000, "loss": [7.588159561157227], "lrs": [0.0012173267497857202], "init_scales": [0.0]}
+{"t": 1788527865.871114, "tag": "finite-test-h32", "train": 2576980377600.0, "eval": 262144000.0, "n": 32, "steps": 409600, "n_cfg": 1, "instance_seed": 0, "eval_tokens": 2000, "loss": [7.859713554382324], "lrs": [0.0041287826185011705], "init_scales": [0.0]}

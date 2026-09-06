@@ -467,30 +467,36 @@ Cost 1.33·10¹⁵ flops and 67 min of wall clock, billed to `results/emergence_
 ## The finite-context-pool sweep (slide "What if data was finite?")
 
 The scan above draws contexts from the full, effectively infinite Zipf tail. Truncate the
-tail at `K = 10 000` contexts, renormalise, and the model-size curve stops being a power
+tail at `K = 2 000` contexts, renormalise, and the model-size curve stops being a power
 law: once a model can hold most of a *bounded* pool there is nothing left to buy.
 
 ```bash
 export PYTHONPATH=src
-uv run python scripts/finite_context_sweep.py                  # 9 rungs at D = 2.62e7, ~74 min
-uv run python scripts/finite_context_sweep.py --steps 102400    # the original 4x-cheaper series
-uv run python scripts/finite_context_sweep.py --report          # both series, with local slopes
+uv run python scripts/finite_context_sweep.py --support 2000   # 9 rungs at D = 2.62e7
+uv run python scripts/finite_context_sweep.py --support 10000   # the earlier, larger pool
+uv run python scripts/finite_context_sweep.py --report          # with local slopes
 ```
 
 `h` in 8…2048 (so `N = 512h` from 4.1e3 to 1.05e6), `D = 2.62e7` online draws and 409 600
 steps at **every** rung, one seed, learning rate optimised per cell with the same
-interior-optimum refinement as the scan (all nine interior, in both series). The run is
-checkpointed after every cell, so it is resumable and re-running skips what is done. The
-stream is a chain of equal 6.55M-token chunks, chunk `i` drawn with its own seed, so a
-longer stream is the shorter one plus an appended chunk — the same append-only discipline
-as `stream_master`/`stream_ext` and for the same reason (`sample_tokens` sizes its
-rejection chunk from the requested length, so re-drawing at a new length silently changes
-the realisation). Chunk 0 is byte-for-byte the file the first pass used.
+interior-optimum refinement as the scan (all nine interior). The run is checkpointed after
+every cell, so it is resumable and re-running skips what is done. The stream is a chain of
+equal 6.55M-token chunks, chunk `i` drawn with its own seed, so a longer stream is the
+shorter one plus an appended chunk — the same append-only discipline as
+`stream_master`/`stream_ext` and for the same reason (`sample_tokens` sizes its rejection
+chunk from the requested length, so re-drawing at a new length silently changes the
+realisation).
+
+Results, the stream cache and the ledger are all keyed by `K`, so pools do not overwrite
+each other. The chunk cache is *also* keyed on the conditional (`finite_shared_v2_...`):
+labels are draws from `p(y|x)`, so a chunk written under the old per-token-logit
+conditional must never be read back by the new profile-based one, or the model would learn
+one conditional and be scored against another.
 
 Two things make this *finite support*, not a finite dataset: contexts are sampled online
 from the truncated Zipf, and every occurrence gets a fresh next-token draw from its fixed
 conditional. Within the pool there is no held-out set and no train/test gap — evaluation
-weights all 10 000 contexts by their exact renormalised frequencies, and every one of them
+weights all 2 000 contexts by their exact renormalised frequencies, and every one of them
 has been seen thousands of times. So the curve below is what running out of *things to
 learn* looks like, never what overfitting looks like.
 
@@ -498,41 +504,46 @@ That is a statement about the pool, not about the world. Score the same runs aga
 *untruncated* Zipf and there is a train/test gap, a large one; that is the second curve on
 the slide and it has its own section below.
 
-| `h` | `N` | excess loss | local slope | at `D` = 6.55e6 | its slope |
-|---|---|---|---|---|---|
-| 8 | 4 096 | 1.693699 | — | 1.694101 | — |
-| 16 | 8 192 | 1.324286 | −0.355 | 1.325302 | −0.354 |
-| 32 | 16 384 | 1.032124 | −0.360 | 1.033968 | −0.358 |
-| 64 | 32 768 | 0.783258 | −0.398 | 0.786548 | −0.395 |
-| 128 | 65 536 | 0.566136 | −0.468 | 0.573029 | −0.457 |
-| 256 | 131 072 | 0.380699 | −0.572 | 0.394475 | −0.539 |
-| 512 | 262 144 | 0.228371 | −0.737 | 0.253310 | −0.639 |
-| 1024 | 524 288 | 0.127639 | −0.839 | 0.163384 | −0.633 |
-| 2048 | 1 048 576 | 0.079962 | **−0.675** | 0.120958 | −0.434 |
+| `h` | `N` | excess loss | local slope |
+|---|---|---|---|
+| 8 | 4 096 | 1.501228 | — |
+| 16 | 8 192 | 1.086128 | −0.467 |
+| 32 | 16 384 | 0.753500 | −0.528 |
+| 64 | 32 768 | 0.478451 | −0.655 |
+| 128 | 65 536 | 0.263259 | −0.862 |
+| 256 | 131 072 | 0.123008 | −1.098 |
+| 512 | 262 144 | 0.059392 | −1.050 |
+| 1024 | 524 288 | 0.037252 | −0.673 |
+| 2048 | 1 048 576 | 0.029313 | **−0.346** |
 
 Over the same range the infinite-pool curve — same protocol, same `D`, from the scan's own
 `steps = 409 600` column — is close to a straight `N^-0.20` (slopes −0.212, −0.205, −0.202,
 −0.198, −0.197, −0.182). The finite-pool curve is steeper from the very first rung
-(`N^-0.36`) and then *accelerates*, to `N^-0.84` — four times the infinite-pool slope.
+(`N^-0.47`) and then *accelerates*, to `N^-1.10` — five times the infinite-pool slope.
 That acceleration is the point of the slide.
 
-**The last rung still relaxes, to −0.675, and that is a limitation of the measurement
-rather than a property of the problem.** The paragraph below is the evidence; the short
-version is that the relaxation is residual under-convergence whose size grows with `N`,
-so the bottom of this curve is an upper bound that gets looser as it goes right.
+**The last two rungs relax, to −0.673 and −0.346.** At `K = 10 000` the same relaxation was
+mostly a measurement artefact (see the next section, which diagnoses it in detail on that
+pool). Here it is at least partly the real thing: the top two rungs sit at 0.037 and 0.029
+nats of excess on a pool of only 2 000 contexts, i.e. a model with 1.05e6 parameters has
+very nearly solved a 2 000-context problem, so there is almost nothing left for the next
+doubling to buy. Which is exactly the slide's claim. The two causes are not separated on
+this pool — the convex-optimum yardstick below was only computed for `K = 10 000` — so
+treat the bottom of this curve as "saturating, by some mixture of saturation and residual
+under-convergence."
 
 ### Testing those runs on the pool they never saw
 
-`finite_context_sweep.py` scores each run on its own 10 000-context pool. That is the
+`finite_context_sweep.py` scores each run on its own 2 000-context pool. That is the
 honest in-distribution number, and it is the solid curve on the slide — but it is not the
 loss anyone would care about, because the pool is not the distribution. The models were
-trained on a Zipf truncated at rank 10 000; the full Zipf puts **13.70 %** of its mass
+trained on a Zipf truncated at rank 2 000; the full Zipf puts **19.11 %** of its mass
 beyond that rank, on contexts these models have never once seen.
 
 ```bash
 export PYTHONPATH=src
-uv run python scripts/finite_test_loss.py            # 9 cells, ~25 min
-uv run python scripts/finite_test_loss.py --hs 8 16  # a subset
+uv run python scripts/finite_test_loss.py --support 2000   # 9 cells
+uv run python scripts/finite_test_loss.py --hs 8 16        # a subset
 uv run python scripts/finite_test_loss.py --report
 ```
 
@@ -543,60 +554,93 @@ against `build_strat_eval()`'s full-Zipf one, which is exactly the evaluator the
 infinite-pool column of the scan uses. The first score is a **reproduction check**: a
 cell whose training loss does not come back to within 2e-4 of the recorded one is
 reported and dropped rather than plotted, because a silent mismatch would mean the two
-curves no longer come from the same models. All nine reproduce, to better than 1e-6.
+curves no longer come from the same models. All nine reproduce, to better than 5e-7.
 
-| `h` | `N` | on its own 10k pool | on the full Zipf | ratio |
+That check is not decoration. The first attempt at this pool failed it by **4–5 nats** at
+every cell, because the sweep had run under the old conditional and the held-out pass
+picked up the new one mid-flight; the guard caught it and the results were quarantined
+rather than plotted. See `results/quarantine_old_conditional/`.
+
+| `h` | `N` | on its own 2k pool | on the full Zipf | ratio |
 |---|---|---|---|---|
-| 8 | 4 096 | 1.693760 | 2.139823 | 1.26x |
-| 16 | 8 192 | 1.324290 | 1.828469 | 1.38x |
-| 32 | 16 384 | 1.032189 | 1.585414 | 1.54x |
-| 64 | 32 768 | 0.783342 | 1.389643 | 1.77x |
-| 128 | 65 536 | 0.566139 | 1.230682 | 2.17x |
-| 256 | 131 072 | 0.380709 | 1.119451 | 2.94x |
-| 512 | 262 144 | 0.228566 | 1.050476 | 4.60x |
-| 1024 | 524 288 | 0.127971 | 0.904004 | 7.06x |
-| 2048 | 1 048 576 | 0.080208 | 0.771079 | 9.61x |
+| 8 | 4 096 | 1.501230 | 2.205102 | 1.47x |
+| 16 | 8 192 | 1.086146 | 1.908226 | 1.76x |
+| 32 | 16 384 | 0.753756 | 1.684341 | 2.23x |
+| 64 | 32 768 | 0.478451 | 1.549851 | 3.24x |
+| 128 | 65 536 | 0.263272 | 1.487971 | 5.65x |
+| 256 | 131 072 | 0.123149 | 1.436818 | 11.67x |
+| 512 | 262 144 | 0.059392 | 1.203615 | 20.27x |
+| 1024 | 524 288 | 0.037660 | 1.012545 | 26.89x |
+| 2048 | 1 048 576 | 0.029701 | 0.868785 | **29.25x** |
 
-**The gap opens by a factor of ten across the sweep** — 1.26x at the smallest model,
-9.61x at the largest. The in-pool curve falls by 21x over the range; the held-out curve
-falls by 2.8x and is visibly flattening. So the steepening slope that is the point of
-this slide is, read on the full distribution, mostly an artefact of asking the model only
-about the ten thousand contexts it was trained on.
+**The gap opens by a factor of twenty across the sweep** — 1.47x at the smallest model,
+29.25x at the largest. The in-pool curve falls by 51x over the range; the held-out curve
+falls by 2.5x. So the steepening slope that is the point of this slide is, read on the full
+distribution, mostly an artefact of asking the model only about the two thousand contexts
+it was trained on.
 
 Worse than flattening: the held-out curve stays **above** the infinite-pool run at every
-`N` (0.771 vs 0.678 at `N` = 1.05e6), so restricting the training distribution does not
+`N` (0.869 vs 0.678 at `N` = 1.05e6), so restricting the training distribution does not
 merely stop helping, it loses to not restricting it — at the same `N` and the same `D`.
 
 The per-stratum breakdown says why, and it is not the obvious reason. Ignorance about the
 unseen tail would cost `log d - E[H]` = 3.78 nats per context, the price of a uniform
-guess. Measured, the contexts beyond rank 10 000 cost **about 6.2 nats**, and the number
-is flat all the way out to rank 1e7:
+guess. Measured, the contexts beyond rank 2 000 cost **about 6.05 nats**, and the number is
+flat all the way out to rank 1e7 (`h` = 512):
 
 | context rank | excess loss (nats) |
 |---|---|
-| 1 | 0.004 |
-| 100 | 0.129 |
-| 1 000 | 0.821 |
-| 3 162 | 1.798 |
-| 7 498 | 3.188 |
-| **10 000** | **6.176** |
-| 31 622 | 6.237 |
-| 1e6 | 6.115 |
-| 1e7 | 6.100 |
+| 1 | 0.005 |
+| 100 | 0.071 |
+| 1 000 | 0.474 |
+| 1 778 | 3.771 |
+| **2 371** | **5.978** |
+| 3 162 | 6.004 |
+| 10 000 | 5.979 |
+| 1e6 | 6.104 |
+| 1e7 | 6.064 |
 
-A model that has only ever seen 10 000 contexts is not ignorant about the rest, it is
+A model that has only ever seen 2 000 contexts is not ignorant about the rest, it is
 **confidently wrong** about them: every embedding it is shown gets mapped into one of the
 targets it has memorised, so an unseen context draws a sharp prediction that happens to be
-wrong, which costs far more than a flat one. 0.137 x 6.2 + 0.863 x 0.229 = 1.05, which is
-the measured held-out loss at `h` = 512 to two decimals.
+wrong, which costs far more than a flat one. 0.1911 x 6.051 + 0.8089 x 0.0594 = 1.204,
+which is the measured held-out loss at `h` = 512 to three decimals.
 
 This is the mechanism behind the caveat on the "From capacity to scaling laws" slide, that
 a faster loss decay is not automatically a better model: the decay is fast here precisely
 because the thing being measured has been made small.
 
+Cost 1.66e15 flops for the sweep and 3.29e14 for the held-out pass, billed to
+`results/finite_support_ledger_k2000.jsonl` and `results/finite_test_ledger_k2000.jsonl` —
+their own ledgers, no budget, and the closed 10¹³ student ledger is untouched. Wall clock
+is not a useful number for this pass: 9.9 h for the sweep and 1.7 h for the held-out run,
+but the two top sweep rungs alone took 91 min and 7.8 h against 12 and 24 min for the same
+rungs on an unloaded machine, so almost all of it is contention with a concurrent job.
+Outputs: `results/finite_support_sweep_k2000.json` and
+`results/finite_support_test_k2000.json`, with every cell's learning-rate grid and
+per-stratum losses. The slide's chart block is **hand-written** in
+`figures/finite-chart.md`: there is no `--write-slide` and no BEGIN/END markers, so the
+numbers there are copied from these two JSONs by hand, from the `excess_star` and
+`excess_test` fields. All three series are at `D = 2.62e7`. `assets/plot.js` styles it,
+from the `options.plot` block in the fence.
+
+**One inconsistency to be aware of on this slide.** The two blue series were regenerated
+under the new conditional `p(y|x)`; the red "infinite context pool" series still comes from
+`results/grid.json`, which predates that rewrite. `L_inf` moved only 2.4598 → 2.4609 nats
+and the finite-pool numbers themselves moved 1–2 % across the rewrite, so the comparison is
+close to fair — but "the held-out curve stays worse than the infinite pool" is a blue-vs-red
+claim and will not be strictly apples-to-apples until `grid.json` is re-run.
+
 ### Why 409 600 steps, and why the top rung is still an upper bound
 
-The first version of this sweep gave every rung 102 400 steps (`D = 6.55e6`) and its top
+**Everything in this subsection is measured on the `K = 10 000` pool, under the old
+per-token-logit conditional** — it is the diagnosis that set the 409 600-step budget the
+`K = 2 000` sweep above then inherited. Its numbers are therefore *not* the ones plotted on
+the slide, and it has not been re-run under the new conditional. It is kept because the
+argument about what an equal-compute model-scaling curve can and cannot resolve at its top
+end is what justifies the budget, and that argument does not depend on the pool size.
+
+The first version of that sweep gave every rung 102 400 steps (`D = 6.55e6`) and its top
 rung relaxed to −0.434. Quadrupling the budget moved that point down 34 % (0.120958 →
 0.079962) and its slope to −0.675, but did not remove the relaxation. What it did do is
 show exactly what the relaxation is.
@@ -658,12 +702,12 @@ are half of it), plus 6.2e14 for the diagnosis, billed to
 `results/finite_support_ledger.jsonl` — its own ledger, no budget, and the closed 10¹³
 student ledger is untouched; 2.84e15 in that ledger all told. The convex solves are
 analysis rather than training and are not billed: ~1.5e15 flops, ~20 min. Output:
-`results/finite_support_sweep.json`, which keeps **both** series (cells are keyed by step
-count; `meta.series` records which one the last run produced) with every cell's
-learning-rate grid and per-stratum losses. The slide's chart block is **hand-written** in
-`figures/finite-chart.md`: there is no `--write-slide` and no BEGIN/END markers, so the
-numbers there are copied from this JSON by hand, from the `excess_star` field. Both of its
-series are at `D = 2.62e7`. `assets/plot.js` styles it, from the `options.plot` block in the fence.
+`results/finite_support_sweep.json`, which keeps **both** step-count series for this pool
+(cells are keyed by step count; `meta.series` records which one the last run produced) with
+every cell's learning-rate grid and per-stratum losses, and
+`results/finite_support_test.json` for its held-out pass. Those two files are the
+`K = 10 000` record; they are no longer what the slide plots, and both predate the
+conditional rewrite.
 
 ## Layout
 

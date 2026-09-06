@@ -797,7 +797,12 @@ In practice, capacity is also **proportional to the number of parameters**. For 
 
 ## From capacity to scaling laws
 
+
+Now that we have some idea of how the capacity scales as a function of the model size, **how do we get scaling laws?**
+
 **For the model size:** assume infinite data, and that the first contexts below capacity get 0 loss and some value $l$ afterwards.
+
+<div style="margin-top: -2.5em"></div>
 
 <!-- The heading and this one paragraph are all the prose this slide can carry:
      the figure below is a third of the slide's height, and colloquium drops a
@@ -1049,13 +1054,13 @@ at $8$--$16\times$ the fitting budget.
 
 </div>
 
-<div class="fit-matrix">
-<div></div><div class="fm-head fragment" data-fragment-index="1">fit region</div><div class="fm-head fragment" data-fragment-index="1">extrapolation</div>
-<div class="fm-label fm-red fragment" data-colloquium-fragment="1">Chinchilla</div><div class="fm-value fm-red fragment" data-fragment-index="1">3.2%</div><div class="fm-value fm-red fragment" data-fragment-index="1">4.8%</div>
-<div class="fm-label fm-navy fragment" data-colloquium-fragment="1">Skaling</div><div class="fm-value fm-navy fragment" data-fragment-index="2">0.4%</div><div class="fm-value fm-navy fragment" data-fragment-index="2">0.6%</div>
+<div class="fit-matrix fragment" data-colloquium-fragment="1">
+<div></div><div class="fm-head">fit region</div><div class="fm-head">extrapolation</div>
+<div class="fm-label fm-red">Chinchilla</div><div class="fm-value fm-red">3.2%</div><div class="fm-value fm-red">4.8%</div>
+<div class="fm-label fm-navy fragment" data-fragment-index="2">Skaling</div><div class="fm-value fm-navy fragment" data-fragment-index="2">0.4%</div><div class="fm-value fm-navy fragment" data-fragment-index="2">0.6%</div>
 </div>
 
-<div class="inline-footnote">
+<div class="inline-footnote fragment" data-fragment-index="1">
 
 Relative rms error on $L-E$; $E$ is known here (0).
 
@@ -1065,7 +1070,11 @@ Relative rms error on $L-E$; $E$ is known here (0).
 
 |||
 
-<div class="chin-story fragment" data-fragment-index="2">
+<!-- The second marker on this slide.  It has to be a marker, not
+     data-fragment-index="2": colloquium writes data-fragment-count from the
+     marker count alone, and the fit-matrix now spends its single marker on
+     beat 1, so a hand-indexed 2 here would never be reachable. -->
+<div class="chin-story fragment" data-colloquium-fragment="1">
 
 **Additive scaling laws do not extrapolate well.**
 
@@ -1196,10 +1205,10 @@ This is only **one possible theory of scaling laws** and we do not yet understan
 
 <!-- step -->
 Some cool work in the field:
-- Power laws from the loss landscape [@bach2024optimization]
-- Superposition yields power laws even if the data is not power law distributed [@liu2025superposition]
-- Many individual emergent behaviors can yield smooth power law improvements [@michaud2023quantization]
-- Deriving exponents from language statistics [@cagnetta2026deriving]
+- Power laws from the **loss landscape** [@bach2024optimization]
+- **Superposition** yields power laws even if the **data is not** power law distributed [@liu2025superposition]
+- Many individual **emergent behaviors** can yield **smooth power law** improvements [@michaud2023quantization]
+- **Deriving exponents** from language statistics [@cagnetta2026deriving]
 
 
 ---

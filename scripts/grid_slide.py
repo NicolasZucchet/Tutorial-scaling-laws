@@ -86,16 +86,38 @@ def fit_numbers(store: dict) -> dict:
 def fit_md(v: dict) -> str:
     """The prose and the two-row table, with the deck's reveal markers baked in.
 
-    The slide opens on the heading alone: the first click brings the prose, the
-    table's header row and the Chinchilla row, and the second brings the Skaling
-    row plus the coupled-law column.  The fragment attributes have to survive a
-    regeneration -- hence they are written here rather than patched into slides.md
-    by hand.  A `fit-matrix` row is three grid cells, so the reveal is marked on
-    each cell: wrapping them would take the row out of the grid.  Only the two
-    labels carry `data-colloquium-fragment="1"` (colloquium renumbers every
-    occurrence of that exact attribute in document order, so it is a marker, not an
-    index); every other reveal here carries the resulting index outright, and so
-    does the `chin-story` column in slides.md.
+    The slide opens on the heading alone.  The first click brings the prose, the
+    table (its rules, its header row and the Chinchilla row) and the footnote; the
+    second brings the Skaling row and the `chin-story` column in slides.md.  The
+    fragment attributes have to survive a regeneration -- hence they are written
+    here rather than patched into slides.md by hand.
+
+    Beat 1 is marked on the **grid container**, not on its cells.  Per-cell
+    fragments still leave the two rules `.fit-matrix` draws itself (`border-top`
+    and `border-bottom`, assets/slides.css) painted on an otherwise blank slide: a
+    border belongs to the container, and no cell can hide it.  Marking the
+    container hides the rules along with the numbers.
+
+    Beat 2 is then a *nested* fragment: the Skaling row's three cells sit inside
+    the already-revealed container and carry index 2 of their own.  That composes
+    correctly because the engine's fragment CSS is `opacity` only -- a child at
+    opacity 0 inside a visible parent is invisible, and it keeps its grid space, so
+    the container's bottom rule does not jump when the row arrives.  The reveal is
+    marked on each of the three cells: what must *not* be done is wrap them, since
+    a wrapper would become one grid item and take the row out of the grid.
+
+    The container carries `data-colloquium-fragment="1"` (colloquium renumbers
+    every occurrence of that exact attribute in document order, so it is a marker,
+    not an index); the prose, the footnote and the Skaling cells carry their index
+    outright.  The slide's second marker is the `chin-story` div in slides.md,
+    which is what backs index 2 -- `data-fragment-count` counts markers only, so
+    the hand-indexed Skaling row needs it to be reachable at all.
+    The slide's *second* marker is the `chin-story` div in slides.md, which is what
+    makes it step 2.  Both steps have to stay marker-generated: colloquium writes
+    `data-fragment-count` from the marker count only, and hand-written indices are
+    passed through uncounted, so a slide with one marker and a hand-indexed step 2
+    would report one step and never reveal the second (see `STEP_GUARD_DOC` in
+    scripts/build_slides.py -- the build refuses it).
     """
     return f"""
 <div class="fragment" data-fragment-index="1">
@@ -105,15 +127,15 @@ at $8$--$16\\times$ the fitting budget.
 
 </div>
 
-<div class="fit-matrix">
-<div></div><div class="fm-head fragment" data-fragment-index="1">fit region</div><div class="fm-head fragment" data-fragment-index="1">extrapolation</div>
-<div class="fm-label fm-red fragment" data-colloquium-fragment="1">Chinchilla</div><div class="fm-value fm-red fragment" data-fragment-index="1">{100 * v['add'].rmse_log:.1f}%</div><div class="fm-value fm-red fragment" data-fragment-index="1">{100 * v['add_test']:.1f}%</div>
-<div class="fm-label fm-navy fragment" data-colloquium-fragment="1">Skaling</div><div class="fm-value fm-navy fragment" data-fragment-index="2">{100 * v['coupled'].rmse_log:.1f}%</div><div class="fm-value fm-navy fragment" data-fragment-index="2">{100 * v['coupled_test']:.1f}%</div>
+<div class="fit-matrix fragment" data-colloquium-fragment="1">
+<div></div><div class="fm-head">fit region</div><div class="fm-head">extrapolation</div>
+<div class="fm-label fm-red">Chinchilla</div><div class="fm-value fm-red">{100 * v['add'].rmse_log:.1f}%</div><div class="fm-value fm-red">{100 * v['add_test']:.1f}%</div>
+<div class="fm-label fm-navy fragment" data-fragment-index="2">Skaling</div><div class="fm-value fm-navy fragment" data-fragment-index="2">{100 * v['coupled'].rmse_log:.1f}%</div><div class="fm-value fm-navy fragment" data-fragment-index="2">{100 * v['coupled_test']:.1f}%</div>
 </div>
 
-<div class="inline-footnote">
+<div class="inline-footnote fragment" data-fragment-index="1">
 
-Relative rms error on $L-L_\\infty$; $L_\\infty$ is known.
+Relative rms error on $L-E$; $E$ is known here (0).
 
 </div>
 """

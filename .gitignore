@@ -230,3 +230,6 @@ runs/
 # expanded deck intermediate (scripts/build_slides.py)
 .slides.build.*.md
 .slides.build.*.html
+
+# live-reload staging dir (scripts/build_slides.py --serve)
+.slides.live.*/
