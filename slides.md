@@ -1295,7 +1295,7 @@ round_results = lab.run_round("first round", sweep)  # runs the sweep
 
 ```python
 # Fits are method specific, see notebook
-result = lab.hero(laws)  # final run!!
+result = lab.hero(n=n, d=d, lr=lr, predicted=loss)  # final run!!
 ```
 
 --- 
@@ -1306,6 +1306,7 @@ result = lab.hero(laws)  # final run!!
 - **At most 3 rounds**, running everything should take 5--10 minutes
 - No AI help for strategy
 - Only restart experiments in case of bugs
+- Only run Part 0 and Part 2 of the code (Part 1 is just demo)
 - **Report your results** at the end using the link that will be given!
 
 
@@ -1321,7 +1322,7 @@ result = lab.hero(laws)  # final run!!
 
 <div class="hero-side">
 
-**From the notebook.** `lab.hero(laws)` prints a form link with your three numbers already in it -- click it, submit.
+**From the notebook.** `lab.hero(...)` prints a form link with your three numbers already in it -- click it, submit.
 
 <div style="margin-top: 0.8em"></div>
 

@@ -47,7 +47,7 @@
 <!-- Reveal 2: first count the concrete operations, then state the row cost in n. -->
 <g class="fragment" data-colloquium-fragment="1">
 <text class="mm-concrete" x="885" y="145" text-anchor="middle">3 multiplications + 3 additions = 6 FLOPs</text>
-<text class="mm-count" x="885" y="211" text-anchor="middle">N multiplications + N additions = 2N FLOPs</text>
+<text class="mm-count" x="885" y="211" text-anchor="middle">n multiplications + n additions = 2n FLOPs</text>
 </g>
 <!-- Reveal 3: repeat the exact row cost m times. -->
 <g class="fragment" data-colloquium-fragment="1">
