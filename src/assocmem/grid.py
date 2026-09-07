@@ -99,17 +99,20 @@ class StratEval:
 
 
 def _strat_file(head: int, per_bin: int, per_decade: int, seed: int,
-                gamma: float, max_context: int | None = None) -> Path:
+                gamma: float, max_context: int | None = None,
+                deterministic: bool = False) -> Path:
     g = "" if gamma == D.GAMMA else f"_g{gamma:.3f}"
     v = "" if max_context is None else f"_v{max_context}"
+    d = "_det" if deterministic else ""
     # "3": p(y|x) is now the universal entropy-indexed profile, so files
     # written by the old per-token-logit conditional are not interchangeable.
-    return CACHE / f"strat_eval3_h{head}_b{per_bin}_d{per_decade}_s{seed}{g}{v}.npz"
+    return CACHE / f"strat_eval3_h{head}_b{per_bin}_d{per_decade}_s{seed}{g}{v}{d}.npz"
 
 
 def build_strat_eval(head: int = 4096, per_bin: int = 512, per_decade: int = 8,
                      seed: int = 11, gamma: float = D.GAMMA,
-                     max_context: int | None = None) -> StratEval:
+                     max_context: int | None = None,
+                     deterministic: bool = False) -> StratEval:
     """Log-spaced strata over the whole vocabulary, `per_decade` of them.
 
     A stratum is taken **exactly** (every context in it, with its true weight p(i)) when
@@ -118,7 +121,7 @@ def build_strat_eval(head: int = 4096, per_bin: int = 512, per_decade: int = 8,
     one lump: the strata run from the single most frequent context upwards, which is
     what lets the per-stratum loss curve resolve the capacity cliff.
     """
-    f = _strat_file(head, per_bin, per_decade, seed, gamma, max_context)
+    f = _strat_file(head, per_bin, per_decade, seed, gamma, max_context, deterministic)
     if f.exists():
         z = np.load(f)
         return StratEval(**{k: z[k] for k in z.files})
@@ -148,7 +151,7 @@ def build_strat_eval(head: int = 4096, per_bin: int = 512, per_decade: int = 8,
     weight = np.concatenate(wts)
     bin_id = np.concatenate(bid)
     weight /= weight.sum()  # the zeta/cutoff arithmetic leaves ~1e-5; make it exact
-    probs = D.conditional(index)
+    probs = D.conditional(index, deterministic=deterministic)
     entropy = -(probs * np.log(np.maximum(probs, 1e-45))).sum(1)
     hi, lo = D.split_u32(index)
     se = StratEval(hi=hi, lo=lo, probs=probs, entropy=entropy.astype(np.float64),
@@ -161,7 +164,8 @@ def build_strat_eval(head: int = 4096, per_bin: int = 512, per_decade: int = 8,
 
 def strat_evalset(head: int = 1024, per_bin: int = 64, per_decade: int = 4,
                   seed: int = 11, gamma: float = D.GAMMA,
-                  max_context: int | None = None) -> EvalSet:
+                  max_context: int | None = None,
+                  deterministic: bool = False) -> EvalSet:
     """The stratified set as a plain :class:`~assocmem.train.EvalSet`, for the Lab.
 
     Same estimator as :func:`build_strat_eval` -- exact head, log-stratified tail
@@ -171,7 +175,8 @@ def strat_evalset(head: int = 1024, per_bin: int = 64, per_decade: int = 4,
     set, for a small fraction of its noise.
     """
     se = build_strat_eval(head=head, per_bin=per_bin, per_decade=per_decade, seed=seed,
-                          gamma=gamma, max_context=max_context)
+                          gamma=gamma, max_context=max_context,
+                          deterministic=deterministic)
     return EvalSet(hi=se.hi, lo=se.lo, probs=se.probs,
                    entropy=se.entropy.astype(np.float32), weight=se.weight)
 
@@ -271,7 +276,7 @@ def run_cell(h: int, steps: int, se: StratEval, stream, eval_set, *, seed: int =
     The grid is *refined until the optimum is interior*: an argmin sitting on an edge
     means the reported loss is an upper bound, and since the bias would vary
     systematically with h and steps it would corrupt the fitted exponents rather than
-    just shift them.  This is the failure mode `Laws` warns about in the student lab,
+    just shift them.  This is the failure mode a clipped IsoFLOP rung shows in the student lab,
     and here it is closed automatically.
 
     `eval_chunk` is worth touching only when the whole eval set is smaller than the

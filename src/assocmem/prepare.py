@@ -29,9 +29,9 @@ def main() -> None:
         t0 = time.time()
         f()
         print(f"  {name:<48s} {time.time() - t0:6.1f} s")
-    ev = strat_evalset(**SCREEN_STRAT)
-    print(f"\nready.  irreducible loss (mean conditional entropy) = "
-          f"{ev.l_inf:.4f} nats;  uniform baseline = 6.2383 nats")
+    # The irreducible loss is deliberately NOT printed: the exercise is to find it, and a
+    # student who runs this would otherwise be handed the answer.
+    print("\nready.  predicting uniform would give log(512) = 6.2383 nats")
 
 
 if __name__ == "__main__":

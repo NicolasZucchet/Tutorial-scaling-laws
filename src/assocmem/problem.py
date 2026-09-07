@@ -30,7 +30,7 @@ CACHE = Path(os.environ.get("ASSOCMEM_CACHE",
 TOTAL_TOKENS = 26_214_400  # 4^7 * 1600 = the top D rung; the stream is defined beyond it
 MASTER_TOKENS = TOTAL_TOKENS  # back-compat alias: there is no longer a base/extension split
 
-_streams: dict[tuple[int, float], Stream] = {}
+_streams: dict[tuple[int, float, bool], Stream] = {}
 
 
 def _p(name: str) -> Path:
@@ -38,17 +38,20 @@ def _p(name: str) -> Path:
     return CACHE / name
 
 
-def get_stream(n_tokens: int, seed: int = 0, gamma: float = D.GAMMA) -> Stream:
+def get_stream(n_tokens: int, seed: int = 0, gamma: float = D.GAMMA,
+               deterministic: bool = False) -> Stream:
     """Prefix of the one canonical training stream, so every run sees the same data.
 
     Prefixes are nested by construction, which is what makes runs at different step
-    counts comparable.
+    counts comparable.  ``deterministic`` selects the one-correct-answer variant of the
+    labels (see :func:`assocmem.data.ent_index`); the token sequence is the same either
+    way, and the two variants are memoised separately.
     """
-    key = (seed, gamma)
+    key = (seed, gamma, bool(deterministic))
     have = _streams.get(key)
     if have is None or len(have) < n_tokens:
         tok = D.stream_tokens(n_tokens, gamma=gamma, salt=seed)
-        y = D.sample_labels(tok, seed=2000 + seed)
+        y = D.sample_labels(tok, seed=2000 + seed, deterministic=deterministic)
         hi, lo = D.split_u32(tok)
         have = _streams[key] = Stream(hi, lo, y)
     if len(have) == n_tokens:
@@ -56,14 +59,14 @@ def get_stream(n_tokens: int, seed: int = 0, gamma: float = D.GAMMA) -> Stream:
     return Stream(have.hi[:n_tokens], have.lo[:n_tokens], have.y[:n_tokens])
 
 
-def get_evalset(n_tokens: int, seed: int = 0) -> EvalSet:
+def get_evalset(n_tokens: int, seed: int = 0, deterministic: bool = False) -> EvalSet:
     """Eval tokens x ~ p(x) with their exact conditionals p(.|x).
 
     Kept for the scripts and the reference runs; the Lab evaluates on the *stratified*
     set in :mod:`assocmem.grid` instead, which is both cheaper and far less noisy.
     """
     tok = D.sample_tokens(n_tokens, seed=7000 + seed)
-    probs = D.conditional(tok)
+    probs = D.conditional(tok, deterministic=deterministic)
     ent = -(probs * np.log(np.maximum(probs, 1e-45))).sum(1)
     hi, lo = D.split_u32(tok)
     return EvalSet(hi, lo, probs, ent)

@@ -161,21 +161,30 @@ def _profiles() -> tuple[np.ndarray, np.ndarray, np.ndarray]:
     return h, p.astype(np.float32), flat
 
 
-def ent_index(tokens: np.ndarray) -> np.ndarray:
+def ent_index(tokens: np.ndarray, deterministic: bool = False) -> np.ndarray:
     """Which of the ``NH`` entropy levels token `x` sits at.
 
     ``exp(h)/d ~ Beta(1, 31)`` clamped to ``exp(h) >= 1``, as before, then snapped to
     the grid -- a quantisation of at most ``log(d)/2(NH-1)`` = 7.6e-4 nats.
+
+    ``deterministic=True`` puts every token at level 0 instead, where ``h = 0`` and the
+    profile is a point mass: ONE correct answer per token.  That is the demo variant of
+    the problem.  It changes nothing about the inputs, the cost or the model -- only the
+    labels -- and it makes the loss easy to read, since ``L_inf = 0`` means the test loss
+    IS the excess loss and every scaling law is a straight line in log-log with nothing
+    subtracted first.
     """
+    if deterministic:
+        return np.zeros(len(tokens), dtype=np.int32)
     v = _hash_stream(tokens, _SALT_ENTROPY, 1)[:, 0]
     u = 1.0 - v ** (1.0 / BETA_B)  # Beta(1, BETA_B)
     h = np.log(np.maximum(D_OUT * u, 1.0))
     return np.rint(h / np.log(D_OUT) * (NH - 1)).astype(np.int32)
 
 
-def target_entropy(tokens: np.ndarray) -> np.ndarray:
+def target_entropy(tokens: np.ndarray, deterministic: bool = False) -> np.ndarray:
     """H(x) in nats -- exactly the entropy of the profile the token is given."""
-    return _profiles()[0][ent_index(tokens)]
+    return _profiles()[0][ent_index(tokens, deterministic)]
 
 
 # 512 = 2^9, so a 6-round Feistel network on 9 bits is an O(1), exactly bijective,
@@ -208,7 +217,8 @@ def class_perm(rank: np.ndarray, tokens: np.ndarray, rounds: int = 6) -> np.ndar
     return ((left << np.uint64(4)) | right).astype(np.int32)
 
 
-def conditional(tokens: np.ndarray, chunk: int = 8192) -> np.ndarray:
+def conditional(tokens: np.ndarray, chunk: int = 8192,
+                deterministic: bool = False) -> np.ndarray:
     """(T,) tokens -> (T, D_OUT) float32 probabilities p(y|x)."""
     prof = _profiles()[1]
     ranks = np.arange(D_OUT, dtype=np.int64)
@@ -217,7 +227,8 @@ def conditional(tokens: np.ndarray, chunk: int = 8192) -> np.ndarray:
         b = min(a + chunk, len(tokens))
         tok = tokens[a:b]
         cls = class_perm(np.broadcast_to(ranks, (b - a, D_OUT)), tok[:, None])
-        np.put_along_axis(out[a:b], cls.astype(np.int64), prof[ent_index(tok)], axis=1)
+        np.put_along_axis(out[a:b], cls.astype(np.int64),
+                          prof[ent_index(tok, deterministic)], axis=1)
     return out
 
 
@@ -287,7 +298,8 @@ def sample_tokens(m: int, seed: int, gamma: float = GAMMA, p_cut: float = P_CUT,
     return np.concatenate(kept)[:m].astype(np.int64)
 
 
-def labels_from_uniforms(tokens: np.ndarray, u: np.ndarray) -> np.ndarray:
+def labels_from_uniforms(tokens: np.ndarray, u: np.ndarray,
+                         deterministic: bool = False) -> np.ndarray:
     """y ~ p(.|x), one uniform per occurrence.
 
     The rank is read straight off ``flat`` -- a single ``searchsorted`` over the
@@ -295,12 +307,13 @@ def labels_from_uniforms(tokens: np.ndarray, u: np.ndarray) -> np.ndarray:
     globally increasing.  No per-token grouping, no (T, d) temporary, no ``exp``.
     """
     _, _, flat = _profiles()
-    g = ent_index(tokens).astype(np.int64)
+    g = ent_index(tokens, deterministic).astype(np.int64)
     rank = np.searchsorted(flat, u + g) - g * D_OUT
     return class_perm(np.minimum(rank, D_OUT - 1), tokens)
 
 
-def sample_labels(tokens: np.ndarray, seed: int, chunk: int = 4_194_304) -> np.ndarray:
+def sample_labels(tokens: np.ndarray, seed: int, chunk: int = 4_194_304,
+                  deterministic: bool = False) -> np.ndarray:
     """y ~ p(.|x) for each occurrence (fresh draw per occurrence).
 
     Nested in the length of `tokens`, because a PCG64 stream is: the first m draws of
@@ -310,7 +323,7 @@ def sample_labels(tokens: np.ndarray, seed: int, chunk: int = 4_194_304) -> np.n
     y = np.empty(len(tokens), dtype=np.int32)
     for a in range(0, len(tokens), chunk):
         b = min(a + chunk, len(tokens))
-        y[a:b] = labels_from_uniforms(tokens[a:b], rng.random(b - a))
+        y[a:b] = labels_from_uniforms(tokens[a:b], rng.random(b - a), deterministic)
     return y
 
 

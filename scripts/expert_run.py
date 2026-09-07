@@ -42,7 +42,7 @@ matplotlib.use("Agg")
 
 import json
 
-from assocmem import Lab, Sweep
+from assocmem import D_OUT, Lab, Sweep
 from assocmem.plots import plot_summary
 
 # priors from the two earlier studies, used only to *centre* the grids
@@ -51,11 +51,15 @@ LR_STAR = lambda c: 14.85 * c**-0.2384
 SPREAD = 1.75  # lr parabola bracket
 
 
-def rung(c, ns, lr_at):
-    """IsoFLOP profile at compute `c` plus a 3-point lr parabola at width `lr_at`."""
+def rung(c, widths, lr_at):
+    """IsoFLOP profile at compute `c` plus a 3-point lr parabola at embedding dimension `lr_at`.
+
+    The sizes here are embedding dimensions, as they were when these grids were chosen;
+    ``Sweep``'s n axis counts parameters, so they are scaled by the vocabulary size.
+    """
     lr = LR_STAR(c)
-    return (Sweep(c=[c], n=ns, lr=[lr])
-            + Sweep(c=[c], n=[lr_at], lr=[lr / SPREAD, lr * SPREAD]))
+    return (Sweep(c=[c], n=[D_OUT * w for w in widths], lr=[lr])
+            + Sweep(c=[c], n=[D_OUT * lr_at], lr=[lr / SPREAD, lr * SPREAD]))
 
 
 lab = Lab("expert", budget=1e13, rounds=3,
@@ -69,7 +73,7 @@ ROUNDS = [
 ]
 
 for name, sweep in ROUNDS:
-    print(f"\n{'=' * 78}\n{name}   (n* prior {N_STAR(sweep.configs[0].c):.0f}, "
+    print(f"\n{'=' * 78}\n{name}   (n* prior {N_STAR(sweep.configs[0].c):.0f} dims, "
           f"lr prior {LR_STAR(sweep.configs[0].c):.4f})\n{'=' * 78}")
     sweep.estimate(lab)
     lab.run_round(name, sweep, plot=True)

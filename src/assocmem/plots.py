@@ -1,18 +1,23 @@
-"""Plots for the tutorial.  Each round plots itself; the laws plot themselves.
+"""Plots for the tutorial.  Each round plots itself; the fits are the student's to make.
 
 Panel selection is automatic: a sweep with several lrs per cell gets an lr panel, a
-sweep with >=3 widths per compute rung gets an IsoFLOP panel, and >=2 rungs get the
-emerging n*(C) / L*(C) laws.  Colours are an ordinal single-hue ramp (rungs are
-*ordered*, not categorical) plus one accent, validated for CVD separation.
+sweep with >=3 model sizes per compute rung gets an IsoFLOP panel, and >=2 rungs get the
+measured n*(C).  `plot_runs` is the general one -- any column against any other, with a
+third on the colour axis and your own fit overlaid.  Colours are an ordinal single-hue
+ramp (rungs are *ordered*, not categorical) plus one accent, validated for CVD
+separation.
 """
 
 from __future__ import annotations
 
 import matplotlib as mpl
+import matplotlib.colors as mcolors
 import matplotlib.pyplot as plt
 import numpy as np
 
 from . import fit as _fit
+from .data import D_OUT
+from .train import BATCH
 
 SURFACE = "#fcfcfb"
 INK, INK2, INK3 = "#0b0b0b", "#52514e", "#8a8983"
@@ -127,14 +132,14 @@ def panel_isoflop(res, ax, hero=None):
         ax.plot([d["n_star"]], [d["loss_star"]], "v", color=col, ms=7, mec=SURFACE,
                 mew=1.2, zorder=5)
     for c in sorted({r["c"] for r in res.rows}):
-        if c not in rungs:  # rung with <3 widths: show the points, no parabola
+        if c not in rungs:  # rung with <3 sizes: show the points, no parabola
             sub = sorted((r for r in res.rows if r["c"] == c), key=lambda r: r["n"])
             ax.plot([r["n"] for r in sub], [r["loss"] for r in sub], "o", ms=4.5,
                     color=INK3, alpha=.7)
     if hero:
         ax.plot([hero["n"]], [hero["loss"]], "*", color=ACCENT, ms=15, mec=SURFACE,
                 mew=1.2, zorder=6, label="hero")
-    ax.set(xscale="log", xlabel="width $n$   (params $=512n$)",
+    ax.set(xscale="log", xlabel="parameters $N$",
            ylabel="test loss (nats)",
            title="IsoFLOP profiles ($\\blacktriangledown$ = optimum)")
     _headroom(ax, 0.34)
@@ -163,8 +168,7 @@ def panel_budget(lab, ax):
     x = 0.0
     for i, r in enumerate(lab.round_log):
         ax.barh([0], [r["flops"]], left=[x], color=_ramp(i, max(len(lab.round_log), 2)),
-                height=0.55, edgecolor=SURFACE, lw=1.5,
-                hatch="///" if r["smoke"] else None)
+                height=0.55, edgecolor=SURFACE, lw=1.5)
         x += r["flops"]
     if lab.hero_record:
         ax.barh([0], [lab.hero_record["c_train"] + lab.hero_record["c_eval"]], left=[x],
@@ -175,7 +179,7 @@ def panel_budget(lab, ax):
                      f"({100 * spent / total:.1f}%)   |   rounds "
                      f"{lab.rounds_used}/{lab.max_rounds}", fontsize=8.5,
             color=INK, fontweight="bold", va="bottom")
-    names = [r["name"] for r in lab.round_log if not r["smoke"]]
+    names = [r["name"] for r in lab.round_log]
     if lab.hero_record:
         names.append("hero")
     ax.text(0, -0.9, "  |  ".join(names), fontsize=7.5, color=INK2, va="top")
@@ -184,6 +188,261 @@ def panel_budget(lab, ax):
 # --------------------------------------------------------------------------- #
 # composites
 # --------------------------------------------------------------------------- #
+# --------------------------------------------------------------------------- #
+# the generic explorer: any column against any column, coloured by a third
+# --------------------------------------------------------------------------- #
+COLUMNS = ("c", "n", "d", "tokens", "lr", "loss", "excess", "params", "width",
+           "tokens_per_param", "flops", "round", "seed", "init", "steps",
+           "n_star", "loss_star")
+
+_AXIS_LABEL = {
+    "c": "compute $C$ (flops)", "n": "parameters $N$", "steps": "steps",
+    "d": "tokens $D$", "tokens": "tokens $D$",
+    "lr": "peak learning rate", "loss": "test loss (nats)",
+    "excess": "excess loss $L-L_\\infty$ (nats)", "params": "parameters $N$",
+    "width": "embedding dimension $N/512$",
+    "tokens_per_param": "tokens per parameter", "flops": "flops", "round": "round",
+    "seed": "instance seed", "init": "init scale",
+    # the columns a list of IsoFLOP optima carries, so `plot_runs(res.isoflop(), ...)`
+    # labels itself like the laws it is about to be fitted into
+    "n_star": "optimal size $N^*$", "loss_star": "best loss $L^*$ (nats)",
+}
+
+
+def _decade_ticks(ax):
+    """Label a log axis that spans less than a decade.
+
+    ``_finish`` drops minor labels, which is right for a multi-decade axis and leaves a
+    narrow one blank -- and an excess-loss axis often covers a factor of 3.  Under two
+    decades, put major ticks (which keep their labels) inside the decade instead.
+    """
+    for axis, lim in ((ax.xaxis, ax.get_xlim()), (ax.yaxis, ax.get_ylim())):
+        if axis.get_scale() != "log":
+            continue
+        lo, hi = lim
+        if lo <= 0:
+            continue
+        span = hi / lo
+        if span < 10:      # sub-decade: plain numbers, since 1.6 reads better than 1.6e0
+            axis.set_major_locator(mpl.ticker.LogLocator(subs=(1, 1.5, 2, 3, 5, 7)))
+            axis.set_major_formatter(mpl.ticker.ScalarFormatter())
+        elif span < 100:   # one or two decades: sci notation, so there is no shared offset
+            axis.set_major_locator(mpl.ticker.LogLocator(subs=(1, 2, 5)))
+            axis.set_major_formatter(mpl.ticker.LogFormatterSciNotation())
+
+
+def _rows_of(runs):
+    """Accept a Results, a Lab, or a plain list of rows; return its rows.
+
+    No l_inf comes back with them: the problem's irreducible loss is not something you are
+    told, so ``excess`` needs a floor you fitted (or know, as in the demo variant) and pass
+    in yourself.
+    """
+    if isinstance(runs, list):
+        return runs
+    rows = getattr(runs, "rows", None)
+    if rows is None:                       # a Lab: take every round it has run
+        return list(runs.results.rows)
+    return list(rows)
+
+
+def _column(rows, name, l_inf):
+    """One column by name, including the derived ones."""
+    if name == "d":
+        name = "tokens"
+    if name == "width":            # the embedding dimension behind a parameter count
+        return np.array([r.get("width", r["n"] / D_OUT) for r in rows], float)
+    if name == "params":
+        return np.array([r["n"] for r in rows], float)          # n IS the parameter count
+    if name == "tokens_per_param":
+        return np.array([r["tokens"] / r["n"] for r in rows], float)
+    if name == "excess":
+        if l_inf is None:
+            raise ValueError(
+                "excess loss needs a floor: pass l_inf=... (the L_inf your own L*(C) fit "
+                "found, or 0.0 on the one-correct-answer demo). The problem does not tell "
+                "you its irreducible loss.")
+        return np.array([r["loss"] - l_inf for r in rows], float)
+    if name not in rows[0]:
+        raise KeyError(f"no column {name!r}; have {sorted(set(rows[0]) | set(COLUMNS))}")
+    return np.array([r[name] for r in rows], float)
+
+
+COLORBAR_MAX = 10   # more colour groups than this and a legend stops being readable
+
+
+def _ramp_cmap():
+    """The ordinal ramp as a continuous colormap, for a colour axis with many values."""
+    return mcolors.LinearSegmentedColormap.from_list("assocmem", RAMP)
+
+
+def _color_norm(vals):
+    """Log norm across the colour values when they span decades, linear when they do not."""
+    v = np.asarray(sorted(vals), float)
+    lo, hi = float(v[0]), float(v[-1])
+    if lo > 0 and hi / lo >= 10:
+        return mcolors.LogNorm(vmin=lo, vmax=hi)
+    return mcolors.Normalize(vmin=lo, vmax=hi if hi > lo else lo + 1e-12)
+
+
+# The compute relation is what lets a parametric law be drawn on axes that are not (N, D):
+# pin any two of (C, N, D) and the third follows from C = k N D.
+_ND_ALIAS = {"tokens": "d", "params": "n"}
+
+
+def _nd_from(xname, xs, cname, cval, k):
+    """(n, d) along a group's x axis, from whichever two of (C, N, D) the axes pin down."""
+    xname = _ND_ALIAS.get(xname, xname)
+    cname = _ND_ALIAS.get(cname, cname)
+    have = {xname: np.asarray(xs, float), cname: np.full(len(xs), float(cval))}
+    if set(have) == {"n", "d"}:
+        return have["n"], have["d"]
+    if set(have) == {"c", "n"}:
+        return have["n"], have["c"] / (k * have["n"])
+    if set(have) == {"c", "d"}:
+        return have["c"] / (k * have["d"]), have["d"]
+    raise ValueError(
+        f"a parametric law cannot be drawn against x={xname!r} coloured by {cname!r}: "
+        f"the pair has to pin down (N, D), so use two of 'n', 'd'/'tokens' and 'c'.")
+
+
+def plot_runs(runs, x="n", y="loss", color="c", *, excess=False, l_inf=None,
+              reduce="min", fit=None, logx=True, logy=True, ax=None, path=None,
+              show=None, title=None):
+    """Any column of a set of runs against any other, with a third as the colour axis.
+
+    The round figures answer fixed questions (where is lr*, where is the IsoFLOP
+    minimum). This answers whichever one you have: ``plot_runs(lab, x="tokens",
+    y="loss", color="n")``, ``plot_runs(r1, x="lr", y="excess", color="c")``, and so on
+    over :data:`COLUMNS` -- the recorded ones plus ``params``, ``tokens_per_param`` and
+    ``excess``.
+
+    excess:  plot ``y - l_inf`` instead of ``y``, with the floor you pass in ``l_inf``.
+             Only the excess loss is a power law, so this is what makes a loss axis a
+             straight line in log-log -- but the floor is yours to estimate: use what your
+             L*(C) fit found, or 0.0 on the one-correct-answer demo, where it is 0 by
+             construction.
+    color:   the column on the colour axis, or None to draw every run as one series.  Up to
+             :data:`COLORBAR_MAX` values get a legend; past that they get a colorbar, since
+             fifteen legend entries are not a legend.
+    reduce:  'min' keeps the best y per (x, colour) cell -- for a loss axis that is the
+             envelope over everything not plotted, e.g. over lr, which is what an
+             IsoFLOP curve wants. 'mean' averages; None draws every run.
+    fit:     what to overlay on each colour group.
+             'powerlaw'  -- a least-squares line through the log-log points, labelled with
+                            its slope and r^2.
+             'parabola'  -- the IsoFLOP parabola in log x, with its minimum marked: the
+                            fit that turns a profile into the (x*, y*) a law is built from.
+             a `JointFit` -- the loss curve that parametric law predicts along this group's
+                            slice, drawn through the measured points.  Pass the fit you
+                            made, so the plot shows the form you chose.
+    Both axes are log by default: a power law is only a straight line there.
+    """
+    rows = _rows_of(runs)
+    if not rows:
+        raise ValueError("no runs to plot")
+    l_inf = None if l_inf is None else float(l_inf)
+    if excess:
+        if y == "loss":
+            y = "excess"
+        elif y != "excess":
+            raise ValueError(f"excess=True does not apply to y={y!r}")
+    parametric = fit if isinstance(fit, _fit.JointFit) else None
+    if fit is not None and parametric is None and fit not in ("powerlaw", "parabola"):
+        raise ValueError(f"unknown fit {fit!r}; 'powerlaw', 'parabola', a JointFit, or None")
+    if parametric is not None and not color:
+        raise ValueError("a parametric law needs a colour axis to know which slice of the "
+                         "(N, D) plane to draw: colour by 'c', 'n' or 'd'.")
+
+    xv = _column(rows, x, l_inf)
+    yv = _column(rows, y, l_inf)
+    cv = _column(rows, color, l_inf) if color else None
+
+    groups = []
+    for cval in (sorted(set(cv)) if color else [None]):
+        m = np.ones(len(rows), bool) if cval is None else (cv == cval)
+        xs, ys = xv[m], yv[m]
+        if reduce in ("min", "mean"):
+            uniq = sorted(set(xs))
+            agg = min if reduce == "min" else (lambda v: float(np.mean(v)))
+            ys = np.array([agg([ys[i] for i in range(len(xs)) if xs[i] == u])
+                           for u in uniq], float)
+            xs = np.array(uniq, float)
+        else:
+            o = np.argsort(xs)
+            xs, ys = xs[o], ys[o]
+        groups.append((cval, xs, ys))
+
+    # Past COLORBAR_MAX groups the colour axis becomes a bar rather than a list, and the
+    # colours come from the value itself instead of from the group's rank.
+    bar = color is not None and len(groups) > COLORBAR_MAX
+    if bar:
+        cmap, norm = _ramp_cmap(), _color_norm([g[0] for g in groups])
+        cols = [cmap(norm(g[0])) for g in groups]
+    else:
+        cols = [_ramp(i, len(groups)) for i in range(len(groups))]
+
+    with mpl.rc_context(STYLE):
+        own = ax is None
+        fig = plt.figure(figsize=(4.6, 3.6)) if own else ax.figure
+        ax = fig.add_subplot(111) if own else ax
+        labelled = set()   # in colorbar mode each overlay is named once, not per group
+
+        def once(kind, text):
+            """Label the first group's overlay only, when the legend is not per group."""
+            if not bar:
+                return text
+            if kind in labelled:
+                return None
+            labelled.add(kind)
+            return text
+
+        for i, (cval, xs, ys) in enumerate(groups):
+            col = cols[i]
+            lbl = None if cval is None else (sci(cval) if color == "c" else f"{cval:g}")
+            # only join the points when x identifies them: with reduce=None a cell can
+            # hold several runs, and a line through them would draw a series that is not
+            # one (all the model sizes at one lr, say).
+            joined = len(xs) > 1 and len(set(xs)) == len(xs)
+            ax.plot(xs, ys, "o-" if joined and parametric is None else "o", ms=5,
+                    color=col, label=None if bar else lbl)
+            if len(xs) >= 2 and fit == "powerlaw":
+                a, b, r2 = _fit.powerlaw(xs, ys)
+                xf = np.exp(np.linspace(np.log(xs.min()), np.log(xs.max()), 50))
+                ax.plot(xf, a * xf**b, ls="--", lw=1.2, color=col, alpha=.9,
+                        label=once("powerlaw",
+                                   f"  $\\propto x^{{{b:.2f}}}$, $r^2$={r2:.3f}"))
+            elif len(xs) >= 3 and fit == "parabola":
+                f = _fit.isoflop_optimum(xs, ys)
+                xf = np.exp(np.linspace(np.log(xs.min()), np.log(xs.max()), 100))
+                ax.plot(xf, np.polyval(f.coef, np.log(xf)), ls=":", lw=1.2, color=col,
+                        alpha=.9, label=once("parabola", "parabola in $\\log x$"))
+                ax.plot([f.n_star], [f.loss_star], "v", color=col, ms=8, mec=SURFACE,
+                        mew=1.2, zorder=5,
+                        label=once("vertex", "$\\blacktriangledown$ fitted optimum"))
+            elif len(xs) >= 2 and parametric is not None:
+                xf = np.exp(np.linspace(np.log(xs.min()), np.log(xs.max()), 120))
+                nn, dd = _nd_from(x, xf, color, cval, parametric.flops_per_nd)
+                pred = parametric.predict(nn, dd)
+                if excess or y == "excess":
+                    pred = pred - (l_inf or 0.0)
+                ax.plot(xf, pred, ls="-", lw=1.3, color=col, alpha=.9,
+                        label=once("parametric", parametric.label))
+        ax.set(xscale="log" if logx else "linear", yscale="log" if logy else "linear",
+               xlabel=_AXIS_LABEL.get(x, x), ylabel=_AXIS_LABEL.get(y, y),
+               title=title if title is not None else f"{y} vs {x}")
+        if bar:
+            sm = mpl.cm.ScalarMappable(norm=norm, cmap=cmap)
+            fig.colorbar(sm, ax=ax, label=_AXIS_LABEL.get(color, color))
+        if ax.get_legend_handles_labels()[1]:
+            _headroom(ax, 0.2)
+            ax.legend(title=None if bar or not color else _AXIS_LABEL.get(color, color),
+                      fontsize=7, title_fontsize=7, labelcolor=INK2,
+                      ncol=2 if len(groups) > 4 and not bar else 1)
+        _decade_ticks(ax)
+        return _finish(fig, path, show) if own else ax
+
+
 def plot_round(res, path=None, show=None, lab=None):
     """Auto-composed figure for one round."""
     n_lr = max((len({r["lr"] for r in res.rows if r["c"] == c and r["n"] == n})
@@ -211,13 +470,13 @@ def plot_round(res, path=None, show=None, lab=None):
             elif name == "scatter":
                 ax.plot([r["n"] for r in res.rows], [r["loss"] for r in res.rows], "o",
                         color=RAMP[3], ms=6, mec=SURFACE, mew=1.2)
-                ax.set(xscale="log", xlabel="width $n$", ylabel="test loss (nats)",
+                ax.set(xscale="log", xlabel="parameters $N$", ylabel="test loss (nats)",
                        title="runs this round")
             elif name == "nstar":
                 cs = [d["c"] for d in iso]
                 a, b, r2 = _fit.powerlaw(cs, [d["n_star"] for d in iso])
                 panel_law(ax, cs, [d["n_star"] for d in iso], a, b,
-                          ylabel="optimal width $n^*$", title="optimal size so far", r2=r2)
+                          ylabel="optimal size $N^*$", title="optimal size so far", r2=r2)
             elif name == "loss":
                 cs = [d["c"] for d in iso]
                 ax.plot(cs, [d["loss_star"] for d in iso], "o-", color=RAMP[3], ms=7,
@@ -228,87 +487,16 @@ def plot_round(res, path=None, show=None, lab=None):
         return _finish(fig, path, show)
 
 
-def plot_laws(laws, path=None, show=None, hero=None):
-    """The three fitted laws, with the hero extrapolation if it has been run."""
-    cs = [r["c"] for r in laws.rungs]
-    an, bn, r2n = laws.n_law
-    a_lr, p_lr = laws.lr_law
-    aL, alL, r2L = laws.loss_law
-    hc = hero["c_train"] if hero else None
-    with mpl.rc_context(STYLE):
-        fig, axes = plt.subplots(1, 3, figsize=(11, 3.4))
-        panel_law(axes[0], cs, [r["n_star"] for r in laws.rungs], an, bn,
-                  ylabel="optimal width $n^*$", title="a  optimal model size", r2=r2n,
-                  hero=(hc, hero["n"]) if hero else None)
-        if laws.lr_anchors:
-            panel_law(axes[1], [c for c, _ in laws.lr_anchors],
-                      [v for _, v in laws.lr_anchors], a_lr, p_lr,
-                      ylabel="optimal peak lr", title="b  optimal learning rate",
-                      hero=(hc, hero["lr_max"]) if hero else None)
-        else:
-            axes[1].axis("off")
-            axes[1].text(.5, .5, "no bracketed lr sweep yet", ha="center", color=INK2)
-        ax = axes[2]
-        xs = np.array([min(cs) / 2.5, max(cs) * (25 if hero else 2.5)])
-        ax.plot(xs, aL * xs**-alL, color=INK3, lw=1.4, ls="--",
-                label=f"${aL:.3g}\\,C^{{-{alL:.4f}}}$   $r^2$={r2L:.4f}")
-        ax.plot(cs, [r["loss_star"] - laws.l_inf for r in laws.rungs], "o", color=RAMP[3],
-                ms=7, mec=SURFACE, mew=1.2, label="measured")
-        if hero:
-            ax.plot([hc], [hero["predicted"] - laws.l_inf], "o", ms=11, mfc="none",
-                    mec=ACCENT, mew=2.0, label="hero predicted")
-            ax.plot([hc], [hero["loss"] - laws.l_inf], "*", color=ACCENT, ms=15,
-                    mec=SURFACE, mew=1.2, label="hero actual")
-        ax.set(xscale="log", yscale="log", xlabel="compute $C$ (flops)",
-               ylabel="excess loss $L-L_\\infty$ (nats)",
-               title=f"c  loss law  ($L_\\infty$={laws.l_inf:.3f})")
-        ax.legend(fontsize=7, labelcolor=INK2)
-        return _finish(fig, path, show)
+def plot_summary(lab, path=None, show=None):
+    """Budget strip + everything measured so far.  The 'where am I' plot.
 
-
-def plot_hero(rec, laws=None, path=None, show=None):
-    """Learning curve + where the hero landed relative to the law."""
-    with mpl.rc_context(STYLE):
-        ncol = 2 if laws else 1
-        fig, axes = plt.subplots(1, ncol, figsize=(4.2 * ncol + 2, 3.4), squeeze=False)
-        ax = axes[0][0]
-        ax.plot(rec["curve_steps"], rec["curve_loss"], "o-", color=ACCENT, ms=5,
-                mec=SURFACE, mew=1.0)
-        ax.axhline(rec["irreducible"], color=INK3, lw=1.4, ls="--")
-        ax.text(rec["steps"] * 0.02, rec["irreducible"] + 0.03,
-                f"irreducible $L_\\infty$={rec['irreducible']:.3f}", color=INK2, fontsize=7.5)
-        ax.axhline(rec["predicted"], color=INK3, lw=1.2, ls=":")
-        ax.text(rec["steps"] * 0.02, rec["predicted"] + 0.03,
-                f"predicted {rec['predicted']:.4f}", color=INK2, fontsize=7.5)
-        ax.set(xlabel="step", ylabel="test loss (nats)",
-               title=f"hero run: n={rec['n']}, {rec['steps']} steps, "
-                     f"lr={rec['lr_max']:.4f}")
-        ax.annotate(f"actual {rec['loss']:.4f}",
-                    (rec["curve_steps"][-1], rec["curve_loss"][-1]),
-                    textcoords="offset points", xytext=(-4, -14), ha="right",
-                    fontsize=8.5, color=INK, fontweight="bold")
-        if laws:
-            cs = [r["c"] for r in laws.rungs]
-            aL, alL, r2L = laws.loss_law
-            ax2 = axes[0][1]
-            xs = np.array([min(cs) / 2.5, rec["c_train"] * 2.5])
-            ax2.plot(xs, aL * xs**-alL, color=INK3, lw=1.4, ls="--", label="fitted law")
-            ax2.plot(cs, [r["loss_star"] - laws.l_inf for r in laws.rungs], "o",
-                     color=RAMP[3], ms=7, mec=SURFACE, mew=1.2, label="screening")
-            ax2.plot([rec["c_train"]], [rec["predicted"] - laws.l_inf], "o", ms=11,
-                     mfc="none", mec=ACCENT, mew=2.0, label="predicted")
-            ax2.plot([rec["c_train"]], [rec["loss"] - laws.l_inf], "*", color=ACCENT,
-                     ms=15, mec=SURFACE, mew=1.2, label="actual")
-            ax2.set(xscale="log", yscale="log", xlabel="compute $C$ (flops)",
-                    ylabel="excess loss $L-L_\\infty$ (nats)",
-                    title=f"extrapolation: error {rec['loss'] - rec['predicted']:+.4f} nats")
-            ax2.legend(fontsize=7, labelcolor=INK2)
-        return _finish(fig, path, show)
-
-
-def plot_summary(lab, laws=None, path=None, show=None):
-    """Budget strip + everything measured so far.  The 'where am I' plot."""
+    Only measurements: the IsoFLOP optima it draws come from the runs, and the one power
+    law on it is n*(C) through those optima.  Fitting L*(C) -- picking a form, deciding
+    whether the floor is identifiable over your span of rungs -- is the part you do
+    yourself, so it is not quietly done for you here.
+    """
     res = lab.results
+    iso = res.isoflop()
     with mpl.rc_context(STYLE):
         fig = plt.figure(figsize=(11, 6.2))
         gs = fig.add_gridspec(3, 3, height_ratios=[0.5, 3, 3], hspace=0.55, wspace=0.28)
@@ -318,41 +506,54 @@ def plot_summary(lab, laws=None, path=None, show=None):
         ax_curve = fig.add_subplot(gs[1, 2])
         if lab.hero_record:
             r = lab.hero_record
-            ax_curve.plot(r["curve_steps"], r["curve_loss"], "o-", color=ACCENT, ms=5)
-            ax_curve.axhline(r["irreducible"], color=INK3, lw=1.4, ls="--")
-            ax_curve.text(r["steps"] * 0.16, r["irreducible"] + 0.03,
-                          f"irreducible {r['irreducible']:.3f}", color=INK2, fontsize=7.5)
-            ax_curve.set(xlabel="step", ylabel="test loss (nats)",
-                         title=f"c  hero run: {r['loss']:.4f} nats "
-                               f"(predicted {r['predicted']:.4f})")
+            xs = [s * BATCH for s in r["curve_steps"]]
+            ax_curve.plot(xs, r["curve_loss"], "o-", color=ACCENT, ms=5)
+            pred = r.get("predicted")
+            if pred is not None and np.isfinite(pred):
+                ax_curve.axhline(pred, color=INK3, lw=1.2, ls=":")
+                ax_curve.text(xs[-1] * 0.16, pred + 0.03, f"predicted {pred:.4f}",
+                              color=INK2, fontsize=7.5)
+            ax_curve.set(xlabel="tokens $D$", ylabel="test loss (nats)",
+                         title=f"c  hero run: {r['loss']:.4f} nats"
+                               + (f" (predicted {pred:.4f})"
+                                  if pred is not None and np.isfinite(pred) else ""))
         else:
             ax_curve.axis("off")
             ax_curve.text(.5, .5, "hero run not done yet", ha="center", color=INK2)
-        if laws is not None:
-            cs = [r["c"] for r in laws.rungs]
-            an, bn, r2n = laws.n_law
-            hc = lab.hero_record["c_train"] if lab.hero_record else None
-            panel_law(fig.add_subplot(gs[2, 0]), cs, [r["n_star"] for r in laws.rungs],
-                      an, bn, ylabel="optimal $n^*$", title="d  optimal size", r2=r2n,
-                      hero=(hc, lab.hero_record["n"]) if lab.hero_record else None)
-            if laws.lr_anchors:
-                a_lr, p_lr = laws.lr_law
-                panel_law(fig.add_subplot(gs[2, 1]), [c for c, _ in laws.lr_anchors],
-                          [v for _, v in laws.lr_anchors], a_lr, p_lr,
-                          ylabel="optimal peak lr", title="e  optimal lr",
-                          hero=(hc, lab.hero_record["lr_max"]) if lab.hero_record else None)
-            aL, alL, r2L = laws.loss_law
-            ax = fig.add_subplot(gs[2, 2])
-            xs = np.array([min(cs) / 2.5, (hc or max(cs)) * 2.5])
-            ax.plot(xs, aL * xs**-alL, color=INK3, lw=1.4, ls="--",
-                    label=f"${aL:.3g}\\,C^{{-{alL:.4f}}}$")
-            ax.plot(cs, [r["loss_star"] - laws.l_inf for r in laws.rungs], "o",
-                    color=RAMP[3], ms=7, mec=SURFACE, mew=1.2, label="measured")
+        cs = [d["c"] for d in iso]
+        hc = lab.hero_record["c_train"] if lab.hero_record else None
+        ax_n = fig.add_subplot(gs[2, 0])
+        if len(iso) >= 2:
+            a, b, r2 = _fit.powerlaw(cs, [d["n_star"] for d in iso])
+            panel_law(ax_n, cs, [d["n_star"] for d in iso], a, b,
+                      ylabel="optimal size $N^*$", title="d  optimal size (measured)",
+                      r2=r2, hero=(hc, lab.hero_record["n"]) if lab.hero_record else None)
+        else:
+            ax_n.axis("off")
+            ax_n.text(.5, .5, "one rung so far\n(>=2 rungs for $n^*(C)$)", ha="center",
+                      va="center", color=INK2, fontsize=8)
+        ax_l = fig.add_subplot(gs[2, 1])
+        if iso:
+            ax_l.plot(cs, [d["loss_star"] for d in iso], "o-", color=RAMP[3], ms=7,
+                      mec=SURFACE, mew=1.2, label="rung optima")
             if lab.hero_record:
-                ax.plot([hc], [lab.hero_record["loss"] - laws.l_inf], "*", color=ACCENT,
-                        ms=15, mec=SURFACE, mew=1.2, label="hero")
-            ax.set(xscale="log", yscale="log", xlabel="compute $C$ (flops)",
-                   ylabel="excess loss (nats)", title="f  loss law")
-            ax.legend(fontsize=7, labelcolor=INK2)
+                ax_l.plot([hc], [lab.hero_record["loss"]], "*", color=ACCENT, ms=15,
+                          mec=SURFACE, mew=1.2, label="hero")
+            ax_l.set(xscale="log", xlabel="compute $C$ (flops)",
+                     ylabel="best loss $L^*$ (nats)", title="e  best loss (measured)")
+            ax_l.legend(fontsize=7, labelcolor=INK2)
+        else:
+            ax_l.axis("off")
+            ax_l.text(.5, .5, "no rung with >=3 sizes yet", ha="center", va="center",
+                      color=INK2, fontsize=8)
+        ax_t = fig.add_subplot(gs[2, 2])
+        ax_t.plot([r["c"] for r in res.rows], [r["tokens"] / r["n"] for r in res.rows],
+                  "o", color=RAMP[2], ms=4.5, alpha=.7, label="every run")
+        if iso:
+            ax_t.plot(cs, [d["c"] / (6.0 * d["n_star"] ** 2) for d in iso], "o-",
+                      color=ACCENT, ms=6, mec=SURFACE, mew=1.2, label="at $n^*$")
+        ax_t.set(xscale="log", yscale="log", xlabel="compute $C$ (flops)",
+                 ylabel="tokens per parameter", title="f  where the budget went")
+        ax_t.legend(fontsize=7, labelcolor=INK2)
         fig.suptitle(f"lab '{lab.name}'", fontsize=11, y=0.99)
         return _finish(fig, path, show, tight=False)
