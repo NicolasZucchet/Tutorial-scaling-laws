@@ -102,6 +102,14 @@
   --fig-hair-width: 1.5;
   --fig-dash: 6 5;
   --fig-point: 2.8;
+
+  /* The lab scoreboard's colour axis, light to dark over 0-100 % of the budget
+     spent on the hero run.  Read twice: by the CSS gradient of the colourbar in
+     figures/hero-board.md, and by assets/hero-board.js, which interpolates
+     between these same two values for the dots -- one ramp, one definition, so
+     the bar cannot end up saying something the plot does not. */
+  --hero-share-lo: var(--deck-blue-tint);
+  --hero-share-hi: var(--deck-navy);
 }
 
 
@@ -275,6 +283,94 @@
   align-items: center;
   gap: 0.4em;
 }
+
+/* The lab scoreboard (figures/hero-board.md).  Its canvas is built in the
+   browser rather than by colloquium, so it is not a .colloquium-chart-container
+   and has to state its own height: Chart.js sizes a maintainAspectRatio:false
+   canvas from its box, and a box with no height collapses to nothing.
+   assets/hero-board.js pins the canvas to this box exactly (see `pin` there), so
+   these are the plot's real dimensions and not a starting point Chart.js may
+   revise.  470 is what fits between the heading and the footer with the
+   colourbar row below it; the width is the slide's wide column, which is the
+   point -- a horizontal plot uses the space the slide actually has. */
+.hero-board-plot {
+  height: 470px;
+  width: 100%;
+}
+
+/* Colourbar over status line, both centred under the plot.  Side by side was
+   the first try and it wrapped: the plot sits in the wide column of a 5/2 row,
+   so the pair has ~815 deck units to share, and the two labels together want
+   more than that at this size. */
+.hero-board-foot {
+  margin-top: 0.35em;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.15em;
+  font-size: 0.7em;
+  color: var(--colloquium-muted);
+}
+
+.hero-bar {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45em;
+}
+
+/* The gradient is the plot's ramp, not a decoration: same two tokens the dots
+   are interpolated between. */
+.hero-bar i {
+  display: inline-block;
+  width: 120px;
+  height: 0.62em;
+  border-radius: 1px;
+  background: linear-gradient(to right, var(--hero-share-lo), var(--hero-share-hi));
+}
+
+.hero-bar em { font-style: normal; }
+
+/* The status line only ever carries a failure now (assets/hero-board.js says
+   why), so it takes no room at all while the sheet is answering. */
+.hero-status { color: var(--colloquium-text); }
+
+.hero-status:empty { display: none; }
+
+.hero-status--bad { color: var(--deck-red); }
+
+/* The form's QR (figures/hero-qr.md, written by scripts/hero_board.py --qr).
+   Sized here rather than in the SVG so the generated fragment stays a bare
+   matrix.  200px is what the narrow column beside the scoreboard has room for
+   next to its two lines of prose; checked by decoding it back out of a 1600x900
+   render of the slide, which is a harder read than any projector. */
+.hero-qr-box {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: 0.5em;
+}
+
+.hero-qr-box svg.hero-qr {
+  width: 100%;
+  max-width: 200px;
+  height: auto;
+  shape-rendering: crispEdges;   /* a QR module is a pixel, not a shape to smooth */
+}
+
+/* The stand-in shown until the QR has been generated: visibly unfinished, so a
+   deck built before the form exists cannot look finished. */
+.hero-qr-box--empty {
+  flex-direction: column;
+  width: 100%;
+  max-width: 200px;
+  aspect-ratio: 1 / 1;
+  border: 2px dashed var(--colloquium-border);
+  color: var(--colloquium-muted);
+  font-size: 0.8em;
+  text-align: center;
+}
+
+.hero-qr-box--empty span { font-family: var(--colloquium-font-mono); font-size: 0.8em; }
 
 /* Chinchilla slide: the mockup's three horizontal bands (premise,
    equation/interpretation, evidence/conclusion) are colloquium `===` rows, the
@@ -978,3 +1074,21 @@
    file is separately cached, so a browser holding an older copy of it rendered
    the figure at `.plot-fig text`'s 22px with the columns on top of each other.
    Geometry and the type that has to fit it now travel in one file. */
+
+/* The narrow column beside the scoreboard: the two ways to submit, over the QR,
+   all of it a size down because the plot is what the room is looking at.  The
+   column is centred against the plot rather than hung from the top of the slide,
+   which with a 470px plot beside ~330px of text and QR is a visible difference.
+   `:has()` because the column div is colloquium's, emitted at `|||`, and the
+   slide source has no handle on it. */
+.hero-side { font-size: 0.8em; }
+
+.slide .col:has(.hero-side) {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+/* The QR is the second thing in that column, so it gets the gap rather than a
+   margin on the prose above it. */
+.hero-side + .hero-qr-box { margin-top: 1.2em; }

@@ -1268,3 +1268,24 @@ Some cool work in the field:
 
 **Your job.** Come up with the **best model**!
 
+
+---
+
+<!-- columns: 5/2 -->
+## How did the room do?
+
+<!-- figure: hero-board -->
+
+|||
+
+<div class="hero-side">
+
+**From the notebook.** `lab.hero(laws)` prints a form link with your three numbers already in it -- click it, submit.
+
+<div style="margin-top: 0.8em"></div>
+
+**Or fill the form yourself.**
+
+</div>
+
+<!-- figure: hero-qr -->

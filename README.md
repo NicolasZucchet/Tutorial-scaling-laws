@@ -39,20 +39,21 @@ lab.hero(laws)                          # sizes to the remainder, commits a pred
 ```
 
 Everything is billed automatically and **you cannot overspend** — the library refuses and tells
-you what to cut. Re-running an identical sweep is free and does not burn a round, `smoke=True`
-runs a sweep at 1 % of the steps to check it works, and `lab.reset(confirm=True)` starts over.
+you what to cut. Re-running an identical sweep is free and does not burn a round, and
+`lab.reset(confirm=True)` starts over.
 State lives in `runs/<name>/` and survives a kernel restart.
 
 ### The API in full
 
 | | |
 |---|---|
-| `Sweep(c=[...], n=[...], lr=[...])` | cartesian product; `c` is flops per run, so steps are derived from `n` — that puts every run at equal compute, which is what an IsoFLOP profile needs. Use `steps=[...]` instead of `c` for a direct sweep. `Sweep + Sweep` concatenates. |
+| `Sweep(c=[...], n=[...], lr=[...])` | cartesian product. Give any two of `c` (flops per run), `n` (parameters) and `d` (tokens per run); the third follows from C = 6ND. Equal `c` across a profile is what an IsoFLOP fit needs. `lr` may be a function of `(c, n, d)`. `Sweep + Sweep` concatenates. |
 | `sweep.estimate(lab)` | free. Flops, % of budget, wall-clock ETA, per-rung breakdown |
-| `lab.run_round(name, sweep)` | trains everything; costs one round. `smoke=True` → free of rounds |
+| `lab.run_round(name, sweep)` | trains everything; costs one round |
 | `results.best() / .table() / .isoflop() / .plot() / .df` | slice, print, fit, draw |
 | `lab.fit()` | the three power laws + `.recipe(C)`, `.predict(C)`, `.summary()`, `.plot()` |
 | `lab.hero(laws)` | one shot, sized to the leftover budget. Prints the prediction *before* training |
+| `lab.report()` | the three numbers to send to the room's scoreboard, and a prefilled form link. Printed by `lab.hero()` too |
 | `lab.status() / .remaining / .rounds_left / .reset()` | where you stand |
 
 `lab.fit()` warns you when a rung's optimum falls outside the widths you tried, or when a
@@ -93,6 +94,52 @@ A second, sharper finding students can reach: don't *fit* the loss exponent, **d
 the width exponent. With capacity `∝ n^c` and excess `∝ K^-(γ-1)`, `b = 1/(1+cγ)` gives
 `α = (γ−1)(1−b)/γ`. That rule predicted all three hero runs to within +0.003…+0.010 nats,
 versus +0.032…+0.053 for their own fitted power laws.
+
+### The live scoreboard (slide "How did the room do?")
+
+The deck's last slide plots the room against itself: **predicted** hero loss across, **actual**
+hero loss up, one dot per student, coloured by the share of the budget that went into the hero
+run — so the reading is "did your law extrapolate", and the diagonal is the answer. It is
+anonymous: the form asks for no name, so a dot cannot be traced to a person and a resubmission
+is a second dot rather than a correction. Beside the plot are the two ways to get on it: the
+prefilled link `lab.hero()` prints, or the form's QR.
+Nothing about the plot is baked into the deck; it reads a Google Form's responses sheet in the
+browser and re-reads it every 8 seconds while the slide is up, so dots land during the lab.
+
+The form is made — [**Tutorial scaling laws MLSS**](https://docs.google.com/forms/d/e/1FAIpQLSdbUs-b8SNnQa0Ex5ckXchFdIhL99hpyXQcsyNXFaeEH9NM5A/viewform),
+asking *Predicted loss* / *Obtained loss* / *Fraction spent on hero run* — its three `entry`
+ids are wired into `FORM_URL`/`FORM_FIELDS` in `src/assocmem/lab.py`, so `lab.report()`
+prints a link with all three answers already filled in; its QR is in `figures/hero-qr.md`
+(verified by decoding it back out of a render of the slide); and its responses sheet is wired
+into `figures/hero-board.md` and answering. Nothing is left to set up:
+
+```bash
+uv run python scripts/hero_board.py --current           # what is wired, and its rows
+uv run python scripts/hero_board.py --current --watch   # ... re-read every 10 s
+```
+
+**The sheet's URL is stored base64'd** (`data-csv-b64`), and deliberately appears nowhere in
+this repo in readable form. The sheet has to be readable by anyone with its link for the slide
+to fetch it at all, which makes that link a password of sorts — and `slides.html` is published
+to Pages. This is obfuscation, not secrecy: the browser's network tab shows the request. What
+it buys is that the URL is not in the page source, the repo, or a search index of either. So
+prefer `--current` over `--csv "<url>"`, and don't paste the decoded URL into a commit. There
+is nothing personal in the sheet to leak either way — that is what dropping the name question
+bought.
+
+To repoint it at another sheet, `--sheet "<share link>"` takes the link as copied from the
+browser (it reads the `gid` out of it), writes the encoded URL in, and checks it; `--plain`
+writes it readable instead; `--qr "<form url>"` regenerates the QR if the form ever moves.
+
+Columns are matched by keyword in the header, not by position, so the questions can be
+reordered freely; rewording them is what to avoid (the rules are `COLUMNS`, in both
+`assets/hero-board.js` and `scripts/hero_board.py`). A *Publish to web* CSV URL also works as
+a comma-separated fallback in `data-csv`, but it is Google-cached by ~5 minutes, which is too
+stale to watch.
+
+Until that sheet URL is in place the slide draws its axes and says so in red under the plot
+rather than failing silently. Mechanism, URL kinds and column rules are documented in
+`assets/hero-board.js`.
 
 ### Running the reference solution
 
