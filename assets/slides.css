@@ -970,3 +970,11 @@
 /* Slide 17's figure is one near-square panel in a half-width column: y = 30..508 of
    a 600-unit box, so the lift is smaller and the box is laid out narrower. */
 .cp-row-pm > .cap-legend { top: -21px; }
+
+/* The history timeline (figures/history-fig.md) styles itself, in a <style>
+   element inside its own SVG, and its citation row is styled inline in
+   slides.md.  Both are deliberate departures from "figure styling lives here":
+   the type sizes are what keep four columns of text from overlapping, and this
+   file is separately cached, so a browser holding an older copy of it rendered
+   the figure at `.plot-fig text`'s 22px with the columns on top of each other.
+   Geometry and the type that has to fit it now travel in one file. */

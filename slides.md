@@ -64,7 +64,7 @@ content: Build **intuition** on why scaling law are **useful** and **why they ho
 
 ## Agenda
 
-### (Very) quick crash course on language modeling
+### Refresher on language modeling
 
 <!-- step -->
 <div style="margin-top: 1.5em"></div>
@@ -88,7 +88,7 @@ content: Build **intuition** on why scaling law are **useful** and **why they ho
 ---
 
 <!-- layout: section-break -->
-# (Very) quick crash course on language modeling
+# Refresher on language modeling
 
 ---
 
@@ -113,24 +113,53 @@ At inference: **sample**, append, repeat.
 
 ---
 
-## The observation
+## A short history
 
-Train a family of language models, plot the **best loss** each one reaches against the **compute** it cost, and the points fall on a **straight line on log-log axes** -- over eight orders of magnitude.
+<!-- figure: history-fig -->
 
-<!-- figure: envelope-fig -->
+<!-- The citations are markdown, not part of the figure, because colloquium
+     only turns [@key] into a citation -- and into a reference-list entry -- in
+     markdown.  The four grid tracks put each group under its own station in
+     the figure above (centres 135, 390, 620, 960 of its 1180 units); the
+     fourth is empty but has to exist, or the other three spread and drift.
+     Styled inline for the same reason the figure carries its own <style>: a
+     stale stylesheet must not be able to turn this row back into one column.
 
-<div class="inline-footnote">
+     Each column is hand-indexed to its station's beat, so a paper arrives
+     with the line it belongs to rather than in a batch at the end.  The
+     figure's four `data-colloquium-fragment="1"` markers are what colloquium
+     counts, and they number 1-4 in document order; `data-fragment-index` here
+     is passed through uncounted, which is exactly what lets it name one of
+     those beats.  Fragments are revealed by opacity, so the hidden columns
+     still occupy their grid tracks and nothing shifts as they arrive. -->
+<div class="inline-footnote hist-cites" style="display: grid; grid-template-columns: 23fr 21fr 18fr 38fr; text-align: center; margin-top: -1.6em">
 
-The compute-efficient frontier of the runs in [@kaplan2020scaling], Figure 2; the next two slides are where such a curve comes from.
+<div class="fragment" data-fragment-index="1">
+
+[@banko2001scaling]<br>[@hestness2017deep]<br>[@rosenfeld2020constructive]
+
+</div>
+
+<div class="fragment" data-fragment-index="2">
+
+[@kaplan2020scaling]
+
+</div>
+
+<div class="fragment" data-fragment-index="3">
+
+[@hoffmann2022training]
+
+</div>
 
 </div>
 
 <!-- step -->
-<div style="margin-top: 1.5em"></div>
+<div style="margin-top: 2.5em"></div>
 
-Nothing about deep learning says this **has** to happen. That it does is what lets us **predict** a model before paying to train it -- but to state it precisely we need the **loss**, the **model size**, the **data** and the **compute**.
+We **review** some of the results from [@kaplan2020scaling] and [@hoffmann2022training] in this part and provide some **pointers to extensions**.
 
---- 
+---
 
 <!-- animate: bullets -->
 ## Loss, model size, data and compute
