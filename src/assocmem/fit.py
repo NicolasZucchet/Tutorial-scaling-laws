@@ -141,16 +141,22 @@ def saturating_powerlaw(c, loss, l_inf0=None):
 
 
 # --------------------------------------------------------------------------- #
-# joint fit: one law for every run, in one of two functional forms
+# joint fit: one law for every run, in one of three functional forms
 # --------------------------------------------------------------------------- #
-# "scaling" is an alias for "kaplan": that form is the one from Scaling Laws for Neural
-# Language Models, and both names get typed.
-FORMS = ("chinchilla", "kaplan")
-_ALIASES = {"scaling": "kaplan", "hoffmann": "chinchilla", "additive": "chinchilla"}
+FORMS = ("chinchilla", "kaplan", "skaling")
+_ALIASES = {"hoffmann": "chinchilla", "additive": "chinchilla",
+            "videau": "skaling", "coupled": "skaling"}
 
 
 def _form(name: str) -> str:
     key = _ALIASES.get(str(name).lower(), str(name).lower())
+    # "scaling" is not accepted, deliberately: SKALING is a form (Chinchilla's exponents
+    # with Kaplan's coupling), and silently reading a missing k as one of the other two is
+    # exactly the mix-up worth a hard error.
+    if key == "scaling":
+        raise ValueError("form='scaling' is ambiguous -- did you mean 'skaling' "
+                         "(L = E + (A N^-a + B D^-b)^k, videau2026skaling) or 'kaplan' "
+                         "(kaplan2020scaling)?  Spell out which.")
     if key not in FORMS:
         raise ValueError(f"unknown form {name!r}; one of {FORMS} "
                          f"(or an alias: {sorted(_ALIASES)})")
@@ -161,13 +167,16 @@ def _form(name: str) -> str:
 class JointFit:
     """One law fitted to every run, in whichever functional form was asked for.
 
-    chinchilla   L = L_inf + A n^-alpha + B d^-beta          [hoffmann2022training]
-    kaplan       L = [(A/n)^(alpha/beta) + B/d]^beta         [kaplan2020scaling]
+    chinchilla   L = L_inf + A n^-alpha + B d^-beta            [hoffmann2022training]
+    kaplan       L = [(A/n)^(alpha/beta) + B/d]^beta           [kaplan2020scaling]
+    skaling      L = L_inf + (A n^-alpha + B d^-beta)^k        [videau2026skaling]
 
-    Both live in the same five slots because the Kaplan form is the additive one with the
-    sum taken inside a power: its A and B are that paper's N_c and D_c, and it has no
-    floor, so ``l_inf`` stays 0 there.  Expanded, its two terms still go as n^-alpha and
-    d^-beta, which is why ``n_exponent`` is one expression for both.
+    All three live in the same slots, because all three are the additive one with the sum
+    raised to a power.  Chinchilla is k = 1.  Kaplan folds the floor away (``l_inf`` stays
+    0 there) and its A and B are that paper's N_c and D_c.  Skaling keeps the floor and
+    lets k float, which is what couples n and d instead of treating them as independent.
+    Raising the sum to a power does not move where the sum is smallest, so all three share
+    one ``n_exponent``.
     """
 
     l_inf: float
@@ -178,6 +187,7 @@ class JointFit:
     rmse: float
     r2: float = float("nan")
     form: str = "chinchilla"
+    k: float = 1.0  # the coupling exponent; 1 for chinchilla, fitted for skaling
     # How compute relates to the two axes, C = flops_per_nd * n * d, and the search range for
     # the constrained optimum.  The defaults are the embedding-dimension convention (C = 6 *
     # D_OUT * n * D); `joint_fit` replaces them from the data when it is given each run's
@@ -191,13 +201,17 @@ class JointFit:
         d = np.asarray(d, float)
         if self.form == "kaplan":
             return ((self.a / n) ** (self.alpha / self.beta) + self.b / d) ** self.beta
-        return self.l_inf + self.a * n**-self.alpha + self.b * d**-self.beta
+        inner = self.a * n**-self.alpha + self.b * d**-self.beta
+        return self.l_inf + (inner**self.k if self.form == "skaling" else inner)
 
     def __str__(self) -> str:
         r2 = "" if not np.isfinite(self.r2) else f"   r2={self.r2:.4f}"
         if self.form == "kaplan":
             return (f"L = [({self.a:.4g}/N)^({self.alpha:.4f}/{self.beta:.4f}) "
                     f"+ {self.b:.4g}/D]^{self.beta:.4f}{r2}")
+        if self.form == "skaling":
+            return (f"L = {self.l_inf:.4f} + ({self.a:.4g} N^-{self.alpha:.4f} "
+                    f"+ {self.b:.4g} D^-{self.beta:.4f})^{self.k:.4f}{r2}")
         return (f"L = {self.l_inf:.4f} + {self.a:.4g} N^-{self.alpha:.4f} "
                 f"+ {self.b:.4g} D^-{self.beta:.4f}{r2}")
 
@@ -229,11 +243,12 @@ def joint_fit(n, d, loss, fix_l_inf: float | None = None, c=None,
               form: str = "chinchilla") -> JointFit:
     """Fit one law to every run at once, over both axes.
 
-    ``form`` picks the functional form -- ``"chinchilla"`` (the additive
-    L_inf + A n^-alpha + B d^-beta) or ``"kaplan"`` / ``"scaling"``
-    ([(A/n)^(alpha/beta) + B/d]^beta, which has no floor). The same points fitted twice is
-    the honest way to see how much of an extrapolation is the data and how much is the form
-    you chose, so both are here and neither is hidden.
+    ``form`` picks the functional form: ``"chinchilla"`` (the additive
+    L_inf + A n^-alpha + B d^-beta), ``"kaplan"`` ([(A/n)^(alpha/beta) + B/d]^beta, no
+    floor), or ``"skaling"`` (L_inf + (A n^-alpha + B d^-beta)^k, which couples n and d
+    through the fitted k instead of treating them as independent).  The same points fitted
+    in two forms is the honest way to see how much of an extrapolation is the data and how
+    much is the form you chose, so all three are here and none is hidden.
 
     ``c`` is each run's compute, optional. Given it, the fit infers the constant in
     C = k n d -- 6 when n counts parameters, 6*512 when it counts embedding dimensions -- and
@@ -254,10 +269,10 @@ def joint_fit(n, d, loss, fix_l_inf: float | None = None, c=None,
         # built from that relation rather than from the data's own scale.
         def unpack(p):
             lnc, ldc, al, be = p
-            return 0.0, np.exp(lnc), al, np.exp(ldc), be
+            return 0.0, np.exp(lnc), al, np.exp(ldc), be, 1.0
 
         def resid(p):
-            _, nc, al, dc, be = unpack(p)
+            _, nc, al, dc, be, _k = unpack(p)
             return ((nc / n) ** (al / be) + dc / d) ** be - loss
 
         lmid = max(float(np.median(loss)), 1e-3)
@@ -270,17 +285,24 @@ def joint_fit(n, d, loss, fix_l_inf: float | None = None, c=None,
         lo = [-50, -50, 1e-3, 1e-3]
         hi = [400, 400, 3.0, 3.0]
     else:
+        # chinchilla and skaling share a parameter block: the additive sum, a floor, and --
+        # for skaling only -- the exponent k the sum is raised to.  k is last so that the
+        # chinchilla starting points are the skaling ones with log k = 0 appended.
+        coupled = form == "skaling"
+
         def unpack(p):
             if fix_l_inf is None:
-                l_inf, la, al, lb, be = p
+                l_inf, la, al, lb, be = p[:5]
             else:
                 l_inf = fix_l_inf
-                la, al, lb, be = p
-            return l_inf, np.exp(la), al, np.exp(lb), be
+                la, al, lb, be = p[:4]
+            return l_inf, np.exp(la), al, np.exp(lb), be, (np.exp(p[-1]) if coupled
+                                                           else 1.0)
 
         def resid(p):
-            l_inf, a, al, b, be = unpack(p)
-            return (l_inf + a * n**-al + b * d**-be) - loss
+            l_inf, a, al, b, be, kk = unpack(p)
+            inner = a * n**-al + b * d**-be
+            return (l_inf + (inner**kk if coupled else inner)) - loss
 
         p0s = []
         l_starts = ([0.0, 0.5 * float(loss.min()), 0.9 * float(loss.min())]
@@ -290,9 +312,15 @@ def joint_fit(n, d, loss, fix_l_inf: float | None = None, c=None,
                 for l0 in l_starts:
                     base = [np.log(2.0) + al0 * np.log(n.mean()), al0,
                             np.log(2.0) + be0 * np.log(d.mean()), be0]
-                    p0s.append(([l0] + base) if fix_l_inf is None else base)
+                    p0 = ([l0] + base) if fix_l_inf is None else base
+                    # (A n^-a)^k = A^k n^-ak, so k trades off against the prefactors and
+                    # exponents: three starts, one either side of the additive k = 1.
+                    p0s += [p0 + [np.log(k0)] for k0 in (0.5, 1.0, 2.0)] if coupled \
+                        else [p0]
         lo = ([0.0] if fix_l_inf is None else []) + [-40, 1e-3, -40, 1e-3]
         hi = ([float(loss.min())] if fix_l_inf is None else []) + [40, 3.0, 40, 3.0]
+        if coupled:
+            lo, hi = lo + [np.log(0.02)], hi + [np.log(5.0)]
 
     best, best_cost = None, np.inf
     for p0 in p0s:
@@ -304,14 +332,15 @@ def joint_fit(n, d, loss, fix_l_inf: float | None = None, c=None,
             best, best_cost = r.x, r.cost
     if best is None:
         raise RuntimeError(f"the {form} fit did not converge from any starting point")
-    l_inf, a, al, b, be = unpack(best)
+    l_inf, a, al, b, be, kk = unpack(best)
     res = resid(best)
     rmse = float(np.sqrt(np.mean(res ** 2)))
     extra = {}
     if c is not None:
         cc = np.asarray(c, float)
-        # k from the runs themselves (median, so one mislabelled row cannot move it), and a
-        # search range that brackets the fitted data by three decades either side
+        # the constant in C = k n d, from the runs themselves (median, so one mislabelled
+        # row cannot move it), and a search range that brackets the data by three decades
         extra = dict(flops_per_nd=float(np.median(cc / (n * d))),
                      n_lo=float(n.min()) / 1e3, n_hi=float(n.max()) * 1e3)
-    return JointFit(l_inf, a, al, b, be, rmse, r2_of(loss, loss + res), form=form, **extra)
+    return JointFit(l_inf, a, al, b, be, rmse, r2_of(loss, loss + res), form=form,
+                    k=float(kk), **extra)

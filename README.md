@@ -26,7 +26,7 @@ uv run jupyter lab notebooks/tutorial.ipynb
 The notebook is the tutorial. You write about ten lines:
 
 ```python
-from assocmem import Lab, Sweep
+from assocmem import Lab, Sweep, powerlaw, saturating_powerlaw, joint_fit
 
 lab = Lab("me", budget=1e13, rounds=3)
 
@@ -34,9 +34,28 @@ s1 = Sweep(c=[4e9, 1.2e10], n=[64, 128, 256, 512], lr=[0.0125, 0.025, 0.05, 0.1,
 s1.estimate(lab)                        # free: cost, share of budget, ETA, what to cut
 r1 = lab.run_round("R1", s1)            # spends one round, prints a table, plots itself
 # ... two more rounds ...
-laws = lab.fit()                        # n*(C), lr*(C), L*(C) with r², plotted
-lab.hero(laws)                          # sizes to the remainder, commits a prediction, runs
+
+iso = lab.results.isoflop()             # per-rung (n*, L*) from a parabola in log n
+a, b, r2 = powerlaw([d["c"] for d in iso], [d["n_star"] for d in iso])   # n*(C)
+n_star = int(a * 3e12**b)
+lab.hero(c=lab.compute_left(n_star), n=n_star, lr=0.03, predicted=3.30)  # one shot
 ```
+
+The fits are yours to make — `isoflop_optimum`, `powerlaw`, `saturating_powerlaw` and
+`joint_fit` are in `assocmem.fit`, and `plot_runs(..., fit=...)` / `plot_plane(runs, fit)`
+draw whichever one you made on top of the runs. There is no `lab.fit()` that does it for
+you: choosing the form, and deciding whether your span of rungs can identify a floor at
+all, is the tutorial.
+
+`joint_fit(..., form=)` takes three parametric forms:
+
+| `form=` | | |
+|---|---|---|
+| `"chinchilla"` | $L = E + A N^{-a} + B D^{-b}$ | *N* and *D* independent (Hoffmann et al., Chinchilla) |
+| `"kaplan"` | $L = [(A/N)^{a/b} + B/D]^{b}$ | coupled, no floor (Kaplan et al.) |
+| `"skaling"` | $L = E + (A N^{-a} + B D^{-b})^{k}$ | coupled, with a floor (Videau et al., *Skaling*) |
+
+`form="scaling"` is refused rather than guessed at — it names two of these three.
 
 Everything is billed automatically and **you cannot overspend** — the library refuses and tells
 you what to cut. Re-running an identical sweep is free and does not burn a round, and
@@ -51,13 +70,19 @@ State lives in `runs/<name>/` and survives a kernel restart.
 | `sweep.estimate(lab)` | free. Flops, % of budget, wall-clock ETA, per-rung breakdown |
 | `lab.run_round(name, sweep)` | trains everything; costs one round |
 | `results.best() / .table() / .isoflop() / .plot() / .df` | slice, print, fit, draw |
-| `lab.fit()` | the three power laws + `.recipe(C)`, `.predict(C)`, `.summary()`, `.plot()` |
-| `lab.hero(laws)` | one shot, sized to the leftover budget. Prints the prediction *before* training |
+| `plot_runs(runs, x=, y=, color=, fit=)` | any column against any other, coloured by a third (or `color=None` for one series, a colorbar past ten values). `fit=` overlays `'powerlaw'`, `'parabola'`, or a `joint_fit` result |
+| `isoflop_optimum / powerlaw / saturating_powerlaw / joint_fit` | the fits, in `assocmem.fit`. `joint_fit(..., form=)` is `'chinchilla'`, `'kaplan'` or `'skaling'` |
+| `plot_plane(runs, fit)` | a fitted law as iso-loss contours over the (N, D) plane, the runs scattered on the same colour scale, plus the compute-optimal path |
+| `lab.compute_left(n)` | flops left to *train* the hero on, i.e. minus what its own final evaluations cost |
+| `lab.hero(c=, n=, lr=, predicted=)` | one shot: any two of `c`/`n`/`d` plus `lr`. Trims to fit rather than refusing |
 | `lab.report()` | the three numbers to send to the room's scoreboard, and a prefilled form link. Printed by `lab.hero()` too |
 | `lab.status() / .remaining / .rounds_left / .reset()` | where you stand |
+| `plot_summary(lab)` | budget strip + everything measured so far |
 
-`lab.fit()` warns you when a rung's optimum falls outside the widths you tried, or when a
-learning-rate grid never bracketed its minimum — the two ways a scaling-law fit quietly lies.
+`results.isoflop()` flags a rung whose optimum falls outside the widths you tried
+(`clipped='low'/'high'`) or whose profile is not convex over them (`'flat'`) — two of the
+ways a scaling-law fit quietly lies; `results.lr_optima()` says the same for a
+learning-rate grid that never bracketed its minimum.
 
 ## For instructors
 
@@ -760,7 +785,7 @@ conditional rewrite.
 
 | | |
 |---|---|
-| `src/assocmem/lab.py` | `Lab`, `Sweep`, `Results`, `Laws` — the student-facing API |
+| `src/assocmem/lab.py` | `Lab`, `Sweep`, `Results` — the student-facing API |
 | `src/assocmem/plots.py` | auto-composed round / law / hero figures |
 | `src/assocmem/data.py` | exact Zipf sampler, entropy-matched conditionals, sphere embeddings — all hashed from the token id, so the 1.1×10¹¹-token vocabulary is never materialised |
 | `src/assocmem/train.py` | hand-written-gradient Adam trainer, `lax.scan` over steps, vmapped over configs; flop accounting |

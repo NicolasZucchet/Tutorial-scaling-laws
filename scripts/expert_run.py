@@ -42,7 +42,7 @@ matplotlib.use("Agg")
 
 import json
 
-from assocmem import D_OUT, Lab, Sweep
+from assocmem import D_OUT, Lab, Sweep, powerlaw, saturating_powerlaw
 from assocmem.plots import plot_summary
 
 # priors from the two earlier studies, used only to *centre* the grids
@@ -79,21 +79,37 @@ for name, sweep in ROUNDS:
     lab.run_round(name, sweep, plot=True)
 
 print(f"\n{'=' * 78}\nLAWS\n{'=' * 78}")
-laws = lab.fit()
+# Fitted here rather than by the lab: the same three steps the notebook asks a student
+# for -- IsoFLOP optima, a power law through them, and a saturating one for L*(C).
+iso = lab.results.isoflop()
+cs = [d["c"] for d in iso]
+a_n, b_n, r2_n = powerlaw(cs, [d["n_star"] for d in iso])
+l_inf, a_l, alpha = saturating_powerlaw(cs, [d["loss_star"] for d in iso])
+print(f"  n*(C)  = {a_n:.4g} * C^{b_n:.4f}          r2={r2_n:.4f}")
+print(f"  L*(C)  = {l_inf:.4f} + {a_l:.4g} * C^-{alpha:.4f}")
+for d in iso:
+    print(f"    C={d['c']:8.1e}  n*={d['n_star']:10,.0f}  L*={d['loss_star']:.4f}"
+          + (f"  ({d['clipped']})" if d["clipped"] else ""))
+
+# lr*(C) is not fitted any more -- the priors this run is centred on are used directly,
+# which is what the earlier studies' lr law was for in the first place.
 print(f"\nscreening total: {lab.spent:.4g} flops ({100 * lab.spent / lab.budget:.1f}% "
       f"of budget) -- careful attempt spent 47%, notebook defaults 26%")
 
 print(f"\n{'=' * 78}\nHERO\n{'=' * 78}")
-hero = lab.hero(laws)
-plot_summary(lab, laws, path=lab.dir / "summary.png", show=False)
+n_hero = int(round(a_n * lab.remaining ** b_n / D_OUT)) * D_OUT
+c_hero = lab.compute_left(n_hero)
+hero = lab.hero(c=c_hero, n=n_hero, lr=LR_STAR(c_hero),
+                predicted=l_inf + a_l * c_hero**-alpha)
+plot_summary(lab, path=lab.dir / "summary.png", show=False)
 
 prev = {"careful (scripts/)": 3.2993, "notebook defaults": 3.2765}
 print(f"\n{'=' * 78}\nSCOREBOARD (same eval set, same problem instance)\n{'=' * 78}")
 rows = sorted([*prev.items(), ("this expert re-run", hero["loss"])], key=lambda kv: kv[1])
 for k, v in rows:
     print(f"  {k:<22s} {v:.4f} nats" + ("   <-- best" if v == rows[0][1] else ""))
-json.dump(dict(laws=dict(n_law=laws.n_law, lr_law=laws.lr_law, loss_law=laws.loss_law,
-                         l_inf=laws.l_inf, rungs=laws.rungs, notes=laws.notes),
+json.dump(dict(laws=dict(n_law=(a_n, b_n, r2_n), loss_law=(l_inf, a_l, alpha),
+                         rungs=iso),
                hero=hero, screening_flops=lab.spent - hero["c_train"] - hero["c_eval"],
                scoreboard=dict(rows)),
           open(lab.dir / "expert_run.json", "w"), indent=1, default=float)

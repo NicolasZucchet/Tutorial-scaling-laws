@@ -30,7 +30,7 @@ from .ledger import BUDGET
 from .ledger import log as log_flops
 from .ledger import report as flop_report
 from .ledger import total as flops_spent
-from .plots import plot_runs, plot_summary
+from .plots import plot_plane, plot_runs, plot_summary
 from .problem import get_evalset, get_stream
 from .train import (BATCH, EvalSet, Stream, evaluate, eval_flops, plan_cost, train_flops,
                     train_sweep)
@@ -43,5 +43,5 @@ __all__ = [
     "log_flops", "flop_report", "flops_spent", "plan_cost", "evaluate",
     "powerlaw", "saturating_powerlaw", "joint_fit", "isoflop_optimum", "r2_of",
     "JointFit", "IsoFit", "FORMS", "steps_for", "tokens_for",
-    "compute_of", "params_of", "d_of", "plot_runs", "plot_summary",
+    "compute_of", "params_of", "d_of", "plot_runs", "plot_plane", "plot_summary",
 ]

@@ -128,17 +128,16 @@ def test_lab_lifecycle():
         shutil.rmtree(tmp, ignore_errors=True)
 
 
-def test_fit_recovers_a_known_power_law():
-    """Synthetic L(n, D) with a known optimum -> the fitter must recover its exponents.
+def test_isoflop_and_powerlaw_recover_a_known_optimum():
+    """Synthetic L(n, D) with a known optimum -> the pieces a student fits must recover it.
 
     excess = 3 n^-0.2 + 3 D^-0.2 with D = C/(6*512*n) has the closed-form optimum
-    n* = (C/3072)^0.5 and excess* = 6 (C/3072)^-0.1, plus a quadratic lr penalty
-    centred on lr*(C) = 2.5 C^-0.2.
+    n* = (C/3072)^0.5 and excess* = 6 (C/3072)^-0.1.  There is no canned `lab.fit()` any
+    more, so what is tested is the route the notebook takes: IsoFLOP optima, then a power
+    law through them, then a saturating power law for L*(C).
     """
-    from assocmem.lab import fit_laws
-
-    def lr_star(c):
-        return 2.5 * c**-0.2
+    from assocmem.fit import powerlaw, saturating_powerlaw
+    from assocmem.lab import Results
 
     l_inf, rows = 2.0, []
     ns = [2**k for k in range(8, 17)]  # 256 .. 65536, brackets every rung's optimum
@@ -146,38 +145,88 @@ def test_fit_recovers_a_known_power_law():
         for n in ns:
             d = c / (6 * D_OUT * n)
             loss = l_inf + 3.0 * n**-0.2 + 3.0 * d**-0.2
-            for f in (1 / 1.7, 1.0, 1.7):  # lr grid centred on the truth
-                lr = lr_star(c) * f
-                rows.append(dict(c=c, n=n, steps=max(1, int(d / 64)), tokens=d, lr=lr,
-                                 init=0.0, seed=0, loss=loss + 0.08 * np.log(f) ** 2))
-    laws = fit_laws(rows)
-    assert not any("WARNING" in t for t in laws.notes), laws.notes
+            rows.append(dict(c=c, n=n, steps=max(1, int(d / 64)), tokens=d, lr=0.05,
+                             init=0.0, seed=0, loss=loss))
+    iso = Results(rows).isoflop()
+    assert len(iso) == 4 and not any(d["clipped"] for d in iso), iso
+    for d in iso:
+        assert abs(d["n_star"] / (d["c"] / 3072) ** 0.5 - 1) < 0.05, d
+
+    a, b, r2 = powerlaw([d["c"] for d in iso], [d["n_star"] for d in iso])
+    assert abs(b - 0.5) < 0.03 and r2 > 0.999, (a, b, r2)
     # the floor is fitted, not given: it has to come back out of the rungs
-    assert abs(laws.l_inf - l_inf) < 0.1, (laws.l_inf, l_inf)
-    assert abs(laws.n_law[1] - 0.5) < 0.03, laws.n_law
-    assert abs(laws.loss_law[1] - 0.1) < 0.015, laws.loss_law
-    assert abs(laws.lr_law[1] - (-0.2)) < 0.03, laws.lr_law
+    li, A, alpha = saturating_powerlaw([d["c"] for d in iso], [d["loss_star"] for d in iso])
+    assert abs(li - l_inf) < 0.1, (li, l_inf)
+    assert abs(alpha - 0.1) < 0.015, alpha
     for c in (1e10, 1e13):
-        assert abs(laws.n_star(c) / (c / 3072) ** 0.5 - 1) < 0.15, c
-        assert abs(laws.predict(c) - (l_inf + 6 * (c / 3072) ** -0.1)) < 0.05, c
+        assert abs(a * c**b / (c / 3072) ** 0.5 - 1) < 0.15, c
+        assert abs(li + A * c**-alpha - (l_inf + 6 * (c / 3072) ** -0.1)) < 0.05, c
 
 
-def test_fit_warns_when_the_grid_misses_the_optimum():
+def test_isoflop_flags_a_grid_that_misses_the_optimum():
     """A grid whose best n sits at an edge must be flagged, not silently believed."""
-    from assocmem.lab import fit_laws
+    from assocmem.lab import Results
 
     l_inf, rows = 2.0, []
     for c in (1e9, 1e10, 1e11):
         for n in (16, 32, 64):  # far below n* = (C/3072)^0.5
             d = c / (6 * D_OUT * n)
             loss = l_inf + 3.0 * n**-0.2 + 3.0 * d**-0.2
-            for f in (1 / 1.7, 1.0, 1.7):
-                rows.append(dict(c=c, n=n, steps=max(1, int(d / 64)), tokens=d,
-                                 lr=2.5 * c**-0.2 * f, init=0.0, seed=0,
-                                 loss=loss + 0.08 * np.log(f) ** 2))
-    notes = fit_laws(rows).notes
-    assert sum("WARNING" in t for t in notes) == 3, notes
-    assert "Widen the n grid" in " ".join(notes)
+            rows.append(dict(c=c, n=n, steps=max(1, int(d / 64)), tokens=d,
+                             lr=0.05, init=0.0, seed=0, loss=loss))
+    iso = Results(rows).isoflop()
+    assert len(iso) == 3, iso
+    assert all(d["clipped"] in ("high", "flat") for d in iso), [d["clipped"] for d in iso]
+
+
+def test_joint_fit_forms_each_recover_their_own_truth():
+    """All three parametric forms, each fitted to data generated from itself."""
+    from assocmem.fit import joint_fit
+
+    ns = np.array([2**k for k in range(11, 19)], float)
+    ds = np.array([10**x for x in np.linspace(5, 8, 6)])
+    n, d = (v.ravel() for v in np.meshgrid(ns, ds))
+
+    chin = 2.0 + 3.0 * n**-0.2 + 3.0 * d**-0.25
+    j = joint_fit(n, d, chin, c=6 * n * d, form="chinchilla")
+    assert j.form == "chinchilla" and j.k == 1.0 and j.r2 > 0.999, j
+    assert abs(j.alpha - 0.2) < 0.02 and abs(j.beta - 0.25) < 0.02, str(j)
+    assert abs(j.l_inf - 2.0) < 0.05, str(j)
+
+    kap = ((1e12 / n) ** (0.1 / 0.15) + 1e11 / d) ** 0.15
+    k = joint_fit(n, d, kap, c=6 * n * d, form="kaplan")
+    assert k.form == "kaplan" and k.r2 > 0.999, k
+    assert abs(k.alpha - 0.1) < 0.01 and abs(k.beta - 0.15) < 0.01, str(k)
+    assert abs(k.n_exponent - 0.6) < 0.02, k.n_exponent
+    assert np.allclose(k.predict(n, d), kap, rtol=2e-3)
+
+    # skaling: Chinchilla's floor and exponents with Kaplan's coupling, the coupling being
+    # the fitted k -- so the whole point is that k comes back as something other than 1
+    sk = 1.5 + (40.0 * n**-0.3 + 90.0 * d**-0.35) ** 0.6
+    s = joint_fit(n, d, sk, c=6 * n * d, form="skaling")
+    assert s.form == "skaling" and s.r2 > 0.9999, s
+    assert abs(s.k - 0.6) < 0.02, str(s)
+    assert abs(s.alpha - 0.3) < 0.02 and abs(s.beta - 0.35) < 0.02, str(s)
+    assert abs(s.l_inf - 1.5) < 0.05, str(s)
+    assert np.allclose(s.predict(n, d), sk, rtol=1e-3)
+    # and it beats the additive form on its own data, which is the claim being made
+    assert s.rmse < 0.1 * joint_fit(n, d, sk, form="chinchilla").rmse
+
+
+def test_scaling_is_not_a_form_name():
+    """'scaling' names two different papers' forms, so it has to be spelled out."""
+    import pytest
+
+    from assocmem.fit import joint_fit
+
+    n = np.array([1e4, 1e5, 1e6, 1e4, 1e5, 1e6])
+    d = np.array([1e5, 1e5, 1e5, 1e6, 1e6, 1e6])
+    loss = 1.0 + 2.0 * n**-0.2 + 2.0 * d**-0.2
+    with pytest.raises(ValueError, match="ambiguous"):
+        joint_fit(n, d, loss, form="scaling")
+    # the aliases that are not ambiguous still resolve
+    assert joint_fit(n, d, loss, form="coupled").form == "skaling"
+    assert joint_fit(n, d, loss, form="additive").form == "chinchilla"
 
 
 def test_one_correct_answer_variant():

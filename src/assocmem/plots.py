@@ -306,6 +306,30 @@ def _nd_from(xname, xs, cname, cval, k):
         f"the pair has to pin down (N, D), so use two of 'n', 'd'/'tokens' and 'c'.")
 
 
+def _check_k(rows, xname, cname, fit):
+    """Refuse to draw a law whose C = k N D disagrees with the runs' own relation.
+
+    ``joint_fit`` only learns k when it is given each run's compute; without that it assumes
+    the embedding-dimension convention, which is 512x off from the parameter counts these
+    columns carry -- and a curve drawn from the wrong k is wrong quietly, as is the
+    ``.optimum()`` that comes from the same constant.
+    """
+    if "c" not in (_ND_ALIAS.get(xname, xname), _ND_ALIAS.get(cname, cname)):
+        return  # (n, d) axes pin the plane down on their own; k is never used
+    ks = [r["c"] / (r["n"] * r["tokens"]) for r in rows
+          if r.get("c") and r.get("n") and r.get("tokens")]
+    if not ks:
+        return
+    k = float(np.median(ks))
+    if abs(k / fit.flops_per_nd - 1) > 0.01:
+        raise ValueError(
+            f"this fit was made for C = {fit.flops_per_nd:.4g} N D but these runs have "
+            f"C = {k:.4g} N D, so its curve (and its .optimum) would be off by "
+            f"{k / fit.flops_per_nd:.4g}x.  Pass each run's compute when you fit -- "
+            f"joint_fit(n, d, loss, c=[r['c'] for r in rows]) -- so it takes the relation "
+            f"from the data.")
+
+
 def plot_runs(runs, x="n", y="loss", color="c", *, excess=False, l_inf=None,
               reduce="min", fit=None, logx=True, logy=True, ax=None, path=None,
               show=None, title=None):
@@ -350,9 +374,11 @@ def plot_runs(runs, x="n", y="loss", color="c", *, excess=False, l_inf=None,
     parametric = fit if isinstance(fit, _fit.JointFit) else None
     if fit is not None and parametric is None and fit not in ("powerlaw", "parabola"):
         raise ValueError(f"unknown fit {fit!r}; 'powerlaw', 'parabola', a JointFit, or None")
-    if parametric is not None and not color:
-        raise ValueError("a parametric law needs a colour axis to know which slice of the "
-                         "(N, D) plane to draw: colour by 'c', 'n' or 'd'.")
+    if parametric is not None:
+        if not color:
+            raise ValueError("a parametric law needs a colour axis to know which slice of "
+                             "the (N, D) plane to draw: colour by 'c', 'n' or 'd'.")
+        _check_k(rows, x, color, parametric)
 
     xv = _column(rows, x, l_inf)
     yv = _column(rows, y, l_inf)
@@ -386,11 +412,17 @@ def plot_runs(runs, x="n", y="loss", color="c", *, excess=False, l_inf=None,
         own = ax is None
         fig = plt.figure(figsize=(4.6, 3.6)) if own else ax.figure
         ax = fig.add_subplot(111) if own else ax
-        labelled = set()   # in colorbar mode each overlay is named once, not per group
+        labelled = set()
 
-        def once(kind, text):
-            """Label the first group's overlay only, when the legend is not per group."""
-            if not bar:
+        def once(kind, text, always=False):
+            """Name an overlay once instead of once per group.
+
+            A power-law label carries that group's own slope, so in legend mode every one
+            of them says something different and they all belong there.  A label that is
+            the same string for every group -- "chinchilla fit" -- is a statement about the
+            figure, and six copies of it is just a longer legend (``always``).
+            """
+            if not (bar or always):
                 return text
             if kind in labelled:
                 return None
@@ -416,10 +448,12 @@ def plot_runs(runs, x="n", y="loss", color="c", *, excess=False, l_inf=None,
                 f = _fit.isoflop_optimum(xs, ys)
                 xf = np.exp(np.linspace(np.log(xs.min()), np.log(xs.max()), 100))
                 ax.plot(xf, np.polyval(f.coef, np.log(xf)), ls=":", lw=1.2, color=col,
-                        alpha=.9, label=once("parabola", "parabola in $\\log x$"))
+                        alpha=.9,
+                        label=once("parabola", "parabola in $\\log x$", always=True))
                 ax.plot([f.n_star], [f.loss_star], "v", color=col, ms=8, mec=SURFACE,
                         mew=1.2, zorder=5,
-                        label=once("vertex", "$\\blacktriangledown$ fitted optimum"))
+                        label=once("vertex", "$\\blacktriangledown$ fitted optimum",
+                                   always=True))
             elif len(xs) >= 2 and parametric is not None:
                 xf = np.exp(np.linspace(np.log(xs.min()), np.log(xs.max()), 120))
                 nn, dd = _nd_from(x, xf, color, cval, parametric.flops_per_nd)
@@ -427,7 +461,7 @@ def plot_runs(runs, x="n", y="loss", color="c", *, excess=False, l_inf=None,
                 if excess or y == "excess":
                     pred = pred - (l_inf or 0.0)
                 ax.plot(xf, pred, ls="-", lw=1.3, color=col, alpha=.9,
-                        label=once("parametric", parametric.label))
+                        label=once("parametric", parametric.label, always=True))
         ax.set(xscale="log" if logx else "linear", yscale="log" if logy else "linear",
                xlabel=_AXIS_LABEL.get(x, x), ylabel=_AXIS_LABEL.get(y, y),
                title=title if title is not None else f"{y} vs {x}")
@@ -439,6 +473,89 @@ def plot_runs(runs, x="n", y="loss", color="c", *, excess=False, l_inf=None,
             ax.legend(title=None if bar or not color else _AXIS_LABEL.get(color, color),
                       fontsize=7, title_fontsize=7, labelcolor=INK2,
                       ncol=2 if len(groups) > 4 and not bar else 1)
+        _decade_ticks(ax)
+        return _finish(fig, path, show) if own else ax
+
+
+def plot_plane(runs, fit, x="n", y="d", *, levels=8, ridge=True, isocompute=None,
+               l_inf=None, ax=None, path=None, show=None, title=None):
+    """A fitted law as iso-loss contours, with the runs it was fitted on scattered on top.
+
+    ``plot_runs(..., fit=j)`` shows one slice of the law at a time -- the loss along a
+    compute rung.  This shows the whole surface: contour lines of ``fit.predict`` over the
+    (N, D) plane, and every run as a dot coloured on the *same* loss scale.  A dot whose
+    colour matches the line it sits on is a run the law got right; the places where the two
+    disagree are what the fitted form is costing you, which is the thing worth seeing before
+    trusting it to extrapolate.
+
+    levels:      how many contour lines, or an explicit list of loss values.
+    ridge:       draw the compute-optimal path, i.e. where ``fit.optimum(C)`` runs as the
+                 budget grows.  It is the answer the whole fit exists to give.
+    isocompute:  flops values to draw as iso-compute lines.  On (N, D) axes each is the
+                 hyperbola N D = C/k -- the constraint the optimum slides along.
+    """
+    rows = _rows_of(runs)
+    if not rows:
+        raise ValueError("no runs to plot")
+    _check_k(rows, x, "c", fit)  # the plane's own axes plus the fit's k have to agree
+    xv, yv = _column(rows, x, l_inf), _column(rows, y, l_inf)
+    lv = _column(rows, "loss", l_inf)
+    if _ND_ALIAS.get(x, x) not in ("n", "d") or _ND_ALIAS.get(y, y) not in ("n", "d"):
+        raise ValueError(f"a law's contours live on the (N, D) plane, so x and y have to be "
+                         f"'n' and 'd'/'tokens' in some order; got x={x!r}, y={y!r}.")
+    swap = _ND_ALIAS.get(x, x) == "d"  # x is tokens, so the fit's first argument is y
+
+    k = fit.flops_per_nd
+    with mpl.rc_context(STYLE):
+        own = ax is None
+        fig = plt.figure(figsize=(5.2, 3.9)) if own else ax.figure
+        ax = fig.add_subplot(111) if own else ax
+        gx = np.geomspace(xv.min() / 1.3, xv.max() * 1.3, 220)
+        gy = np.geomspace(yv.min() / 1.3, yv.max() * 1.3, 220)
+        gxx, gyy = np.meshgrid(gx, gy)
+        pred = fit.predict(gyy if swap else gxx, gxx if swap else gyy)
+        if l_inf is not None:
+            pred = pred - float(l_inf)
+            lv = lv - float(l_inf)
+        # one scale for the surface and the dots, so "same colour" means "same loss"
+        cmap = _ramp_cmap().reversed()   # dark = low loss, as on a loss colorbar
+        norm = _color_norm(np.concatenate([pred.ravel(), lv]))
+        cs = ax.contour(gxx, gyy, pred, levels=levels, cmap=cmap, norm=norm,
+                        linewidths=1.1)
+        ax.clabel(cs, inline=True, fontsize=6, fmt="%.2f")
+        ax.plot([], [], color=INK3, lw=1.1, label=f"{fit.label}: iso-loss")
+        ax.scatter(xv, yv, c=lv, cmap=cmap, norm=norm, s=34, edgecolors=SURFACE,
+                   linewidths=0.8, zorder=4, label="runs (measured loss)")
+        for c_iso in (isocompute or []):
+            xs = np.geomspace(gx[0], gx[-1], 200)
+            ys = c_iso / (k * xs)
+            m = (ys >= gy[0]) & (ys <= gy[-1])
+            if not m.any():
+                continue
+            ax.plot(xs[m], ys[m], color=INK3, lw=1.0, ls="--", alpha=.8)
+            # labelled at the small-N end: the other end of an iso-compute line is the
+            # low-loss corner, where the contour labels already are
+            ax.annotate(sci(c_iso), (xs[m][0], ys[m][0]), fontsize=6, color=INK2,
+                        ha="left", va="top", xytext=(2, -2),
+                        textcoords="offset points")
+        if ridge:
+            c_lo, c_hi = k * gx[0] * gy[0], k * gx[-1] * gy[-1]
+            pts = np.array([fit.optimum(cc)[:2] for cc in np.geomspace(c_lo, c_hi, 160)])
+            px, py = (pts[:, 1], pts[:, 0]) if swap else (pts[:, 0], pts[:, 1])
+            m = ((px >= gx[0]) & (px <= gx[-1]) & (py >= gy[0]) & (py <= gy[-1]))
+            if m.any():
+                ax.plot(px[m], py[m], color=ACCENT, lw=2.0, zorder=5,
+                        label="compute-optimal path")
+        fig.colorbar(mpl.cm.ScalarMappable(norm=norm, cmap=cmap), ax=ax,
+                    label="excess loss (nats)" if l_inf is not None else "test loss (nats)")
+        ax.set(xscale="log", yscale="log", xlim=(gx[0], gx[-1]), ylim=(gy[0], gy[-1]),
+               xlabel=_AXIS_LABEL.get(x, x), ylabel=_AXIS_LABEL.get(y, y),
+               title=title if title is not None
+               else f"the {fit.form} law over the (N, D) plane")
+        # framed, unlike every other legend in here: this one sits on top of a filled
+        # surface rather than on the page
+        ax.legend(fontsize=7, labelcolor=INK2, loc="lower left", frameon=True,
+                  facecolor=SURFACE, edgecolor=GRID, framealpha=0.92)
         _decade_ticks(ax)
         return _finish(fig, path, show) if own else ax
 
@@ -542,6 +659,7 @@ def plot_summary(lab, path=None, show=None):
             ax_l.set(xscale="log", xlabel="compute $C$ (flops)",
                      ylabel="best loss $L^*$ (nats)", title="e  best loss (measured)")
             ax_l.legend(fontsize=7, labelcolor=INK2)
+            _decade_ticks(ax_l)
         else:
             ax_l.axis("off")
             ax_l.text(.5, .5, "no rung with >=3 sizes yet", ha="center", va="center",
@@ -555,5 +673,6 @@ def plot_summary(lab, path=None, show=None):
         ax_t.set(xscale="log", yscale="log", xlabel="compute $C$ (flops)",
                  ylabel="tokens per parameter", title="f  where the budget went")
         ax_t.legend(fontsize=7, labelcolor=INK2)
+        _decade_ticks(ax_t)
         fig.suptitle(f"lab '{lab.name}'", fontsize=11, y=0.99)
         return _finish(fig, path, show, tight=False)

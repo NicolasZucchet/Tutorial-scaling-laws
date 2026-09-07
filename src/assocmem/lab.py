@@ -6,8 +6,8 @@ Everything a student needs is four objects::
     s   = Sweep(c=[4e9], n=[64, 128, 256], lr=[0.03, 0.06])
     s.estimate(lab)                                     # free: what would this cost?
     r   = lab.run_round("lr landscape", s)              # spends 1 round, plots itself
-    laws = lab.fit()                                    # power laws + .recipe(C)
-    lab.hero(laws)                                      # one shot, sized to the remainder
+    #   fit the laws yourself, from `assocmem.fit`: isoflop_optimum, powerlaw, joint_fit
+    lab.hero(c=lab.compute_left(), n=..., lr=..., predicted=...)     # one shot
 
 The interesting machinery -- lazy Zipf data, hashed embeddings, vmapped training,
 flop accounting -- stays out of sight in `data`/`train`/`ledger`.
@@ -129,8 +129,9 @@ def _listify(x):
 def _lr_of(fn, c: float, n: int, d: int) -> float:
     """Call an lr function with as many of (c, n, d) as it accepts.
 
-    A rule may only need one of them -- ``laws.lr`` takes compute alone -- so the arity is read
-    off the signature rather than forced on the caller; anything variadic gets all three.
+    A rule may only need one of them -- an lr law fitted against compute takes ``c`` alone --
+    so the arity is read off the signature rather than forced on the caller; anything variadic
+    gets all three.
     """
     try:
         params = inspect.signature(fn).parameters.values()
@@ -161,7 +162,7 @@ class Sweep:
 
     ``lr`` is a list of values, or a **function** evaluated per config: it is called with as
     many of ``(c, n, d)`` as it takes, so ``lambda c, n, d: 0.001 * n`` is a size-dependent
-    rule and ``laws.lr`` (which takes ``c`` alone) reuses a fitted law.
+    rule and ``lambda c: 0.08 * (c / 1e10) ** -0.05`` reuses an lr law you fitted yourself.
 
     Sweeps concatenate with ``+``, so an irregular design is still one round::
 
@@ -230,9 +231,6 @@ class Sweep:
                 worst = max(rounded, key=lambda p: abs(p[1] / p[0] - 1))
                 unit = f"whole embedding dimensions of {D_OUT} parameters" if axis == "n" \
                     else f"whole batches of {BATCH} tokens"
-                print(f"note: {axis} rounded to {unit} "
-                      f"({len({v for v, _ in rounded})} value(s), e.g. "
-                      f"{worst[0]:.0f} -> {worst[1]})")
         self.configs = tuple(cfgs)
 
     # -- composition ---------------------------------------------------------
@@ -419,179 +417,6 @@ class Results:
 
 
 # --------------------------------------------------------------------------- #
-# Laws
-# --------------------------------------------------------------------------- #
-@dataclass
-class Laws:
-    l_inf: float  # FITTED floor, from the 3-parameter L*(C) fit -- never given
-    rungs: list[dict]
-    n_law: tuple  # (a, b, r2)    n*  = a C^b
-    lr_law: tuple  # (a, p)        lr* = a C^p
-    loss_law: tuple  # (a, alpha, r2)  L*  = l_inf + a C^-alpha
-    loss_law_free: tuple  # (l_inf, a, alpha)
-    lr_anchors: list = field(default_factory=list)
-    notes: list = field(default_factory=list)
-
-    def n_star(self, c: float) -> float:
-        a, b, _ = self.n_law
-        return a * c**b
-
-    def lr(self, c: float) -> float:
-        a, p = self.lr_law
-        return a * c**p
-
-    def predict(self, c: float) -> float:
-        a, al, _ = self.loss_law
-        return self.l_inf + a * c**-al
-
-    def predict_free(self, c: float) -> float:
-        li, a, al = self.loss_law_free
-        return li + a * c**-al
-
-    def recipe(self, c: float) -> dict:
-        """The compute-optimal (n, d, lr) for a compute budget `c`.
-
-        ``n`` is a parameter count rounded to a whole embedding dimension, and ``width`` is
-        that dimension -- the shape the model actually has.
-        """
-        width = max(1, int(round(self.n_star(c) / D_OUT)))
-        steps = _fit.steps_for(c, width)
-        return dict(n=width * D_OUT, width=width, d=steps * BATCH,
-                    lr=self.lr(train_flops(width, steps)),
-                    predicted_loss=self.predict(train_flops(width, steps)))
-
-    def summary(self) -> str:
-        an, bn, r2n = self.n_law
-        al, pl = self.lr_law
-        aL, alL, r2L = self.loss_law
-        li, aF, alF = self.loss_law_free
-        L = [f"fitted on {len(self.rungs)} IsoFLOP rungs "
-             f"({min(r['c'] for r in self.rungs):.3g} -> "
-             f"{max(r['c'] for r in self.rungs):.3g} flops)",
-             f"  n*(C)  = {an:.4g} * C^{bn:.4f}          r2={r2n:.4f}",
-             f"  lr*(C) = {al:.4g} * C^{pl:.4f}          from {len(self.lr_anchors)} "
-             f"bracketed lr sweep(s)",
-             f"  L*(C)  = {li:.4f} + {aF:.4g} * C^-{alF:.4f}   (3-param fit: the floor "
-             f"L_inf is fitted, not given)",
-             f"  excess = {aL:.4g} * C^-{alL:.4f}   r2={r2L:.4f}   "
-             f"(the same rungs above the fitted floor -- a low r2 here means the floor is "
-             f"not pinned down yet)",
-             f"  => N ~ C^{bn:.3f}, D ~ C^{1 - bn:.3f}"]
-        L += [f"  note: {t}" for t in self.notes]
-        return "\n".join(L)
-
-    def plot(self, path=None, show=None):
-        from .plots import plot_laws
-
-        return plot_laws(self, path=path, show=show)
-
-
-def fit_laws(rows, lr_curvature: float | None = None) -> Laws:
-    """IsoFLOP optima -> the three power laws.  See `Lab.fit`.
-
-    The floor L_inf is a *fitted* parameter, not an input: the problem does not tell you its
-    irreducible loss, so L*(C) is the 3-parameter L_inf + A C^-alpha.  That is the honest
-    version and it is harder -- with a floor to find, the exponent is only as good as your
-    span of rungs -- so ``loss_law``'s r^2 is worth reading, since it says whether the fitted
-    floor actually makes the excess a straight line.
-    """
-    res = Results(list(rows))
-    rungs = res.isoflop()
-    if len(rungs) < 2:
-        have = ", ".join(f"{r['c']:.3g}" for r in rungs) or "none"
-        raise ValueError("need >=3 values of n at >=2 values of C to fit the laws; "
-                         f"rungs with enough widths so far: {have}")
-
-    # --- lr law: use rungs whose lr grid bracketed the optimum (interior minimum) --
-    anchors, curv = [], []
-    for c in res.rungs:
-        sub = res.select(c=c)
-        # take the n closest to that rung's optimum, then look along lr
-        star = next((r["n_star"] for r in rungs if np.isclose(r["c"], c)), None)
-        ns = sorted({r["n"] for r in sub.rows})
-        n_pick = min(ns, key=lambda n: abs(np.log(n / star))) if star else ns[len(ns) // 2]
-        cell = sorted(sub.select(n=n_pick).rows, key=lambda r: r["lr"])
-        if len(cell) < 3:
-            continue
-        i = int(np.argmin([r["loss"] for r in cell]))
-        if i in (0, len(cell) - 1):
-            continue  # clipped: the true optimum is outside the grid
-        x = np.log([r["lr"] for r in cell])
-        y = np.array([r["loss"] for r in cell])
-        co = np.polyfit(x, y, 2)
-        if co[0] > 0:
-            anchors.append((c, float(np.exp(-co[1] / (2 * co[0])))))
-            curv.append(float(co[0]))
-    notes = []
-    if len(anchors) >= 2:
-        a_lr, p_lr, _ = _fit.powerlaw([c for c, _ in anchors], [v for _, v in anchors])
-    elif len(anchors) == 1:
-        a_lr, p_lr = anchors[0][1], 0.0
-        notes.append("only one bracketed lr sweep -> lr* assumed constant in C. "
-                     "Sweep >=3 lrs at two different C to get the trend.")
-    else:
-        a_lr, p_lr = res.best()["lr"], 0.0
-        notes.append("no lr sweep bracketed its optimum -> using the single best lr seen. "
-                     "Your lr grid is probably too narrow.")
-    k = lr_curvature if lr_curvature is not None else (float(np.mean(curv)) if curv else 0.0)
-
-    # --- correct rungs whose best lr sat away from lr*(C) --------------------
-    cs, nstar, lstar = [], [], []
-    for r in rungs:
-        c = r["c"]
-        if r.get("clipped") in ("low", "high"):
-            below = r["clipped"] == "low"
-            notes.append(
-                f"WARNING rung C={c:.3g}: the fitted optimum lies "
-                f"{'below your smallest' if below else 'above your largest'} "
-                f"n ({min(r['ns']) if below else max(r['ns'])}), so n* is a bound, not an "
-                f"optimum. Widen the n grid at this rung or the law will lie.")
-        elif r.get("clipped") == "flat":
-            notes.append(f"WARNING rung C={c:.3g}: the loss-vs-n profile is not convex over "
-                         f"the widths you tried, so n* is just the best point, not a fitted "
-                         f"optimum. Add widths on both sides of it.")
-        n_pick = min(r["ns"], key=lambda n: abs(np.log(n / r["n_star"])))
-        lr_used = Results(res.select(c=c).select(n=n_pick).rows).best()["lr"]
-        pen = k * np.log(lr_used / (a_lr * c**p_lr)) ** 2 if k > 0 else 0.0
-        if pen > 0.005:
-            notes.append(f"rung C={c:.3g} was trained at lr={lr_used:.4g} vs lr*="
-                         f"{a_lr * c ** p_lr:.4g}; L* corrected by -{pen:.4f}")
-        cs.append(c); nstar.append(r["n_star"]); lstar.append(r["loss_star"] - pen)
-
-    cs, nstar, lstar = np.array(cs), np.array(nstar), np.array(lstar)
-    an, bn, r2n = _fit.powerlaw(cs, nstar)
-    # The floor comes from the rungs themselves.  Three parameters need three rungs; with two
-    # there is nothing to separate a floor from an exponent, so it is pinned to zero and the
-    # law is read as a pure power law in the raw loss -- said out loud, because every
-    # extrapolation then inherits it.
-    if len(cs) >= 3:
-        free = _fit.saturating_powerlaw(cs, lstar)
-    else:
-        a0, b0, _ = _fit.powerlaw(cs, lstar)
-        free = (0.0, a0, -b0)
-        notes.append("only 2 rungs -> L_inf cannot be fitted and is pinned to 0, so L*(C) is "
-                     "a bare power law in the raw loss and will UNDER-predict at large C. "
-                     "Add a third rung.")
-    l_inf = float(free[0])
-    if l_inf <= 1e-9 < min(lstar):
-        notes.append("the fitted floor came out at 0, its lower bound: over this span of "
-                     "compute the rungs cannot tell a floor from a slower power law. Widen "
-                     "the span (rungs 3-4x apart beat rungs 1.2x apart) before trusting "
-                     "L_inf or any extrapolation of L*(C).")
-    if len(cs) == 3:
-        notes.append("3 rungs for a 3-parameter L*(C): the fit is exactly determined, so its "
-                     "r2 is 1 by construction and says nothing about the floor. A 4th rung "
-                     "is what turns L_inf into a measurement.")
-    aL, bL, r2L = _fit.powerlaw(cs, np.maximum(lstar - l_inf, 1e-6))
-    return Laws(l_inf=l_inf,
-                rungs=[dict(c=float(c), n_star=float(n), loss_star=float(l))
-                       for c, n, l in zip(cs, nstar, lstar)],
-                n_law=(an, bn, r2n), lr_law=(a_lr, p_lr),
-                loss_law=(aL, -bL, r2L), loss_law_free=free,
-                lr_anchors=anchors, notes=notes)
-
-
-# --------------------------------------------------------------------------- #
 # Lab
 # --------------------------------------------------------------------------- #
 class Lab:
@@ -749,7 +574,7 @@ class Lab:
             raise BudgetError(
                 f"no screening rounds left ({self.rounds_used}/{self.max_rounds} used), "
                 f"and {len(todo)} of these {len(sweep)} configs are new. "
-                f"Fit your laws with lab.fit() and spend the remaining "
+                f"Fit your laws on what you have and spend the remaining "
                 f"{self.remaining:.3g} flops on lab.hero().")
 
         sub = Sweep(None, None, _configs=todo)
@@ -798,69 +623,108 @@ class Lab:
                      show=None)
         return out
 
-    # -- fitting -------------------------------------------------------------
-    def fit(self, plot: bool = True, quiet: bool = False,
-            lr_curvature: float | None = None) -> Laws:
-        """Fit n*(C), lr*(C) and L*(C) to every round run so far.
-
-        ``lr_curvature`` overrides the loss-vs-log-lr curvature that the correction for
-        off-optimum rungs uses; by default it is the mean of the curvatures actually
-        measured in the rounds, which needs at least one bracketed lr sweep to be
-        meaningful (``laws.notes`` says so when it is not).
-        """
-        laws = fit_laws(self.rows, lr_curvature=lr_curvature)
-        if not quiet:
-            print(laws.summary())
-        if plot:
-            laws.plot(path=self.dir / "laws.png", show=None)
-        return laws
-
     # -- hero ----------------------------------------------------------------
-    def hero(self, laws: Laws, plot: bool = True, margin: float = 2e10) -> dict:
-        """Spend everything that is left on one run.  Can only be done once."""
-        c = self.remaining - margin
+    def _hero_eval_flops(self, width: int) -> float:
+        """What the hero's own evaluations cost: the learning curve plus two final scorings."""
+        return (eval_flops(width, self.eval_tokens) * self.hero_curve_points
+                + eval_flops(width, self.hero_eval_tokens)
+                + eval_flops(width, self.hero_check_tokens))
+
+    def compute_left(self, n: int | None = None) -> float:
+        """Flops available to *train* the hero run: what is left, less its evaluations.
+
+        The hero is scored on a much larger eval set than a screening run, twice, plus a
+        learning curve, and none of that is free -- so the number to hand to ``hero(c=...)``
+        is not ``lab.remaining``.  The reserve scales with the model, so pass the ``n`` you
+        are about to use for the exact figure; without one it is priced at the largest model
+        run so far.  Either way ``hero`` trims the run to what fits, so an estimate here
+        costs a few steps at worst and never an error.
+        """
+        widths = [int(r.get("width", r["n"] / D_OUT)) for r in self.rows]
+        width = (max(1, int(round(float(n) / D_OUT))) if n is not None
+                 else (max(widths) if widths else 1))
+        return max(0.0, self.remaining - self._hero_eval_flops(width))
+
+    def hero(self, c=None, n=None, lr=None, *, d=None, predicted=None) -> dict:
+        """Spend what is left on one run, at the recipe you fitted.  One shot only.
+
+        Give ``lr`` and any **two** of ``c`` (flops to train on), ``n`` (parameters) and
+        ``d`` (tokens); the third follows from C = 6ND, the same way a ``Sweep`` is given.
+        ``lab.compute_left()`` is the ``c`` that fits.
+
+        ``predicted`` is what YOUR law says this run will score.  It is not needed to
+        train, but it is the number the scoreboard plots against the result, and writing it
+        down before the run is what makes it a prediction -- so pass it.
+        """
+        if lr is None:
+            raise BudgetError("hero needs a learning rate: hero(c=..., n=..., lr=...)")
+        given = {k: v for k, v in dict(c=c, n=n, d=d).items() if v is not None}
+        if len(given) < 2:
+            raise BudgetError(
+                f"hero needs two of c, n, d (it got {sorted(given) or 'none'}): the third "
+                f"follows from C = 6ND.  Try hero(c=lab.compute_left(), n=..., lr=...).")
+        if "n" in given:
+            width = max(1, int(round(float(n) / D_OUT)))
+        else:
+            width = max(1, int(round(_fit.params_of(float(c), float(d)) / D_OUT)))
+        n_par = width * D_OUT
+        if "d" in given:
+            steps = max(1, int(round(float(d) / BATCH)))
+        else:
+            steps = _fit.steps_for(float(c), width)
+        if len(given) == 3:
+            want = _fit.compute_of(n_par, steps * BATCH)
+            if abs(want / float(c) - 1) > 0.02:
+                raise BudgetError(
+                    f"c, n and d disagree: 6ND = {want:.4g} for the n and d you gave, but "
+                    f"c={float(c):.4g}.  Give any two and let the third follow.")
+
         if self.hero_record is not None:
             # re-running the cell is fine; asking for a *different* hero run is not
             rec = self.hero_record
-            want = laws.recipe(rec["c_train"])
-            if want["n"] == rec["n"] and abs(want["lr"] / rec["lr_max"] - 1) < 1e-6:
+            same = (rec["n"] == n_par and rec["steps"] == steps
+                    and abs(float(lr) / rec["lr_max"] - 1) < 1e-6)
+            if same:
                 print(f"hero run already done -- replaying it (no flops spent).\n"
                       f"  n={rec['n']:,} params, d={rec['tokens']:,}, "
                       f"lr={rec['lr_max']:.5f}\n"
-                      f"  PREDICTED {rec['predicted']:.4f}  ->  ACTUAL {rec['loss']:.4f}"
-                      f"   (error {rec['loss'] - rec['predicted']:+.4f})")
-                if plot:
-                    from .plots import plot_hero
-
-                    plot_hero(rec, laws, show=None)
-                self.report()
+                      f"  ACTUAL {rec['loss']:.4f}"
+                      + (f"   (predicted {rec['predicted']:.4f}, error "
+                         f"{rec['loss'] - rec['predicted']:+.4f})"
+                         if np.isfinite(rec.get("predicted", np.nan)) else ""))
+                self.report(predicted=predicted)
                 return rec
             raise BudgetError(
                 f"the hero run has already been done: n={rec['n']:,} params, "
                 f"d={rec['tokens']:,}, "
                 f"lr={rec['lr_max']:.5f}, loss {rec['loss']:.4f}.\nYou only get one shot -- "
-                f"these laws would have asked for n={want['n']}, lr={want['lr']:.5f} instead. "
-                f"Start a fresh Lab(name=...) if you want another attempt.")
-        for _ in range(50):  # eval cost depends on the size, which depends on c
-            width = max(1, int(round(laws.n_star(c) / D_OUT)))
-            ev = (eval_flops(width, self.eval_tokens) * self.hero_curve_points
-                  + eval_flops(width, self.hero_eval_tokens)
-                  + eval_flops(width, self.hero_check_tokens))
-            c_new = self.remaining - margin - ev
-            if abs(c_new - c) < 1e6:
-                break
-            c = c_new
-        n = width * D_OUT
-        steps = _fit.steps_for(c, width)
+                f"this call asks for n={n_par:,}, d={steps * BATCH:,}, lr={float(lr):.5f} "
+                f"instead.  Start a fresh Lab(name=...) if you want another attempt.")
+
+        ev = self._hero_eval_flops(width)
+        # A recipe that overshoots the remainder is trimmed rather than refused: the run is
+        # the point, and a handful of steps is a cheaper correction than a raised exception
+        # at the last cell of the notebook.
+        afford = int((self.remaining - ev) / train_flops(width, 1))
+        if afford < 1:
+            raise BudgetError(
+                f"nothing left for a hero run at n={n_par:,}: its evaluations alone cost "
+                f"{ev:.3g} flops and only {self.remaining:.3g} remain.  A smaller n leaves "
+                f"room -- lab.compute_left(n) prices it.")
+        if steps > afford:
+            print(f"trimmed the hero run from {steps} to {afford} steps: "
+                  f"{train_flops(width, steps) + ev:.4g} flops would not fit in the "
+                  f"{self.remaining:.4g} remaining (evals take {ev:.3g}).")
+            steps = afford
         c_train = train_flops(width, steps)
-        lr = laws.lr(c_train)
-        pred, pred_free = laws.predict(c_train), laws.predict_free(c_train)
+        lr = float(lr)
+        pred = float("nan") if predicted is None else float(predicted)
         print(f"HERO RECIPE at C={c_train:.4g} (+{ev:.3g} for evals)\n"
-              f"  n = {n:,} params  ({D_OUT} x {width}) | d = {steps * BATCH:,} tokens "
+              f"  n = {n_par:,} params  ({D_OUT} x {width}) | d = {steps * BATCH:,} tokens "
               f"({steps} steps of {BATCH}) | lr = {lr:.5f} -> {lr / 10:.6f} cosine\n"
-              f"  PREDICTED LOSS = {pred:.4f} nats", flush=True)
-        if c_train + ev > self.remaining:
-            raise BudgetError("hero run does not fit -- this should not happen")
+              + (f"  PREDICTED LOSS = {pred:.4f} nats" if np.isfinite(pred) else
+                 "  no predicted loss given -- pass predicted=... to score the "
+                 "extrapolation"), flush=True)
 
         r = train_sweep(n=width, steps=steps, lrs=[lr],
                         stream=get_stream(steps * BATCH,
@@ -875,9 +739,9 @@ class Lab:
         ledger.log("hero-final-eval",
                    eval=eval_flops(width, ma) + eval_flops(width, mb), n=width)
 
-        rec = dict(n=n, width=width, steps=steps, tokens=steps * BATCH, lr_max=lr,
+        rec = dict(n=n_par, width=width, steps=steps, tokens=steps * BATCH, lr_max=lr,
                    lr_min=lr / 10, c_train=c_train, c_eval=ev, predicted=pred,
-                   predicted_free=pred_free, loss=float(exact_a[0]),
+                   loss=float(exact_a[0]),
                    loss_sampled=float(samp_a[0]), loss_heldout_set=float(exact_b[0]),
                    curve_steps=[int(x) for x in r.curve_steps],
                    curve_loss=[float(x) for x in r.curve.ravel()])
@@ -886,23 +750,19 @@ class Lab:
         np.save(self.dir / "hero_W.npy", np.asarray(r.params[0]))
         print(f"\n=== HERO RESULT ===\n"
               f"  ACTUAL loss   = {rec['loss']:.4f} nats  ({ma} held-out tokens)\n"
-              f"  PREDICTED     = {pred:.4f}          error {rec['loss'] - pred:+.4f}\n"
-              f"  cross-checks  : {rec['loss_sampled']:.4f} (sampled-y CE), "
-              f"{rec['loss_heldout_set']:.4f} (independent eval set)\n"
-              f"  your fitted floor = {laws.l_inf:.4f}   -> excess "
-              f"{rec['loss'] - laws.l_inf:.4f} nats (against YOUR fit, not the truth)\n"
+              + (f"  PREDICTED     = {pred:.4f}          error "
+                 f"{rec['loss'] - pred:+.4f}\n" if np.isfinite(pred) else "")
+              + f"  cross-checks  : {rec['loss_sampled']:.4f} (sampled-y CE), "
+                f"{rec['loss_heldout_set']:.4f} (independent eval set)\n"
               + self.status())
-        if plot:
-            from .plots import plot_hero
-
-            plot_hero(rec, laws, path=self.dir / "hero.png", show=None)
         # Printed here rather than left to the student to ask for: the scoreboard
         # slide is only as good as the number of runs that make it onto it.
         self.report()
         return rec
 
     # -- reporting -------------------------------------------------------------
-    def report(self, url: str | None = None, fields: dict | None = None) -> dict:
+    def report(self, name: str | None = None, url: str | None = None,
+               fields: dict | None = None, predicted: float | None = None) -> dict:
         """The numbers the room's scoreboard wants, and a link that carries them.
 
         The slide "How did the room do?" plots one dot per submission -- predicted
@@ -913,8 +773,12 @@ class Lab:
         link that fills the answers in for you.  Submitting is still a click: the
         link opens the form, it does not post anything on your behalf.
 
-        No name is asked for or sent.  The plot is a cloud of dots, so a second
+        No name is asked for or sent -- `name` is accepted so a call that passes one
+        still works, and then ignored.  The plot is a cloud of dots, so a second
         submission is a second dot rather than a correction -- submit once.
+
+        `predicted` fills in (or overrides) what your law said this run would score,
+        for the case where `hero` was called without it.
 
         `share` is the WHOLE cost of the hero run, its final evaluations included
         (the ~1e10 flops of `c_eval`), as a FRACTION of the lab's budget -- what is
@@ -926,26 +790,34 @@ class Lab:
         """
         rec = self.hero_record
         if rec is None:
-            raise BudgetError("no hero run yet -- lab.hero(laws) first, and report "
-                              "what it gives you.")
+            raise BudgetError("no hero run yet -- lab.hero(c=..., n=..., lr=...) first, "
+                              "and report what it gives you.")
+        if predicted is not None:
+            rec["predicted"] = float(predicted)
+            self._save()
+        pred = float(rec.get("predicted", float("nan")))
         c_hero = rec["c_train"] + rec["c_eval"]
-        out = dict(predicted=round(rec["predicted"], 4),
+        out = dict(predicted=round(pred, 4) if np.isfinite(pred) else None,
                    actual=round(rec["loss"], 4),
                    share=round(c_hero / self.budget, 3))
         url = FORM_URL if url is None else url
         fields = FORM_FIELDS if fields is None else fields
-        if url and all(fields.get(k) for k in out):
+        # A prefilled link with a blank in it is worse than no link, so it is only built
+        # once all three answers exist.
+        if url and all(fields.get(k) for k in out) and out["predicted"] is not None:
             query = urllib.parse.urlencode(
                 dict([("usp", "pp_url")] + [(fields[k], out[k]) for k in out]))
             out["url"] = f"{url.split('?')[0]}?{query}"
         # Labelled the way the form's three questions are, and in their order, so
         # the block is read off rather than translated.
         print(f"\n=== REPORT YOUR RUN ===   (the form's three fields, in order)\n"
-              f"  predicted loss           : {out['predicted']:.4f}\n"
-              f"  obtained loss            : {out['actual']:.4f}\n"
-              f"  fraction on the hero run : {out['share']:.3f}"
-              f"   ({100 * out['share']:.1f}% = {c_hero:.3g} of "
-              f"{self.budget:.3g} flops)")
+              f"  predicted loss           : "
+              + (f"{out['predicted']:.4f}" if out["predicted"] is not None else
+                 "-- none recorded: lab.report(predicted=<what your law said>)") + "\n"
+              + f"  obtained loss            : {out['actual']:.4f}\n"
+                f"  fraction on the hero run : {out['share']:.3f}"
+                f"   ({100 * out['share']:.1f}% = {c_hero:.3g} of "
+                f"{self.budget:.3g} flops)")
         if "url" in out:
             print(f"  -> or open this link, which arrives with all three filled in:\n"
                   f"     {out['url']}")
