@@ -1307,6 +1307,7 @@ result = lab.hero(n=n, d=d, lr=lr, predicted=loss)  # final run!!
 - No AI help for strategy
 - Only restart experiments in case of bugs
 - Only run Part 0 and Part 2 of the code (Part 1 is just demo)
+- Choose Colab runtime to be GPU (will be faster!)
 - **Report your results** at the end using the link that will be given!
 
 
