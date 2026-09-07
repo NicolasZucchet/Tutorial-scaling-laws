@@ -39,7 +39,7 @@ MLSS Tübingen Tutorial -- September 8th 2026
 
 The early successes of large language models relied on **two main observations**:
 1. As we scale models and data, the next-token prediction improves in a **predictable way**.
-2. As loss improves, the ability of the model to **solve tasks** we ultimately care about increase.
+2. As loss improves, the ability of the model to **solve tasks** we ultimately care about increases.
 
 <!-- step -->
 <div style="margin-top: 1.5em"></div>
@@ -49,7 +49,7 @@ Scaling laws are the science behind **1.**, are what justified the huge investme
 <!-- step -->
 <div style="margin-top: 1.5em"></div>
 
-They interesting from an **engineering perspective** (useful tools to design models), and from a **scientific standpoint** (suggest some universal principles underlying learning to be discovered!).
+They are interesting from an **engineering perspective** (useful tools to design models), and from a **scientific standpoint** (suggest some universal principles underlying learning to be discovered!).
 
 <!-- step -->
 <div style="margin-top: 1.5em"></div>
@@ -57,7 +57,7 @@ They interesting from an **engineering perspective** (useful tools to design mod
 ```box
 title: Goal of the tutorial
 tone: accent
-content: Build **intuition** on why scaling law are **useful** and **why they hold**.
+content: Build **intuition** on why scaling laws are **useful** and **why they hold**.
 ```
 
 ---
@@ -166,7 +166,7 @@ We **review** some of the results from [@kaplan2020scaling] and [@hoffmann2022tr
 
 The **variables** we care about are:
 - **Loss $L$.** Next-token prediction cross-entropy, which is the **objective of learning** (in the pretraining phase).
-- **Model size $N$.** Number of the **parameters** the neural network has (w/o embedding matrices).
+- **Model size $N$.** Number of **parameters** the neural network has (w/o embedding matrices).
 - **Number of tokens $D$.** Total **number of tokens trained on**. Each token usually serves as target of the next token objective once, but can appear in the context much more often.
 - **Compute $C$.** Total number of **elementary operations** (e.g., addition or multiplication in a certain numerical precision like FP16) performed to train the entire model. Proxy for how much it **cost** to train a model.
 
@@ -203,7 +203,7 @@ For **Transformers**, matrix multiplications **dominate** the FLOPs cost (but no
 
 <div style="margin-top: 1.5em"></div>
 
-**Side note.** This holds for dense Transformers; only the number of **activated** parameters matter in mixture of experts, they **increase the number of parameters** while keeping **FLOPs constant**.
+**Side note.** This holds for dense Transformers; only the number of **activated** parameters matters in Mixture of Experts, they **increase the number of parameters** while keeping **FLOPs constant**.
 
 ---
 
@@ -413,7 +413,7 @@ As a result, the ratio between the compute-optimal model and dataset size remain
 <div style="margin-top: 1.5em"></div>
 
 Rule of thumb: **$20$ tokens per parameter**. 
-Way less than what [@kaplan2020scaling] advocated for before [@besiroglu2024chinchilla], and the current trend is towards a larger number for other reasons, e.g. **inference cost** [@gadre2025overtraining; @sardana2024beyond].
+Way more than what [@kaplan2020scaling] advocated for before [@besiroglu2024chinchilla], and the current trend is towards a larger number for other reasons, e.g. **inference cost** [@gadre2025overtraining; @sardana2024beyond].
 
 <!-- step -->
 <div style="margin-top: 1.5em"></div>
@@ -437,7 +437,7 @@ And **optimization details**? e.g., batch size, sequence length...
 <!-- step -->
 <div style="margin-top: 1.5em"></div>
 
-Too expensive to **retune everything everytime**, so there are some choices that everyone is making (e.g., what expansion ratio should an MLP have, ratio width / depth of the network, what learning rates should be etc...)
+Too expensive to **retune everything every time**, so there are some choices that everyone is making (e.g., what expansion ratio should an MLP have, ratio width / depth of the network, what learning rates should be etc...)
 
 <!-- step -->
 <div style="margin-top: 1.5em"></div>
@@ -451,11 +451,11 @@ That said, there are some principles that one could use: compare recipe-specific
 
 --- 
 
-## What about other hyperparameters
+## What about other hyperparameters?
 
 How to develop a **recipe** (model / optimizer / data...) when we only have limited compute? What matters is how good it will be at **large scale**, but we can only afford **small runs**.
 
-One size cannot tell us: compare **scaling laws**.
+A single model size cannot tell us: compare **scaling laws**.
 
 <!-- figure: recipe-trends-fig -->
 
@@ -499,7 +499,7 @@ As large language models are becoming more and **more complex** and used in diff
 - data is **diverse**, e.g. many languages, how should we balance them? [@longpre2026atlas]
 - what happens when we **run out** of internet data? [@muennighoff2023scaling]
 - serving models also costs compute: how to split compute between **training and inference**? [@sardana2024beyond; @jones2021scaling]
-- architectures are getting more complex, e.g. **mixture of experts** [@clark2022unified] or **different sequence layers** [@poli2024mechanistic]: do the laws carry over?
+- architectures are getting more complex, e.g. **Mixture of Experts** [@clark2022unified] or **different sequence layers** [@poli2024mechanistic]: do the laws carry over?
 - training now has **many stages**: how does that change the tradeoffs? [@khatri2026art]
 
 <!-- step -->
@@ -675,7 +675,7 @@ More formally, we have
 - Each context $i$ has a **random embedding** $e_i$ drawn from the unit sphere of dimension $h$.
 - The model predicts the next-token distribution through
 $$p(\cdot | i) = \mathrm{softmax}(We_i).$$
-- There is **only one** out of the $d$ tokens exists in the data (we have some multi-class prediction problem).
+- **Only one** out of the $d$ tokens exists in the data (we have some multi-class prediction problem).
 
 ---
 
@@ -716,7 +716,7 @@ Corresponds to taking **one gradient descent step**, starting from $W=0$, on the
 
 <div style="margin-top: 1.5em"></div>
 
-Contexts with embeddings close to $e_i$ will be **pushed towards outputting** $z_i$ (and thus to predict the correct next-token).
+Contexts with embeddings close to $e_i$ will be **pushed towards outputting** $z_i$ (and thus to predict the correct next token).
 
 ---
 
@@ -768,7 +768,7 @@ The prediction for context $i$ is perturbed by the **other embeddings close to**
 
 <!-- step -->
 
-**Exercice.** Demonstrate that it is proportional to $hd$ up to logarithmic factors.
+**Exercise.** Demonstrate that it is proportional to $hd$ up to logarithmic factors.
 
 ---
 
@@ -804,7 +804,7 @@ Hebbian gets <span class="highlight-red">0.02</span>, an **order of magnitude** 
 <!-- class: pc-slide -->
 ## Capacity, in theory and in practice
 
-In practice, capacity is also **proportional to the number of parameters**. For Mixture of Experts, the **total** number of parameters matter, so they store **more knowledge per active parameter**.
+In practice, capacity is also **proportional to the number of parameters**. For Mixture of Experts, the **total** number of parameters matters, so they store **more knowledge per active parameter**.
 
 ===
 
@@ -945,7 +945,7 @@ Note that in this case there is no residual entropy and the loss will converge t
 
 <!-- step -->
 
-Context $i$ has high chance to appear in the first $D$ tokens as soon as
+Context $i$ has a high chance to appear in the first $D$ tokens as soon as
 
 ===
 
@@ -1030,7 +1030,7 @@ L(C) &\propto C^{\frac{1 - \alpha }{1+\alpha}}
 <!-- step -->
 <div style="margin-top: 1.5em"></div>
 
-Does this back of the enveloppe calculation predicts what is happening **in simulation**?
+Does this back of the envelope calculation predict what is happening **in simulation**?
 
 ---
 
@@ -1214,16 +1214,16 @@ Our toy model can **capture** some of this behavior!
 
 ## Conclusion and takeaways (Part II)
 
-We modeled language modeling with an **associative memory** exposed to **power law data** distribution.
+We modeled language modeling with an **associative memory** exposed to a **power law data** distribution.
 
 <!-- step -->
-With **simple theory**, we were able to **accurately predict** scaling laws exponents.
+With **simple theory**, we were able to **accurately predict** scaling law exponents.
 
 <!-- step -->
 ```box
 title: Takeaway
 tone: accent
-content: Scaling power laws **naturally arise** when the data itself is produced in power laws.
+content: Scaling power laws **naturally arise** when the data itself follows power laws.
 ```
 
 <!-- step -->
@@ -1236,7 +1236,7 @@ content: Scaling power laws **naturally arise** when the data itself is produced
 <!-- animate:bullets -->
 ## To learn more
 
-This is only **one possible theory of scaling laws** and we do not yet understand which mechanisms yields the scaling laws 
+This is only **one possible theory of scaling laws** and we do not yet understand which mechanisms yield the scaling laws.
 
 <!-- step -->
 Some cool work in the field:
@@ -1267,6 +1267,47 @@ Some cool work in the field:
 <div style="margin-top: 1.5em"></div>
 
 **Your job.** Come up with the **best model**!
+
+---
+
+## The code 
+
+Notebook available [here](https://colab.research.google.com/github/NicolasZucchet/Tutorial-scaling-laws/blob/main/notebooks/tutorial.ipynb), underlying model and data are a **black box on purpose**.
+
+
+<!-- step -->
+
+```python
+lab = Lab("me", budget=1e13, rounds=3)  # contains task (max 3 rounds), DON'T TOUCH
+```
+
+```python
+sweep = Sweep(
+     c=[4e9, 12e9],
+     n=[2**(13 + i) for i in range(5)],  # fix C+N, C+D, or N+D
+     lr=[0.001, 0.01, 0.1],  # either array, or a function of c, n, d  
+)  # Cartesian product, test all combinations
+sweep + Sweep(n=[2**14], d=[2**14], lr=[0.01])  # Sweeps can be added!
+sweep.estimate(lab)  # estimates FLOPs used by the sweep
+
+round_results = lab.run_round("first round", sweep)  # runs the sweep
+```
+
+```python
+# Fits are method specific, see notebook
+result = lab.hero(laws)  # final run!!
+```
+
+--- 
+
+## Additional details
+
+- Total compute budget is $10^{13}$ FLOPs
+- **At most 3 rounds**, running everything should take 5--10 minutes
+- No AI help for strategy
+- Only restart experiments in case of bugs
+- **Report your results** at the end using the link that will be given!
+
 
 
 ---
