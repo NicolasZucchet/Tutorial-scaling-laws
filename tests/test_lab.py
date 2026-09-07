@@ -297,6 +297,43 @@ def test_results_reductions_and_plot_runs():
         raise AssertionError("excess without l_inf was allowed")
 
 
+def test_hero_evaluations_are_measured_but_not_charged():
+    """`bill_eval=False` keeps scoring out of the budget without hiding it.
+
+    The hero is scored on a much larger eval set than a screening run, twice, plus a
+    learning curve -- charging that would quietly take a rung's worth of compute out of
+    the run the student is actually buying.  So it is logged as `eval_free`: visible in
+    the ledger and the report, absent from the total the budget is measured against.
+    """
+    from assocmem import ledger
+    from assocmem.problem import get_evalset, get_stream
+    from assocmem.train import train_sweep
+
+    tmp = Path(tempfile.mkdtemp())
+    try:
+        ledger.configure(tmp / "ledger.jsonl", 1e13)
+        stream, evals = get_stream(64 * 4), get_evalset(256)
+        r = train_sweep(n=2, steps=4, lrs=[0.1], stream=stream, eval_set=evals,
+                        eval_tokens=256, eval_points=2, tag="free", bill_eval=False)
+        t = ledger.total()
+        assert r.eval_flops > 0, r.eval_flops        # it was computed
+        assert t["eval"] == 0.0, t                   # and not charged
+        assert abs(t["eval_free"] - r.eval_flops) < 1, t
+        assert abs(t["total"] - r.train_flops) < 1, t
+        assert "uncharged" in ledger.report()
+
+        # the default still bills it, which is what every screening round relies on
+        r2 = train_sweep(n=2, steps=4, lrs=[0.2], stream=stream, eval_set=evals,
+                         eval_tokens=256, eval_points=2, tag="billed")
+        t2 = ledger.total()
+        assert abs(t2["eval"] - r2.eval_flops) < 1, t2
+        assert t2["eval_free"] == t["eval_free"], t2
+    finally:
+        ledger.configure(Path(__file__).resolve().parents[1] / "results" / "ledger.jsonl",
+                         ledger.BUDGET)
+        shutil.rmtree(tmp, ignore_errors=True)
+
+
 def test_report_of_a_hero_run():
     """lab.report() reads the hero record; the prefilled link carries the numbers.
 
@@ -317,12 +354,13 @@ def test_report_of_a_hero_run():
             assert "no hero run" in str(e), e
 
         lab.hero_record = dict(predicted=2.5123456, loss=2.5312345,
-                               c_train=4.9e12, c_eval=1e11)
+                               c_train=5e12, c_eval_free=1e11)
         out = lab.report()
         assert "name" not in out, "the form asks for no name; the plot is anonymous"
         assert out["predicted"] == 2.5123 and out["actual"] == 2.5312, out
-        # A fraction, not a percentage: (4.9e12 + 1e11) / 1e13, which is what the
-        # form's own 0-to-1 validation accepts from a prefilled link.
+        # A fraction, not a percentage: 5e12 / 1e13, which is what the form's own
+        # 0-to-1 validation accepts from a prefilled link.  The hero's own scoring
+        # (c_eval_free) is deliberately NOT in there -- it is not charged.
         assert out["share"] == 0.5, out
         assert out["url"].startswith(FORM_URL), out
 

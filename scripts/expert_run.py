@@ -98,7 +98,7 @@ print(f"\nscreening total: {lab.spent:.4g} flops ({100 * lab.spent / lab.budget:
 
 print(f"\n{'=' * 78}\nHERO\n{'=' * 78}")
 n_hero = int(round(a_n * lab.remaining ** b_n / D_OUT)) * D_OUT
-c_hero = lab.compute_left(n_hero)
+c_hero = lab.remaining
 hero = lab.hero(c=c_hero, n=n_hero, lr=LR_STAR(c_hero),
                 predicted=l_inf + a_l * c_hero**-alpha)
 plot_summary(lab, path=lab.dir / "summary.png", show=False)
@@ -110,7 +110,7 @@ for k, v in rows:
     print(f"  {k:<22s} {v:.4f} nats" + ("   <-- best" if v == rows[0][1] else ""))
 json.dump(dict(laws=dict(n_law=(a_n, b_n, r2_n), loss_law=(l_inf, a_l, alpha),
                          rungs=iso),
-               hero=hero, screening_flops=lab.spent - hero["c_train"] - hero["c_eval"],
+               hero=hero, screening_flops=lab.spent - hero["c_train"],
                scoreboard=dict(rows)),
           open(lab.dir / "expert_run.json", "w"), indent=1, default=float)
 print(f"\n{lab.status()}")

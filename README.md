@@ -38,7 +38,7 @@ r1 = lab.run_round("R1", s1)            # spends one round, prints a table, plot
 iso = lab.results.isoflop()             # per-rung (n*, L*) from a parabola in log n
 a, b, r2 = powerlaw([d["c"] for d in iso], [d["n_star"] for d in iso])   # n*(C)
 n_star = int(a * 3e12**b)
-lab.hero(c=lab.compute_left(n_star), n=n_star, lr=0.03, predicted=3.30)  # one shot
+lab.hero(c=lab.remaining, n=n_star, lr=0.03, predicted=3.30)   # one shot
 ```
 
 The fits are yours to make — `isoflop_optimum`, `powerlaw`, `saturating_powerlaw` and
@@ -73,8 +73,7 @@ State lives in `runs/<name>/` and survives a kernel restart.
 | `plot_runs(runs, x=, y=, color=, fit=)` | any column against any other, coloured by a third (or `color=None` for one series, a colorbar past ten values). `fit=` overlays `'powerlaw'`, `'parabola'`, or a `joint_fit` result |
 | `isoflop_optimum / powerlaw / saturating_powerlaw / joint_fit` | the fits, in `assocmem.fit`. `joint_fit(..., form=)` is `'chinchilla'`, `'kaplan'` or `'skaling'` |
 | `plot_plane(runs, fit)` | a fitted law as iso-loss contours over the (N, D) plane, the runs scattered on the same colour scale, plus the compute-optimal path |
-| `lab.compute_left(n)` | flops left to *train* the hero on, i.e. minus what its own final evaluations cost |
-| `lab.hero(c=, n=, lr=, predicted=)` | one shot: any two of `c`/`n`/`d` plus `lr`. Trims to fit rather than refusing |
+| `lab.hero(c=, n=, lr=, predicted=)` | one shot: any two of `c`/`n`/`d` plus `lr`. `c=lab.remaining` fits, since the hero's own scoring is measured but not charged. Trims to fit rather than refusing |
 | `lab.report()` | the three numbers to send to the room's scoreboard, and a prefilled form link. Printed by `lab.hero()` too |
 | `lab.status() / .remaining / .rounds_left / .reset()` | where you stand |
 | `plot_summary(lab)` | budget strip + everything measured so far |

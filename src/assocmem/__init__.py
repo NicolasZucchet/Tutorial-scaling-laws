@@ -9,7 +9,7 @@ Tutorial API (see `assocmem.lab`)
     r = lab.run_round("lr landscape", s) # spends one round, plots itself
     plot_runs(lab, x="n", y="loss", color="c", excess=True)   # any axes you like
     #   the fits are yours to make: isoflop_optimum / powerlaw / joint_fit
-    lab.hero(c=lab.compute_left(), n=..., lr=..., predicted=...)
+    lab.hero(c=lab.remaining, n=..., lr=..., predicted=...)
 
 Low-level API
 -------------

@@ -267,12 +267,20 @@ def train_sweep(
     eval_tokens: int | None = None,
     tag: str = "untagged",
     return_params: bool = False,
+    bill_eval: bool = True,
 ) -> SweepResult:
     """Train ``len(lrs)`` configs of an n-dim model for ``steps`` steps, in parallel.
 
     ``lrs`` and ``init_scales`` are broadcast against each other to form the config
     axis, so you can sweep either or both.  The cost is billed to the flop ledger
     under ``tag``; the call refuses to run if it would blow the budget.
+
+    ``bill_eval=False`` keeps the evaluation flops out of that budget: they are still
+    computed, and still written to the ledger as ``eval_free`` so the audit trail is
+    complete, but they neither count towards the total nor stand in the way of the run.
+    Scoring a model is not what a student is buying compute for, and for the final run --
+    which is scored on a much bigger eval set than a screening run -- the difference is
+    the size of a rung.
     """
     lrs = np.atleast_1d(np.asarray(lrs, dtype=np.float64))
     if init_scales is None:
@@ -292,7 +300,7 @@ def train_sweep(
     m_eval = len(ewt_np)
 
     n_eval_pts = len(np.unique(np.linspace(0, steps, eval_points + 1).astype(int))) - 1
-    cost = plan_cost(n, steps, k, m_eval, n_eval_pts)
+    cost = plan_cost(n, steps, k, m_eval, n_eval_pts if bill_eval else 0)
     spent = ledger.total()["total"]
     if spent + cost > ledger.BUDGET:
         raise RuntimeError(
@@ -315,7 +323,8 @@ def train_sweep(
 
     tr = train_flops(n, steps, BATCH, k)
     ev = eval_flops(n, m_eval, k) * n_eval_pts
-    ledger.log(tag, train=tr, eval=ev, n=n, steps=steps, n_cfg=k,
+    billed = dict(eval=ev) if bill_eval else dict(eval=0.0, eval_free=ev)
+    ledger.log(tag, train=tr, **billed, n=n, steps=steps, n_cfg=k,
                instance_seed=instance_seed, eval_tokens=m_eval,
                loss=[float(x) for x in curve[-1]], lrs=[float(x) for x in lrs],
                init_scales=[float(x) for x in init_scales])

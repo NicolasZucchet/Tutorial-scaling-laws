@@ -171,7 +171,8 @@ def panel_budget(lab, ax):
                 height=0.55, edgecolor=SURFACE, lw=1.5)
         x += r["flops"]
     if lab.hero_record:
-        ax.barh([0], [lab.hero_record["c_train"] + lab.hero_record["c_eval"]], left=[x],
+        # training only: the hero's scoring is measured but not charged
+        ax.barh([0], [lab.hero_record["c_train"]], left=[x],
                 color=ACCENT, height=0.55, edgecolor=SURFACE, lw=1.5)
     ax.set_xlim(0, total)
     ax.set_ylim(-1.4, 1.1)

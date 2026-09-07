@@ -21,9 +21,13 @@ def configure(path=None, budget: float | None = None) -> None:
         BUDGET = float(budget)
 
 
-def log(tag: str, *, train: float = 0.0, eval: float = 0.0, **info) -> None:
+def log(tag: str, *, train: float = 0.0, eval: float = 0.0, eval_free: float = 0.0,
+        **info) -> None:
+    """Append one record.  ``eval_free`` is evaluation that is measured but not charged:
+    it is reported separately and never counts against the budget (see `train_sweep`)."""
     LEDGER.parent.mkdir(parents=True, exist_ok=True)
-    rec = dict(t=time.time(), tag=tag, train=float(train), eval=float(eval), **info)
+    rec = dict(t=time.time(), tag=tag, train=float(train), eval=float(eval),
+               eval_free=float(eval_free), **info)
     with LEDGER.open("a") as f:
         f.write(json.dumps(rec) + "\n")
 
@@ -38,19 +42,30 @@ def total() -> dict:
     recs = records()
     tr = sum(r["train"] for r in recs)
     ev = sum(r["eval"] for r in recs)
-    return dict(train=tr, eval=ev, total=tr + ev, remaining=BUDGET - tr - ev, n_runs=len(recs))
+    free = sum(r.get("eval_free", 0.0) for r in recs)
+    return dict(train=tr, eval=ev, eval_free=free, total=tr + ev,
+                remaining=BUDGET - tr - ev, n_runs=len(recs))
 
 
 def report() -> str:
     t = total()
     by_tag: dict[str, float] = {}
+    free_by_tag: dict[str, float] = {}
     for r in records():
         by_tag[r["tag"]] = by_tag.get(r["tag"], 0.0) + r["train"] + r["eval"]
+        free_by_tag[r["tag"]] = free_by_tag.get(r["tag"], 0.0) + r.get("eval_free", 0.0)
     lines = [f"budget {BUDGET:.3g} | spent {t['total']:.4g} "
              f"({100 * t['total'] / BUDGET:.2f}%) | remaining {t['remaining']:.4g}",
              f"  train {t['train']:.4g}   eval {t['eval']:.4g}   ({t['n_runs']} sweeps)"]
+    if t["eval_free"]:
+        lines.append(f"  plus {t['eval_free']:.4g} of uncharged evaluation "
+                     f"(the final run's scoring, not billed to the budget)")
     for k, v in sorted(by_tag.items(), key=lambda kv: -kv[1]):
-        lines.append(f"    {k:<28s} {v:.4g}  ({100 * v / BUDGET:.2f}%)")
+        free = free_by_tag.get(k, 0.0)
+        if not v and not free:
+            continue
+        lines.append(f"    {k:<28s} {v:.4g}  ({100 * v / BUDGET:.2f}%)"
+                     + (f"   + {free:.4g} uncharged" if free else ""))
     return "\n".join(lines)
 
 

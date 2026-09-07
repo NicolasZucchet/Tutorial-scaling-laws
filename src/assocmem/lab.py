@@ -7,7 +7,7 @@ Everything a student needs is four objects::
     s.estimate(lab)                                     # free: what would this cost?
     r   = lab.run_round("lr landscape", s)              # spends 1 round, plots itself
     #   fit the laws yourself, from `assocmem.fit`: isoflop_optimum, powerlaw, joint_fit
-    lab.hero(c=lab.compute_left(), n=..., lr=..., predicted=...)     # one shot
+    lab.hero(c=lab.remaining, n=..., lr=..., predicted=...)          # one shot
 
 The interesting machinery -- lazy Zipf data, hashed embeddings, vmapped training,
 flop accounting -- stays out of sight in `data`/`train`/`ledger`.
@@ -624,33 +624,13 @@ class Lab:
         return out
 
     # -- hero ----------------------------------------------------------------
-    def _hero_eval_flops(self, width: int) -> float:
-        """What the hero's own evaluations cost: the learning curve plus two final scorings."""
-        return (eval_flops(width, self.eval_tokens) * self.hero_curve_points
-                + eval_flops(width, self.hero_eval_tokens)
-                + eval_flops(width, self.hero_check_tokens))
-
-    def compute_left(self, n: int | None = None) -> float:
-        """Flops available to *train* the hero run: what is left, less its evaluations.
-
-        The hero is scored on a much larger eval set than a screening run, twice, plus a
-        learning curve, and none of that is free -- so the number to hand to ``hero(c=...)``
-        is not ``lab.remaining``.  The reserve scales with the model, so pass the ``n`` you
-        are about to use for the exact figure; without one it is priced at the largest model
-        run so far.  Either way ``hero`` trims the run to what fits, so an estimate here
-        costs a few steps at worst and never an error.
-        """
-        widths = [int(r.get("width", r["n"] / D_OUT)) for r in self.rows]
-        width = (max(1, int(round(float(n) / D_OUT))) if n is not None
-                 else (max(widths) if widths else 1))
-        return max(0.0, self.remaining - self._hero_eval_flops(width))
-
     def hero(self, c=None, n=None, lr=None, *, d=None, predicted=None) -> dict:
         """Spend what is left on one run, at the recipe you fitted.  One shot only.
 
         Give ``lr`` and any **two** of ``c`` (flops to train on), ``n`` (parameters) and
         ``d`` (tokens); the third follows from C = 6ND, the same way a ``Sweep`` is given.
-        ``lab.compute_left()`` is the ``c`` that fits.
+        ``lab.remaining`` is the ``c`` that fits: the hero's own scoring is not charged to
+        the budget, so every flop you have left can go into training it.
 
         ``predicted`` is what YOUR law says this run will score.  It is not needed to
         train, but it is the number the scoreboard plots against the result, and writing it
@@ -662,7 +642,7 @@ class Lab:
         if len(given) < 2:
             raise BudgetError(
                 f"hero needs two of c, n, d (it got {sorted(given) or 'none'}): the third "
-                f"follows from C = 6ND.  Try hero(c=lab.compute_left(), n=..., lr=...).")
+                f"follows from C = 6ND.  Try hero(c=lab.remaining, n=..., lr=...).")
         if "n" in given:
             width = max(1, int(round(float(n) / D_OUT)))
         else:
@@ -701,25 +681,29 @@ class Lab:
                 f"this call asks for n={n_par:,}, d={steps * BATCH:,}, lr={float(lr):.5f} "
                 f"instead.  Start a fresh Lab(name=...) if you want another attempt.")
 
-        ev = self._hero_eval_flops(width)
-        # A recipe that overshoots the remainder is trimmed rather than refused: the run is
-        # the point, and a handful of steps is a cheaper correction than a raised exception
-        # at the last cell of the notebook.
-        afford = int((self.remaining - ev) / train_flops(width, 1))
+        # The hero's own scoring is not charged (`bill_eval=False` below), so the whole
+        # remainder is available to train on.  A recipe that overshoots it is trimmed rather
+        # than refused: the run is the point, and a handful of steps is a cheaper correction
+        # than a raised exception at the last cell of the notebook.
+        afford = int(self.remaining / train_flops(width, 1))
         if afford < 1:
             raise BudgetError(
-                f"nothing left for a hero run at n={n_par:,}: its evaluations alone cost "
-                f"{ev:.3g} flops and only {self.remaining:.3g} remain.  A smaller n leaves "
-                f"room -- lab.compute_left(n) prices it.")
+                f"nothing left for a hero run at n={n_par:,}: one step costs "
+                f"{train_flops(width, 1):.3g} flops and only {self.remaining:.3g} remain. "
+                f"A smaller n leaves room.")
         if steps > afford:
-            print(f"trimmed the hero run from {steps} to {afford} steps: "
-                  f"{train_flops(width, steps) + ev:.4g} flops would not fit in the "
-                  f"{self.remaining:.4g} remaining (evals take {ev:.3g}).")
+            # A step or two is the rounding at the end of `remaining / cost per step` and
+            # not worth a line of output; a real trim means the recipe asked for more than
+            # the lab has, and that the student should see.
+            if afford < 0.99 * steps:
+                print(f"trimmed the hero run from {steps} to {afford} steps: "
+                      f"{train_flops(width, steps):.4g} flops would not fit in the "
+                      f"{self.remaining:.4g} remaining.")
             steps = afford
         c_train = train_flops(width, steps)
         lr = float(lr)
         pred = float("nan") if predicted is None else float(predicted)
-        print(f"HERO RECIPE at C={c_train:.4g} (+{ev:.3g} for evals)\n"
+        print(f"HERO RECIPE at C={c_train:.4g}\n"
               f"  n = {n_par:,} params  ({D_OUT} x {width}) | d = {steps * BATCH:,} tokens "
               f"({steps} steps of {BATCH}) | lr = {lr:.5f} -> {lr / 10:.6f} cosine\n"
               + (f"  PREDICTED LOSS = {pred:.4f} nats" if np.isfinite(pred) else
@@ -731,16 +715,18 @@ class Lab:
                                           deterministic=self.deterministic),
                         eval_set=self.evals, eval_tokens=self.eval_tokens,
                         eval_points=self.hero_curve_points, instance_seed=0, tag="hero",
-                        return_params=True)
+                        return_params=True, bill_eval=False)
         ea = strat_evalset(**HERO_STRAT, deterministic=self.deterministic)
         eb = strat_evalset(**CHECK_STRAT, deterministic=self.deterministic)
         exact_a, samp_a, ma = evaluate(r.params, ea, n=width, instance_seed=0, y_seed=11)
         exact_b, samp_b, mb = evaluate(r.params, eb, n=width, instance_seed=0, y_seed=12)
-        ledger.log("hero-final-eval",
-                   eval=eval_flops(width, ma) + eval_flops(width, mb), n=width)
+        # Recorded, not charged: the same treatment the curve evals got above.
+        ev = eval_flops(width, ma) + eval_flops(width, mb)
+        ledger.log("hero-final-eval", eval_free=ev, n=width)
 
         rec = dict(n=n_par, width=width, steps=steps, tokens=steps * BATCH, lr_max=lr,
-                   lr_min=lr / 10, c_train=c_train, c_eval=ev, predicted=pred,
+                   lr_min=lr / 10, c_train=c_train, c_eval_free=ev + r.eval_flops,
+                   predicted=pred,
                    loss=float(exact_a[0]),
                    loss_sampled=float(samp_a[0]), loss_heldout_set=float(exact_b[0]),
                    curve_steps=[int(x) for x in r.curve_steps],
@@ -780,10 +766,11 @@ class Lab:
         `predicted` fills in (or overrides) what your law said this run would score,
         for the case where `hero` was called without it.
 
-        `share` is the WHOLE cost of the hero run, its final evaluations included
-        (the ~1e10 flops of `c_eval`), as a FRACTION of the lab's budget -- what is
-        left over from screening, which is the quantity the deck's colour axis
-        means.  A fraction rather than a percentage because that is what the form
+        `share` is what the hero run cost to TRAIN, as a FRACTION of the lab's
+        budget -- what is left over from screening, which is the quantity the deck's
+        colour axis means.  Its evaluations are not in there because they are not
+        charged: scoring the final model is measured (`c_eval_free`) and reported,
+        but a student is buying compute to train with.  A fraction rather than a percentage because that is what the form
         asks for ("e.g. 0.42; needs to be between 0 and 1"), and a prefilled link
         that fails the form's own validation is worse than no link; the printout
         gives the percentage too, since that is what a person reads.
@@ -796,7 +783,7 @@ class Lab:
             rec["predicted"] = float(predicted)
             self._save()
         pred = float(rec.get("predicted", float("nan")))
-        c_hero = rec["c_train"] + rec["c_eval"]
+        c_hero = rec["c_train"]
         out = dict(predicted=round(pred, 4) if np.isfinite(pred) else None,
                    actual=round(rec["loss"], 4),
                    share=round(c_hero / self.budget, 3))
